@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { sendOtp, verifyOtp } from "@/services/auth.services";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
@@ -52,23 +53,55 @@ function VerifyOtpForm() {
   };
 
   const handleVerify = async () => {
-    const code = otp.join("");
-    if (code.length < OTP_LENGTH) return;
-    setLoading(true);
-    // TODO: verifyOtp(email, code)
-    setTimeout(() => {
-      setLoading(false);
-      router.push(mode === "signup" ? "/select-role" : "/onboarding/profile");
-    }, 900);
-  };
+  const code = otp.join("")
+  if (code.length < OTP_LENGTH) return
 
-  const handleResend = () => {
-    if (timer > 0) return;
+  setLoading(true)
+  try {
+    const { user } = await verifyOtp(email, code)
+
+    if (mode === "signup") {
+      router.push("/select-role")
+    } else {
+      router.push(
+        user.role === "developer" ? "/feed" : "/recruiter/dashboard"
+      )
+    }
+  } catch (err: unknown) {
+    let message = "Failed to verify OTP";
+
+    if (err instanceof Error) {
+      message = err.message;
+    }
+    alert(message)
+    setOtp(Array(OTP_LENGTH).fill(""))
+    inputRefs.current[0]?.focus()
+  } finally {
+    setLoading(false)
+  }
+}
+
+  const handleResend = async () => {
+  if (timer > 0) return;
+
+  try {
+    await sendOtp(email, mode as "signup" | "login");
+
+    // Only update UI after successful resend
     setTimer(RESEND_SECONDS);
     setOtp(Array(OTP_LENGTH).fill(""));
     inputRefs.current[0]?.focus();
-    // TODO: sendOtp(email)
-  };
+  } catch (err: unknown) {
+    let message = "Failed to resend OTP";
+
+    if (err instanceof Error) {
+      message = err.message;
+    }
+
+    alert(message);
+    console.error("Resend OTP error:", err);
+  }
+};
 
   const filled = otp.filter(Boolean).length;
 

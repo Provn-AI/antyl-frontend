@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { sendOtp } from "@/services/auth.services";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,22 +12,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) return
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(email)) return;
-
-    setLoading(true);
-
-    // TODO: replace with → import { sendOtp } from "@/services/auth.service";
-    // await sendOtp(email);
-
-    setTimeout(() => {
-      setLoading(false);
-      router.push(`/verify-otp?email=${encodeURIComponent(email)}&mode=login`);
-    }, 800);
-  };
+  setLoading(true)
+  try {
+    await sendOtp(email, "login")
+    router.push(`/verify-otp?email=${encodeURIComponent(email)}&mode=login`)
+  } catch (err: unknown) {
+    let message = "Failed to send OTP"
+    if (err instanceof Error) {
+      message = err.message;
+    }
+    alert(message)
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <>
