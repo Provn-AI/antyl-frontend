@@ -266,7 +266,7 @@ export default function SelectRolePage() {
           </Link>
 
           <h1 className="card-title">I am a…</h1>
-          <p className="card-sub">Choose how you want to use Provn</p>
+          <p className="card-sub">Choose how you want to use Antyl</p>
 
           <div className="roles-grid">
             {/* Developer card */}

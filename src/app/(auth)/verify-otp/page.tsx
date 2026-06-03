@@ -10,8 +10,11 @@ const RESEND_SECONDS = 60;
 function VerifyOtpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const email = searchParams.get("email") ?? "";
-  const mode = searchParams.get("mode") ?? "login";
+  const mode  = searchParams.get("mode")  ?? "login";
+  // role is only present on signup — forwarded from signup page URL
+  const role  = searchParams.get("role") as "developer" | "recruiter" | null;
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [timer, setTimer] = useState(RESEND_SECONDS);
@@ -53,76 +56,69 @@ function VerifyOtpForm() {
   };
 
   const handleVerify = async () => {
-  const code = otp.join("")
-  if (code.length < OTP_LENGTH) return
+    const code = otp.join("");
+    if (code.length < OTP_LENGTH) return;
 
-  setLoading(true)
-  try {
-    const { user } = await verifyOtp(email, code)
+    setLoading(true);
+    try {
+      // On signup: pass role so backend creates the account with the right role.
+      // On login: role is undefined — backend looks up existing user.
+      const { user } = await verifyOtp(
+        email,
+        code,
+        mode === "signup" && role ? role : undefined
+      );
 
-    if (mode === "signup") {
-      router.push("/select-role")
-    } else {
-      router.push(
-        user.role === "developer" ? "/feed" : "/recruiter/dashboard"
-      )
+      if (mode === "signup") {
+        // Go straight to onboarding — role is already set
+        router.push(
+          user.role === "developer" ? "/onboarding/profile" : "/onboarding/recruiter"
+        );
+      } else {
+        // Login — route based on stored role
+        router.push(
+          user.role === "developer" ? "/feed" : "/recruiter/dashboard"
+        );
+      }
+    } catch (err: unknown) {
+      let message = "Failed to verify OTP";
+      if (err instanceof Error) message = err.message;
+      alert(message);
+      setOtp(Array(OTP_LENGTH).fill(""));
+      inputRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
     }
-  } catch (err: unknown) {
-    let message = "Failed to verify OTP";
-
-    if (err instanceof Error) {
-      message = err.message;
-    }
-    alert(message)
-    setOtp(Array(OTP_LENGTH).fill(""))
-    inputRefs.current[0]?.focus()
-  } finally {
-    setLoading(false)
-  }
-}
+  };
 
   const handleResend = async () => {
-  if (timer > 0) return;
-
-  try {
-    await sendOtp(email, mode as "signup" | "login");
-
-    // Only update UI after successful resend
-    setTimer(RESEND_SECONDS);
-    setOtp(Array(OTP_LENGTH).fill(""));
-    inputRefs.current[0]?.focus();
-  } catch (err: unknown) {
-    let message = "Failed to resend OTP";
-
-    if (err instanceof Error) {
-      message = err.message;
+    if (timer > 0) return;
+    try {
+      await sendOtp(email, mode as "signup" | "login");
+      setTimer(RESEND_SECONDS);
+      setOtp(Array(OTP_LENGTH).fill(""));
+      inputRefs.current[0]?.focus();
+    } catch (err: unknown) {
+      let message = "Failed to resend OTP";
+      if (err instanceof Error) message = err.message;
+      alert(message);
     }
-
-    alert(message);
-    console.error("Resend OTP error:", err);
-  }
-};
+  };
 
   const filled = otp.filter(Boolean).length;
 
   return (
     <div className="card">
       <div className="icon-wrap">
-        <svg
-          width="22" height="22" viewBox="0 0 24 24"
-          fill="none" stroke="#FF6B4D" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round"
-        >
-          <path d="M4 4h16v16H4z" />
-          <path d="m22 6-10 7L2 6" />
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h16v16H4z"/>
+          <path d="m22 6-10 7L2 6"/>
         </svg>
       </div>
 
       <h1 className="card-title">Enter OTP</h1>
-
       <p className="card-sub">
-        We sent a verification code to{" "}
-        <strong>{email}</strong>
+        We sent a verification code to <strong>{email}</strong>
       </p>
 
       <div className="otp-row" onPaste={handlePaste}>
@@ -230,7 +226,6 @@ export default function VerifyOtpPage() {
           margin-bottom: 2rem;
           line-height: 1.5;
         }
-
         .card-sub strong { color: var(--ink); font-weight: 600; word-break: break-word; }
 
         .otp-row {
@@ -258,18 +253,15 @@ export default function VerifyOtpPage() {
           transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
           flex: 0 0 auto;
         }
-
         .otp-box.filled {
           border-color: var(--coral);
           box-shadow: 0 0 0 3px rgba(255,107,77,0.10);
         }
-
         .otp-box:focus {
           border-color: var(--coral);
           box-shadow: 0 0 0 3px rgba(255,107,77,0.14);
           transform: translateY(-1px);
         }
-
         .otp-box::-webkit-outer-spin-button,
         .otp-box::-webkit-inner-spin-button { -webkit-appearance: none; }
 
@@ -292,12 +284,10 @@ export default function VerifyOtpPage() {
           justify-content: center;
           margin-bottom: 1.4rem;
         }
-
         .btn-verify:hover:not(:disabled) {
           transform: translateY(-1px);
           box-shadow: 0 6px 24px rgba(255,107,77,0.36);
         }
-
         .btn-verify:disabled { opacity: 0.55; cursor: not-allowed; }
 
         .spinner {
@@ -308,7 +298,6 @@ export default function VerifyOtpPage() {
           border-radius: 50%;
           animation: spin 0.7s linear infinite;
         }
-
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .resend-row { font-size: 13.5px; color: var(--gray3); }
@@ -324,7 +313,6 @@ export default function VerifyOtpPage() {
           cursor: pointer;
           font-family: var(--font);
         }
-
         .resend-btn:hover { opacity: 0.85; }
 
         @media (max-width: 480px) {
@@ -336,8 +324,8 @@ export default function VerifyOtpPage() {
 
       <div className="page-wrap">
         <Suspense fallback={
-          <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 280 }}>
-            <span style={{ color: "var(--gray3)", fontSize: 14 }}>Loading…</span>
+          <div className="card" style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight: 280 }}>
+            <span style={{ color:"var(--gray3)", fontSize: 14 }}>Loading…</span>
           </div>
         }>
           <VerifyOtpForm />
