@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 
 export default function LandingPage() {
@@ -41,7 +42,7 @@ export default function LandingPage() {
           animateCount("match", 0, 87, 1000);
         }
       },
-      { threshold: 0.4 }
+      { threshold: 0, rootMargin: "0px 0px -100px 0px" }
     );
     if (statsRef.current) observer.observe(statsRef.current);
     return () => observer.disconnect();
@@ -51,7 +52,7 @@ export default function LandingPage() {
     {
       num: "01",
       title: "Connect GitHub",
-      desc: "Link your repos. Provn's AI reads your actual code — not your resume.",
+      desc: "Link your repos. Antyl's AI reads your actual code — not your resume.",
       color: "#FF6B4D",
       bg: "#FFF0ED",
     },
@@ -127,7 +128,7 @@ export default function LandingPage() {
         </svg>
       ),
       title: "Auto-apply engine",
-      desc: "Set your preferences once. Provn applies to matching jobs every 6 hours — only above your match threshold.",
+      desc: "Set your preferences once. Antyl applies to matching jobs every 6 hours — only above your match threshold.",
       color: "#FFB347",
       bg: "#FFF8ED",
     },
@@ -139,7 +140,7 @@ export default function LandingPage() {
         </svg>
       ),
       title: "Trust score badge",
-      desc: "One score from 0–100 that tells the whole story. Carries across every job application on Provn.",
+      desc: "One score from 0–100 that tells the whole story. Carries across every job application on Antyl.",
       color: "#22C55E",
       bg: "#EAFAF0",
     },
@@ -290,12 +291,12 @@ export default function LandingPage() {
         .hero-eyebrow {
           display: inline-flex; align-items: center; gap: 7px;
           background: var(--cream); border: 1px solid var(--beige);
-          color: var(--coral); font-size: 12.5px; font-weight: 700;
-          padding: 6px 16px; border-radius: 50px; margin-bottom: 1.75rem;
+          color: var(--coral); font-size: 14px; font-weight: 700;
+          padding: 8px 20px; border-radius: 50px; margin-bottom: 2rem;
           letter-spacing: .02em; animation: fadeUp .6s ease both;
         }
         .eyebrow-dot {
-          width: 7px; height: 7px; border-radius: 50%; background: var(--coral);
+          width: 8px; height: 8px; border-radius: 50%; background: var(--coral);
           animation: pulse 2s ease infinite;
         }
         @keyframes pulse {
@@ -393,7 +394,7 @@ export default function LandingPage() {
         .section-inner { max-width: 1100px; margin: 0 auto; }
         .section-eyebrow {
           display: inline-flex; align-items: center; gap: 6px;
-          font-size: 11.5px; font-weight: 700; letter-spacing: .1em;
+          font-size: 13px; font-weight: 700; letter-spacing: .1em;
           text-transform: uppercase; color: var(--coral); margin-bottom: 1rem;
         }
         .section-title {
@@ -617,7 +618,9 @@ export default function LandingPage() {
 
       {/* ─── NAVBAR ─── */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
-        <Link href='/'>Provn</Link>
+        <Link href='/' style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+          <Image src="/Antyl.svg" alt="Antyl" width={50} height={50} />
+        </Link>
         <div className="nav-links">
           <a href="#how-it-works" className="nav-link">How it works</a>
           <a href="#features" className="nav-link">Features</a>
@@ -648,7 +651,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="hero-sub">
-          Provn verifies developers with AI, then auto-applies you to matching
+          Antyl verifies developers with AI, then auto-applies you to matching
           roles. No ghosting, no guessing — just your next job.
         </p>
 
@@ -683,7 +686,7 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          Join 12,000+ verified developers already on Provn
+          Join 12,000+ verified developers already on Antyl
         </div>
 
         <div className="hero-badge-row" style={{ marginTop: "1rem" }}>
@@ -701,33 +704,6 @@ export default function LandingPage() {
           </span>
         </div>
       </section>
-
-      {/* ─── STATS ─── */}
-      <div className="stats-strip" ref={statsRef}>
-        <div className="stats-inner">
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.devs >= 1000
-                ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
-                : counts.devs}
-              <span className="stat-suffix">+</span>
-            </div>
-            <div className="stat-label">Verified developers</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.companies}<span className="stat-suffix">+</span>
-            </div>
-            <div className="stat-label">Companies hiring</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.match}<span className="stat-suffix">%</span>
-            </div>
-            <div className="stat-label">Match accuracy</div>
-          </div>
-        </div>
-      </div>
 
       {/* ─── HOW IT WORKS ─── */}
       <section className="section" id="how-it-works">
@@ -787,6 +763,33 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ─── STATS ─── */}
+      <div className="stats-strip" ref={statsRef}>
+        <div className="stats-inner">
+          <div className="stat-item">
+            <div className="stat-number">
+              {counts.devs >= 1000
+                ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
+                : counts.devs}
+              <span className="stat-suffix">+</span>
+            </div>
+            <div className="stat-label">Verified developers</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">
+              {counts.companies}<span className="stat-suffix">+</span>
+            </div>
+            <div className="stat-label">Companies hiring</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">
+              {counts.match}<span className="stat-suffix">%</span>
+            </div>
+            <div className="stat-label">Match accuracy</div>
+          </div>
+        </div>
+      </div>
 
       {/* ─── TRUST SCORE ─── */}
       <section className="score-section" id="trust-score">
@@ -960,7 +963,7 @@ export default function LandingPage() {
         <div className="footer-inner">
           <div className="footer-top">
             <div className="footer-brand">
-              <span className="footer-logo">provn</span>
+              <Image src="/Antyl.svg" alt="Antyl" width={60} height={60} style={{ marginBottom: "1rem" }} />
               <p className="footer-brand-desc">
                 AI-powered developer verification and smart job matching. Built
                 for engineers who want to prove their skills, not just list them.
@@ -991,9 +994,17 @@ export default function LandingPage() {
                 <a href="/billing" className="footer-link">Plans</a>
               </div>
             </div>
+            <div>
+              <div className="footer-col-title">Contact</div>
+              <div className="footer-links">
+                <a href="mailto:info@antyl.org" className="footer-link">info@antyl.org</a>
+                <a href="tel:+918172836138" className="footer-link">+91-8172836138</a>
+                <span className="footer-link" style={{ cursor: "default" }}>Koramangala, Bangalore, India</span>
+              </div>
+            </div>
           </div>
           <div className="footer-bottom">
-            <span>© 2026 Provn. All rights reserved.</span>
+            <span>© 2026 Antyl. All rights reserved.</span>
             <div className="footer-bottom-links">
               <a href="/privacy" className="footer-bottom-link">Privacy</a>
               <a href="/terms" className="footer-bottom-link">Terms</a>
