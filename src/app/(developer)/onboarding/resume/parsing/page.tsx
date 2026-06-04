@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getResumeStatus } from "@/services/resume.service";
 
 const messages = [
   "Uploading resume...",
@@ -18,29 +19,51 @@ export default function ResumeParsingPage() {
   const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) return 100;
-        return prev + 1;
-      });
-    }, 150);
+  const progressInterval = setInterval(() => {
+    setProgress((prev) => {
+      if (prev >= 95) return 95;
+      return prev + 2;
+    });
+  }, 400);
 
-    const messageInterval = setInterval(() => {
-      setMessageIndex((prev) =>
-        prev < messages.length - 1 ? prev + 1 : prev
-      );
-    }, 3000);
+  const messageInterval = setInterval(() => {
+    setMessageIndex((prev) =>
+      prev < messages.length - 1 ? prev + 1 : prev
+    );
+  }, 3000);
 
-    const redirectTimer = setTimeout(() => {
-      router.push("/onboarding/resume/review");
-    }, 15000);
+  const pollInterval = setInterval(async () => {
+    try {
+      const status = await getResumeStatus();
 
-    return () => {
-      clearInterval(progressInterval);
-      clearInterval(messageInterval);
-      clearTimeout(redirectTimer);
-    };
-  }, [router]);
+      if (status.status === "completed") {
+        setProgress(100);
+
+        clearInterval(progressInterval);
+        clearInterval(messageInterval);
+        clearInterval(pollInterval);
+
+        router.push("/onboarding/resume/review");
+      }
+
+      if (status.status === "failed") {
+        clearInterval(progressInterval);
+        clearInterval(messageInterval);
+        clearInterval(pollInterval);
+
+        alert("Resume parsing failed.");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, 3000);
+
+  return () => {
+    clearInterval(progressInterval);
+    clearInterval(messageInterval);
+    clearInterval(pollInterval);
+  };
+}, [router]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6">
@@ -60,8 +83,8 @@ export default function ResumeParsingPage() {
       </div>
 
       <p className="mt-4 text-sm text-gray-500">
-        About 15 seconds remaining
-      </p>
+  Processing your resume...
+</p>
     </div>
   );
 }

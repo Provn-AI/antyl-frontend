@@ -61,8 +61,8 @@ export default function RepoSelection({
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            repository_ids: selectedRepos,
-          }),
+            repo_ids: selectedRepos,
+            })
         }
       );
 

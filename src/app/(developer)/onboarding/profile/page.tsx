@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import OnboardingStepper from "@/components/developer/OnboardingStepper";
 import { ONBOARDING_STEPS } from "@/components/developer/OnboardingStepper";
+import { createProfile } from "@/services/developer.service";
 
 // ─────────────────────────────────────────────
 // Types
@@ -101,8 +102,14 @@ export default function OnboardingProfilePage() {
     try {
       // TODO: replace with → import { saveProfile } from "@/services/developer.service";
       // await saveProfile(form);
-      await new Promise((res) => setTimeout(res, 800)); // mock
-      router.push("/onboarding/resume");
+    await createProfile({
+            name: form.name,
+            city: form.city,
+            current_role: form.currentRole,
+            bio: form.bio,
+            });
+
+    router.push("/onboarding/resume");
     } catch {
       alert("Failed to save profile. Please try again.");
     } finally {

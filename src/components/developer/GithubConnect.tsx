@@ -29,45 +29,24 @@ export default function GithubConnect({
     useState(false);
 
   const connectGithub = async () => {
-    try {
-      setLoading(true);
+  const clientId =
+    process.env
+      .NEXT_PUBLIC_GITHUB_CLIENT_ID;
 
-      const token =
-        localStorage.getItem("access_token");
+  const redirectUri =
+    window.location.origin +
+    "/onboarding/github/callback";
 
-      const res = await fetch(
-        `${API_URL}/developer/github/connect`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  const githubUrl =
+    `https://github.com/login/oauth/authorize` +
+    `?client_id=${clientId}` +
+    `&scope=repo` +
+    `&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}`;
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(
-          data.detail || "Failed to connect GitHub"
-        );
-      }
-
-      setIsConnected(true);
-      setGithubUser(
-        data.username || "GitHub Connected"
-      );
-
-      onConnected?.(
-        data.username || "GitHub Connected"
-      );
-    } catch (error) {
-      console.error(error);
-      alert("Failed to connect GitHub");
-    } finally {
-      setLoading(false);
-    }
-  };
+  window.location.href = githubUrl;
+};
 
   const disconnectGithub = async () => {
     try {

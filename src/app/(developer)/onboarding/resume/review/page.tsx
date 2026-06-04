@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import WorkHistoryTimeline from "@/components/developer/WorkHistoryTimeline";
+import { updateProfile } from "@/services/developer.service";
 
 export default function ResumeReviewPage() {
   const router = useRouter();
@@ -59,11 +60,43 @@ export default function ResumeReviewPage() {
     setEducation(updated);
   };
 
-  const handleConfirm = () => {
-    // later call backend
+  const [loading, setLoading] = useState(false);
+
+const handleConfirm = async () => {
+  try {
+    setLoading(true);
+
+    await updateProfile({
+  years_experience: Number(yearsExperience),
+
+  tech_stack: skills
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+
+  resume_parsed_data: {
+    work_history: workHistory.map((item) => ({
+      company: item.company,
+      role: item.role,
+      duration: item.duration,
+    })),
+
+    education: education.map((item) => ({
+      degree: item.degree,
+      institution: item.institution,
+      year: item.year,
+    })),
+  },
+});
 
     router.push("/onboarding/github");
-  };
+  } catch (error) {
+    console.error(error);
+    alert("Failed to save resume data.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -175,11 +208,14 @@ export default function ResumeReviewPage() {
       </div>
 
       <button
+        disabled={loading}
         onClick={handleConfirm}
-        className="px-6 py-3 rounded-lg bg-black text-white"
-      >
-        Confirm & Continue
-      </button>
+        className="px-6 py-3 rounded-lg bg-black text-white disabled:opacity-50"
+        >
+        {loading
+            ? "Saving..."
+            : "Confirm & Continue"}
+        </button>
     </div>
   );
 }
