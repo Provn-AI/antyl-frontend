@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:8000";
+import {
+  startVerification,
+} from "@/services/verification.service";
 
 export default function VerificationIntroPage() {
   const router = useRouter();
@@ -13,35 +13,13 @@ export default function VerificationIntroPage() {
   const [loading, setLoading] =
     useState(false);
 
-  const startVerification =
+  const handleStartVerification =
     async () => {
       try {
         setLoading(true);
 
-        const token =
-          localStorage.getItem(
-            "access_token"
-          );
-
-        const res = await fetch(
-          `${API_URL}/developer/verification/start`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
         const data =
-          await res.json();
-
-        if (!res.ok) {
-          throw new Error(
-            data.detail ||
-              "Failed to start verification"
-          );
-        }
+          await startVerification();
 
         localStorage.setItem(
           "verification_session_id",
@@ -53,6 +31,7 @@ export default function VerificationIntroPage() {
         );
       } catch (error) {
         console.error(error);
+
         alert(
           "Failed to start verification."
         );
@@ -190,7 +169,7 @@ export default function VerificationIntroPage() {
           <button
             className="btn"
             onClick={
-              startVerification
+              handleStartVerification
             }
             disabled={loading}
           >
