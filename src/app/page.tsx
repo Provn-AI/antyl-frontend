@@ -188,7 +188,7 @@ export default function LandingPage() {
     },
   ];
 
-  const logos: Record<string, JSX.Element> = {
+  const logos: Record<string, React.ReactElement> = {
     nextjs: (
       <svg width="28" height="28" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
         <mask id="nxt-m" style={{ maskType: "alpha" }} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="180">
@@ -1247,7 +1247,7 @@ export default function LandingPage() {
                     <div className="proof-recruiter-badge">Recruiter</div>
                   )}
                 </div>
-                <p className="proof-quote">"{t.quote}"</p>
+                <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
                 <div className="proof-card-footer">
                   <span className="proof-company-dot" />
                   <span className="proof-company">{t.company}</span>
