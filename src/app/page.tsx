@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -549,6 +550,7 @@ export default function LandingPage() {
           overflow: hidden;
           background: var(--white);
           border-bottom: 1px solid var(--gray2);
+          margin-top: 2.5rem;
         }
         .tech-carousel-label {
           text-align: center;
