@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
@@ -184,6 +185,160 @@ export default function LandingPage() {
       desc: "After each session, get a precise breakdown: what to fix in your repos to move up to the next tier.",
       color: "#FFD84D",
       bg: "#FFFBEE",
+    },
+  ];
+
+  const logos: Record<string, JSX.Element> = {
+    nextjs: (
+      <svg width="28" height="28" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <mask id="nxt-m" style={{ maskType: "alpha" }} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="180">
+          <circle cx="90" cy="90" r="90" fill="black" />
+        </mask>
+        <g mask="url(#nxt-m)">
+          <circle cx="90" cy="90" r="90" fill="black" />
+          <path d="M149.508 157.52L69.142 54H54V125.97H66.12V69.38L140 164.845C143.333 162.614 146.51 160.165 149.508 157.52Z" fill="url(#nxt-g1)" />
+          <rect x="115" y="54" width="12" height="72" fill="url(#nxt-g2)" />
+        </g>
+        <defs>
+          <linearGradient id="nxt-g1" x1="109" y1="116.5" x2="144.5" y2="160.5" gradientUnits="userSpaceOnUse">
+            <stop stopColor="white" /><stop offset="1" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="nxt-g2" x1="121" y1="54" x2="120.8" y2="106.875" gradientUnits="userSpaceOnUse">
+            <stop stopColor="white" /><stop offset="1" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+      </svg>
+    ),
+    nodejs: (
+      <svg width="28" height="32" viewBox="0 0 256 289" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#539E43" d="M128 288.5c-4 0-7.7-1.1-11.1-2.9l-35.3-20.9c-5.3-3-2.7-4-1-4.7 7.2-2.4 8.6-3 16.2-7.2.8-.4 1.9-.3 2.7.2l27.1 16.1c1.1.6 2.5.6 3.4 0l105.8-61.1c1.1-.6 1.8-1.9 1.8-3.1V83c0-1.3-.7-2.5-1.8-3.2L130.4 18.7c-1.1-.6-2.5-.6-3.4 0L21.3 79.8c-1.1.6-1.8 1.9-1.8 3.2v122.1c0 1.2.7 2.5 1.8 3.1l29 16.8c15.8 7.9 25.4-1.4 25.4-10.8V93.4c0-1.7 1.3-2.9 2.9-2.9h12.8c1.7 0 2.9 1.3 2.9 2.9v120.8c0 21-11.5 33.2-31.4 33.2-6.1 0-10.9 0-24.5-6.6l-27.9-16C4.4 220.5 0 212.9 0 204.8V82.7C0 74.5 4.4 67 11.6 63L117.4 1.9c7-4 16.3-4 23.2 0L246.4 62.9C253.6 67 258 74.5 258 82.7v122.1c0 8.1-4.4 15.7-11.6 19.7L140.6 285.5c-3.4 1.9-7.1 2.9-11.1 2.9h-1.5z"/>
+      </svg>
+    ),
+    php: (
+      <svg width="32" height="18" viewBox="0 0 256 92" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="128" cy="46" rx="128" ry="46" fill="#8892BF"/>
+        <path fill="#fff" d="M35.88 22h18.8l-3.1 16h9.4c8.8 0 14.8 1.8 18 5.4 3 3.4 3.8 8.4 2.4 15-1.5 7.2-4.6 12.7-9.2 16.4-4.6 3.7-10.8 5.5-18.8 5.5H30L35.88 22zM52 64.5h6.7c3.4 0 5.9-.7 7.5-2.2 1.5-1.4 2.7-3.9 3.4-7.3.6-3.2.3-5.4-.9-6.6-1.2-1.2-3.7-1.8-7.5-1.8H55L52 64.5z"/>
+        <path fill="#fff" d="M89.1 22h18.8l-3.1 16h9.4c8.8 0 14.8 1.8 18 5.4 3 3.4 3.8 8.4 2.4 15-1.5 7.2-4.6 12.7-9.2 16.4-4.6 3.7-10.8 5.5-18.8 5.5H83.2L89.1 22zM105.3 64.5H112c3.4 0 5.9-.7 7.5-2.2 1.5-1.4 2.7-3.9 3.4-7.3.6-3.2.3-5.4-.9-6.6-1.2-1.2-3.7-1.8-7.5-1.8h-6.2l-3 15.9z"/>
+        <path fill="#fff" d="M145.3 22h18.5l-1.9 10h9.7c6.6 0 11.1 1.4 13.5 4.2 2.4 2.8 2.9 7 1.4 12.6l-5.5 26.8h-18.8l5.2-25.3c.6-2.8.4-4.6-.5-5.5-.9-.9-2.9-1.3-6-1.3h-7.8l-6.5 32.1h-18.5L145.3 22z"/>
+      </svg>
+    ),
+    git: (
+      <svg width="28" height="28" viewBox="0 0 92 92" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#F05133" d="M90.156 41.965L50.036 1.848a5.912 5.912 0 0 0-8.364 0l-8.33 8.33 10.566 10.566a7.03 7.03 0 0 1 7.23 1.684 7.043 7.043 0 0 1 1.673 7.277l10.183 10.184a7.026 7.026 0 0 1 7.278 1.672 7.04 7.04 0 0 1 0 9.957 7.045 7.045 0 0 1-9.961 0 7.038 7.038 0 0 1-1.532-7.66l-9.5-9.497V59.36a7.04 7.04 0 0 1 1.86 11.29 7.04 7.04 0 0 1-9.957 0 7.04 7.04 0 0 1 0-9.958 7.034 7.034 0 0 1 2.308-1.539V33.926a7.001 7.001 0 0 1-2.308-1.535 7.049 7.049 0 0 1-1.516-7.698L29.242 14.126 1.734 41.633a5.918 5.918 0 0 0 0 8.367l40.12 40.116a5.908 5.908 0 0 0 8.364 0l39.938-39.938a5.92 5.92 0 0 0 0-8.213"/>
+      </svg>
+    ),
+    typescript: (
+      <svg width="28" height="28" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+        <rect width="256" height="256" rx="20" fill="#3178C6"/>
+        <path fill="#fff" d="M150.518 200.475v27.62c4.492 2.302 9.805 4.028 15.938 5.179 6.133 1.151 12.597 1.726 19.393 1.726 6.622 0 12.914-.633 18.874-1.899 5.96-1.266 11.187-3.352 15.678-6.257 4.492-2.906 8.048-6.704 10.669-11.394 2.62-4.689 3.93-10.486 3.93-17.391 0-5.006-.749-9.394-2.246-13.163a30.748 30.748 0 0 0-6.479-10.055c-2.821-2.935-6.205-5.567-10.149-7.898-3.945-2.33-8.394-4.531-13.347-6.602-3.628-1.497-6.881-2.949-9.761-4.354-2.879-1.405-5.327-2.839-7.342-4.303-2.016-1.463-3.571-3.025-4.665-4.686-1.094-1.66-1.641-3.564-1.641-5.712 0-1.956.489-3.717 1.468-5.282.979-1.565 2.362-2.921 4.151-4.067 1.79-1.146 3.945-2.043 6.465-2.691 2.52-.647 5.327-.971 8.421-.971 2.248 0 4.581.158 6.999.475 2.418.317 4.836.793 7.255 1.429 2.419.636 4.75 1.457 6.998 2.462a33.256 33.256 0 0 1 6.134 3.633v-25.772c-4.09-1.566-8.584-2.717-13.482-3.452-4.899-.734-10.524-1.101-16.876-1.101-6.564 0-12.798.705-18.703 2.117-5.904 1.411-11.1 3.591-15.591 6.539-4.492 2.949-8.048 6.776-10.668 11.483-2.622 4.707-3.932 10.317-3.932 16.83 0 8.326 2.417 15.48 7.253 21.459 4.836 5.979 12.088 11.101 21.755 15.366 3.802 1.566 7.3 3.103 10.493 4.611 3.194 1.509 5.96 3.048 8.3 4.615 2.34 1.568 4.177 3.265 5.511 5.092 1.334 1.827 2.001 3.923 2.001 6.291 0 1.899-.404 3.659-1.211 5.282-.807 1.622-2.076 3.03-3.807 4.22-1.732 1.19-3.917 2.131-6.552 2.823-2.636.692-5.731 1.038-9.282 1.038-6.075 0-12.149-1.066-18.223-3.198-6.074-2.132-11.631-5.335-16.67-9.608zm-46.139-91.91H140.65v-23.675H41v23.675h35.345V233h28.034V108.565z"/>
+      </svg>
+    ),
+    tailwind: (
+      <svg width="28" height="18" viewBox="0 0 54 33" xmlns="http://www.w3.org/2000/svg">
+        <path fillRule="evenodd" clipRule="evenodd" d="M27 0C19.8 0 15.3 3.6 13.5 10.8c2.7-3.6 5.85-4.95 9.45-4.05 2.054.514 3.522 2.004 5.147 3.653C30.744 13.09 33.808 16.2 40.5 16.2c7.2 0 11.7-3.6 13.5-10.8-2.7 3.6-5.85 4.95-9.45 4.05-2.054-.514-3.522-2.004-5.147-3.653C36.756 3.11 33.692 0 27 0zM13.5 16.2C6.3 16.2 1.8 19.8 0 27c2.7-3.6 5.85-4.95 9.45-4.05 2.054.514 3.522 2.004 5.147 3.653C17.244 29.29 20.308 32.4 27 32.4c7.2 0 11.7-3.6 13.5-10.8-2.7 3.6-5.85 4.95-9.45 4.05-2.054-.514-3.522-2.004-5.147-3.653C23.256 19.31 20.192 16.2 13.5 16.2z" fill="#38BDF8"/>
+      </svg>
+    ),
+    sqlite: (
+      <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#0F7ACF" d="M79.998 1.428c-8.23 1.39-20.007 15.145-21.876 26.576-.944 5.754.586 10.157 4.514 12.847l1.97 1.315-1.126 1.386c-3.437 4.228-4.565 8.818-3.51 14.296 1.05 5.434.19 9.08-2.824 11.916-1.506 1.413-3.527 2.458-6.617 3.412l-2.047.63 1.25 2.1c4.41 7.406 3.843 15.668-1.496 21.615-2.24 2.49-2.024 2.475 3.97.278 17.484-6.37 34.267-22.015 42.097-39.68 4.15-9.418 5.407-18.61 3.695-26.97-1.575-7.696-5.37-12.787-11.26-15.01l-2.378-.9.784-1.52c2.023-3.93 2.652-8.918 1.718-13.647l-.518-2.643-1.346 2.199z"/>
+        <path fill="#003B57" d="M32.067 10.172c-12.22 1.57-22.698 10.47-26.52 22.62-1.294 4.1-1.444 11.196-.338 15.6 2.4 9.6 10.07 17.836 20.028 21.574l2.37.895-.595 2.014c-1.83 6.19-1.41 13.4 1.14 19.83.83 2.1 1.61 3.63 1.74 3.4.12-.22-.11-1.9-.51-3.72-1.24-5.56-.31-12.3 2.44-17.57l1.43-2.74-2.18-1.16c-8.12-4.33-12.83-12.09-12.83-21.12 0-8.27 3.81-15.02 11.05-19.58 3.45-2.17 9.36-3.97 13.74-4.17 2.11-.1 2.2-.14 1.56-.72-3.39-3.1-5.42-7.63-5.67-12.61l-.13-2.58-2.44.31z"/>
+      </svg>
+    ),
+    angular: (
+      <svg width="28" height="28" viewBox="0 0 250 250" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#DD0031" d="M125 30L31.9 63.2l14.2 123.1L125 230l78.9-43.7 14.2-123.1z"/>
+        <path fill="#C3002F" d="M125 30v22.2-.1V230l78.9-43.7 14.2-123.1L125 30z"/>
+        <path fill="#fff" d="M125 52.1L66.8 182.6h21.7l11.7-29.2h49.4l11.7 29.2H183L125 52.1zm17 83.3h-34l17-40.9 17 40.9z"/>
+      </svg>
+    ),
+    sql: (
+      <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="25" rx="38" ry="12" fill="#00758F"/>
+        <path fill="#00758F" d="M12 25v15c0 6.627 17.013 12 38 12s38-5.373 38-12V25c0 6.627-17.013 12-38 12S12 31.627 12 25z"/>
+        <path fill="#F29111" d="M12 40v15c0 6.627 17.013 12 38 12s38-5.373 38-12V40c0 6.627-17.013 12-38 12S12 46.627 12 40z"/>
+        <path fill="#00758F" d="M12 55v15c0 6.627 17.013 12 38 12s38-5.373 38-12V55c0 6.627-17.013 12-38 12S12 61.627 12 55z"/>
+      </svg>
+    ),
+  };
+
+  const carouselSkills = [
+    { key: "nextjs",      name: "Next.js" },
+    { key: "nodejs",      name: "Node.js" },
+    { key: "php",         name: "PHP" },
+    { key: "git",         name: "Git" },
+    { key: "sql",         name: "MySQL" },
+    { key: "tailwind",    name: "Tailwind CSS" },
+    { key: "typescript",  name: "TypeScript" },
+    { key: "sqlite",      name: "SQLite" },
+    { key: "angular",     name: "Angular" },
+  ];
+
+  const carouselTestimonials = [
+    {
+      quote: "Got 3 interview calls in the first week — without applying to a single job manually.",
+      name: "Arjun K.",
+      role: "Frontend Engineer",
+      company: "Razorpay",
+      initials: "AK",
+      score: 88,
+      tier: "Expert",
+      bg: "#FFE8E3",
+      color: "#FF6B4D",
+    },
+    {
+      quote: "The Trust Score is a game changer. I finally know who can actually do the job before I even call them.",
+      name: "Nidhi S.",
+      role: "Talent Lead",
+      company: "Zomato",
+      initials: "NS",
+      score: null,
+      tier: "Recruiter",
+      bg: "#F3EFFE",
+      color: "#8B5CF6",
+    },
+    {
+      quote: "Provn proved my skills without a whiteboard test. My score opened doors I couldn't before.",
+      name: "Priya S.",
+      role: "Full-Stack Dev",
+      company: "PhonePe",
+      initials: "PS",
+      score: 79,
+      tier: "Advanced",
+      bg: "#FFF4E3",
+      color: "#FFB347",
+    },
+    {
+      quote: "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
+      name: "Rahul M.",
+      role: "Backend Engineer",
+      company: "Swiggy",
+      initials: "RM",
+      score: 91,
+      tier: "Expert",
+      bg: "#EAFAF0",
+      color: "#22C55E",
+    },
+    {
+      quote: "As a startup founder, filtering by Trust Score meant our first hire was genuinely excellent.",
+      name: "Kavya R.",
+      role: "Founder & CTO",
+      company: "Buildfast",
+      initials: "KR",
+      score: null,
+      tier: "Recruiter",
+      bg: "#FFF0F2",
+      color: "#FF7A8A",
+    },
+    {
+      quote: "I was skeptical, but the AI verification session actually asked smart questions about my own code.",
+      name: "Dev P.",
+      role: "DevOps Engineer",
+      company: "CRED",
+      initials: "DP",
+      score: 83,
+      tier: "Advanced",
+      bg: "#E6F4FF",
+      color: "#3B82F6",
     },
   ];
 
@@ -388,6 +543,262 @@ export default function LandingPage() {
           -webkit-text-fill-color: transparent; background-clip: text;
         }
         .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-top: .375rem; }
+
+        /* ---- TECH CAROUSEL ---- */
+        .tech-carousel-section {
+          padding: 3.5rem 0;
+          overflow: hidden;
+          background: var(--white);
+          border-bottom: 1px solid var(--gray2);
+          margin-top: 2.5rem;
+        }
+        .tech-carousel-label {
+          text-align: center;
+          font-size: 11.5px;
+          font-weight: 700;
+          letter-spacing: .12em;
+          text-transform: uppercase;
+          color: var(--gray3);
+          margin-bottom: 1.75rem;
+        }
+        .tech-marquee-wrap {
+          position: relative;
+          overflow: hidden;
+        }
+        .tech-marquee-wrap::before,
+        .tech-marquee-wrap::after {
+          content: '';
+          position: absolute;
+          top: 0; bottom: 0;
+          width: 120px;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .tech-marquee-wrap::before {
+          left: 0;
+          background: linear-gradient(to right, var(--white) 0%, transparent 100%);
+        }
+        .tech-marquee-wrap::after {
+          right: 0;
+          background: linear-gradient(to left, var(--white) 0%, transparent 100%);
+        }
+        .tech-marquee-track {
+          display: flex;
+          width: max-content;
+          gap: 10px;
+          padding: 6px 0;
+          animation: techScrollRight 38s linear infinite;
+        }
+        .tech-marquee-wrap:hover .tech-marquee-track {
+          animation-play-state: paused;
+        }
+        @keyframes techScrollRight {
+          from { transform: translateX(-50%); }
+          to   { transform: translateX(0); }
+        }
+        .tech-pill {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 20px;
+          border-radius: 999px;
+          border: 1px solid var(--gray2);
+          background: var(--white);
+          white-space: nowrap;
+          cursor: default;
+          transition: border-color .2s, transform .2s, box-shadow .2s;
+          user-select: none;
+        }
+        .tech-pill:hover {
+          border-color: var(--coral);
+          transform: translateY(-2px) scale(1.03);
+          box-shadow: 0 4px 16px rgba(255,107,77,.12);
+        }
+        .tech-pill-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          flex-shrink: 0;
+        }
+        .tech-pill span {
+          font-size: 13.5px;
+          font-weight: 600;
+          color: var(--ink);
+          letter-spacing: -.01em;
+        }
+
+        /* ---- SOCIAL PROOF MARQUEE ---- */
+        .proof-section {
+          padding: 5rem 0;
+          background: var(--gray1);
+          border-top: 1px solid var(--gray2);
+          border-bottom: 1px solid var(--gray2);
+          overflow: hidden;
+        }
+        .proof-header {
+          text-align: center;
+          margin-bottom: 3rem;
+          padding: 0 1.5rem;
+        }
+        .proof-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11.5px;
+          font-weight: 700;
+          letter-spacing: .1em;
+          text-transform: uppercase;
+          color: var(--coral);
+          margin-bottom: .875rem;
+        }
+        .proof-title {
+          font-family: var(--serif);
+          font-size: clamp(26px, 3vw, 38px);
+          font-weight: 600;
+          color: var(--ink);
+          letter-spacing: -.03em;
+          line-height: 1.15;
+        }
+        .proof-title em { font-style: italic; color: var(--coral); }
+        .proof-marquee-wrap {
+          position: relative;
+          overflow: hidden;
+        }
+        .proof-marquee-wrap::before,
+        .proof-marquee-wrap::after {
+          content: '';
+          position: absolute;
+          top: 0; bottom: 0;
+          width: 140px;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .proof-marquee-wrap::before {
+          left: 0;
+          background: linear-gradient(to right, var(--gray1) 0%, transparent 100%);
+        }
+        .proof-marquee-wrap::after {
+          right: 0;
+          background: linear-gradient(to left, var(--gray1) 0%, transparent 100%);
+        }
+        .proof-marquee-track {
+          display: flex;
+          width: max-content;
+          gap: 16px;
+          padding: 8px 8px 16px;
+          animation: proofScroll 50s linear infinite;
+        }
+        .proof-marquee-wrap:hover .proof-marquee-track {
+          animation-play-state: paused;
+        }
+        @keyframes proofScroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        .proof-card {
+          width: 300px;
+          flex-shrink: 0;
+          background: var(--white);
+          border: 1px solid var(--gray2);
+          border-radius: 20px;
+          padding: 1.5rem;
+          transition: transform .2s, box-shadow .2s;
+          cursor: default;
+        }
+        .proof-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 36px rgba(0,0,0,.07);
+        }
+        .proof-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+        }
+        .proof-avatar-wrap {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .proof-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+        .proof-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--ink);
+          letter-spacing: -.01em;
+        }
+        .proof-role {
+          font-size: 11.5px;
+          color: var(--gray3);
+          margin-top: 1px;
+        }
+        .proof-score-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 50px;
+          background: linear-gradient(90deg, #FF6B4D, #FFB347);
+          color: white;
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+        .proof-recruiter-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 50px;
+          background: var(--gray1);
+          color: var(--gray4);
+          border: 1px solid var(--gray2);
+          flex-shrink: 0;
+        }
+        .proof-quote {
+          font-size: 13.5px;
+          color: var(--gray4);
+          line-height: 1.65;
+          font-style: italic;
+          margin-bottom: 1rem;
+        }
+        .proof-card-footer {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding-top: .875rem;
+          border-top: 1px solid var(--gray2);
+        }
+        .proof-company-dot {
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: var(--coral);
+          flex-shrink: 0;
+        }
+        .proof-company {
+          font-size: 11.5px;
+          font-weight: 700;
+          color: var(--coral);
+        }
+        .proof-stars {
+          margin-left: auto;
+          display: flex;
+          gap: 2px;
+        }
+        .proof-star {
+          width: 11px; height: 11px;
+          background: #FFD84D;
+          clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+        }
 
         /* ---- SECTIONS ---- */
         .section { padding: 6rem 1.5rem; }
@@ -790,6 +1201,65 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── TECH CAROUSEL & SOCIAL PROOF ─── */}
+      <section className="tech-carousel-section">
+        <p className="tech-carousel-label">Verified across every major stack</p>
+        <div className="tech-marquee-wrap">
+          <div className="tech-marquee-track">
+            {[...carouselSkills, ...carouselSkills].map((s, i) => (
+              <div className="tech-pill" key={i}>
+                <span className="tech-pill-icon">{logos[s.key]}</span>
+                <span>{s.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="proof-section">
+        <div className="proof-header">
+          <div className="proof-eyebrow">
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
+            Trusted by thousands
+          </div>
+          <h2 className="proof-title">
+            Real people. <em>Real results.</em>
+          </h2>
+        </div>
+        <div className="proof-marquee-wrap">
+          <div className="proof-marquee-track">
+            {[...carouselTestimonials, ...carouselTestimonials].map((t, i) => (
+              <div className="proof-card" key={i}>
+                <div className="proof-card-top">
+                  <div className="proof-avatar-wrap">
+                    <div className="proof-avatar" style={{ background: t.bg, color: t.color }}>
+                      {t.initials}
+                    </div>
+                    <div>
+                      <div className="proof-name">{t.name}</div>
+                      <div className="proof-role">{t.role}</div>
+                    </div>
+                  </div>
+                  {t.score ? (
+                    <div className="proof-score-badge">{t.tier} · {t.score}</div>
+                  ) : (
+                    <div className="proof-recruiter-badge">Recruiter</div>
+                  )}
+                </div>
+                <p className="proof-quote">"{t.quote}"</p>
+                <div className="proof-card-footer">
+                  <span className="proof-company-dot" />
+                  <span className="proof-company">{t.company}</span>
+                  <div className="proof-stars">
+                    {[...Array(5)].map((_, si) => <div className="proof-star" key={si} />)}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ─── TRUST SCORE ─── */}
       <section className="score-section" id="trust-score">
