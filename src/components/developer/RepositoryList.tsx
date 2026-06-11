@@ -8,10 +8,11 @@ const API_URL =
 
 export interface Repository {
   id: string;
+  github_repo_id: number;
   name: string;
   language: string | null;
   stars: number;
-  last_updated: string;
+  last_synced_at: string;
   complexity_score?: number | null;
 }
 
@@ -127,7 +128,7 @@ export default function RepositoryList({
                 <span className="repo-pill">
                   Updated{" "}
                   {new Date(
-                    repo.last_updated
+                    repo.last_synced_at
                   ).toLocaleDateString()}
                 </span>
 

@@ -75,11 +75,73 @@ function VerifyOtpForm() {
           user.role === "developer" ? "/onboarding/profile" : "/onboarding/recruiter"
         );
       } else {
-        // Login — route based on stored role
-        router.push(
-          user.role === "developer" ? "/feed" : "/recruiter/dashboard"
-        );
+  if (
+    user.role === "developer"
+  ) {
+    const token =
+      localStorage.getItem(
+        "access_token"
+      );
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/developer/profile/me`,
+      {
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+        },
       }
+    );
+
+    const data =
+      await res.json();
+
+    const profile =
+      data.profile;
+
+    if (
+      profile.onboarding_completed
+    ) {
+      router.push("/feed");
+    }
+    else if (
+      profile.onboarding_step === 1
+    ) {
+      router.push(
+        "/onboarding/profile"
+      );
+    }
+    else if (
+      profile.onboarding_step === 2
+    ) {
+      router.push(
+        "/onboarding/resume"
+      );
+    }
+    else if (
+      profile.onboarding_step === 3
+    ) {
+      router.push(
+        "/onboarding/github"
+      );
+    }
+    else if (
+      profile.onboarding_step === 4
+    ) {
+      router.push(
+        "/onboarding/projects"
+      );
+    }
+    else {
+      router.push("/feed");
+    }
+  }
+  else {
+    router.push(
+      "/recruiter/dashboard"
+    );
+  }
+}
     } catch (err: unknown) {
       let message = "Failed to verify OTP";
       if (err instanceof Error) message = err.message;

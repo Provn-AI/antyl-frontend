@@ -5,7 +5,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import OnboardingStepper from "@/components/developer/OnboardingStepper";
 import { ONBOARDING_STEPS } from "@/components/developer/OnboardingStepper";
-import { createProfile } from "@/services/developer.service";
+import {
+  updateProfile,
+} from "@/services/developer.service";
 
 // ─────────────────────────────────────────────
 // Types
@@ -102,12 +104,12 @@ export default function OnboardingProfilePage() {
     try {
       // TODO: replace with → import { saveProfile } from "@/services/developer.service";
       // await saveProfile(form);
-    await createProfile({
-            name: form.name,
-            city: form.city,
-            current_role: form.currentRole,
-            bio: form.bio,
-            });
+    await updateProfile({
+      name: form.name,
+      city: form.city,
+      current_role: form.currentRole,
+      bio: form.bio,
+    });
 
     router.push("/onboarding/resume");
     } catch {

@@ -18,12 +18,12 @@ export default function RepoSelection({
   repos,
   onSuccess,
 }: RepoSelectionProps) {
-  const [selectedRepos, setSelectedRepos] = useState<string[]>([]);
+  const [selectedRepos, setSelectedRepos] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const toggleRepo = (repoId: string) => {
+  const toggleRepo = (repoId: number) => {
     const isSelected =
-      selectedRepos.includes(repoId);
+  selectedRepos.includes(repoId);
 
     if (isSelected) {
       setSelectedRepos((prev) =>
@@ -217,7 +217,9 @@ export default function RepoSelection({
 
         {repos.map((repo) => {
           const isSelected =
-            selectedRepos.includes(repo.id);
+          selectedRepos.includes(
+            repo.github_repo_id
+          );
 
           const limitReached =
             selectedRepos.length >=
@@ -236,7 +238,7 @@ export default function RepoSelection({
               }`}
               onClick={() => {
                 if (!disabled) {
-                  toggleRepo(repo.id);
+                  toggleRepo(repo.github_repo_id);
                 }
               }}
             >

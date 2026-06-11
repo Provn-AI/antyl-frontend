@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import GithubConnect from "@/components/developer/GithubConnect";
 import RepositoryList, {
@@ -13,6 +14,8 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000";
 
+
+
 export default function GithubPage() {
   const router = useRouter();
 
@@ -21,6 +24,7 @@ export default function GithubPage() {
   const [loadingRepos, setLoadingRepos] =
     useState(false);
 
+    
   const fetchRepos = async () => {
     try {
       setLoadingRepos(true);
@@ -54,6 +58,18 @@ export default function GithubPage() {
       setLoadingRepos(false);
     }
   };
+  useEffect(() => {
+  const loadRepos = async () => {
+    const token =
+      localStorage.getItem("access_token");
+
+    if (!token) return;
+
+    await fetchRepos();
+  };
+
+  loadRepos();
+}, []);
 
   return (
     <div className="max-w-5xl mx-auto p-8">
