@@ -1030,7 +1030,7 @@ export default function LandingPage() {
       {/* ─── NAVBAR ─── */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
         <Link href='/' style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-          <Image src="/Antyl.svg" alt="Antyl" width={50} height={50} />
+          <Image src="/Antyl.png" alt="Antyl" width={50} height={50} />
         </Link>
         <div className="nav-links">
           <a href="#how-it-works" className="nav-link">How it works</a>
@@ -1117,7 +1117,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className="section" id="how-it-works">
+      <section className="section" id="how-it-works" style={{ borderTop: "1px solid var(--gray2)" }}>
         <div className="section-inner">
           <div style={{ maxWidth: 560 }}>
             <span className="section-eyebrow">
@@ -1433,7 +1433,7 @@ export default function LandingPage() {
         <div className="footer-inner">
           <div className="footer-top">
             <div className="footer-brand">
-              <Image src="/Antyl.svg" alt="Antyl" width={60} height={60} style={{ marginBottom: "1rem" }} />
+              <Image src="/Antyl.png" alt="Antyl" width={60} height={60} style={{ marginBottom: "1rem" }} />
               <p className="footer-brand-desc">
                 AI-powered developer verification and smart job matching. Built
                 for engineers who want to prove their skills, not just list them.
