@@ -302,7 +302,7 @@ export default function SignupPage() {
 
       <div className="page-wrap">
         <div className="card">
-          <Link href="/" className="logo">provn</Link>
+          <Link href="/" className="logo">Antyl</Link>
 
           <h1 className="card-title">Create your account</h1>
           <p className="card-sub">Start your verified dev journey</p>

@@ -78,7 +78,7 @@ export function withGuest<P extends object>(
         if (user.role === "developer") {
           router.replace("/feed");
         } else if (user.role === "recruiter") {
-          router.replace("/recruiter/dashboard");
+          router.replace("/dashboard");
         } else {
           router.replace("/select-role");
         }

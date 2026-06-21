@@ -56,3 +56,27 @@ export async function withdrawApplication(
 
   return data;
 }
+
+export async function getApplications() {
+  const token = getToken();
+
+  const res = await fetch(
+    `${API_URL}/developer/applications`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data.detail ||
+      "Failed to load applications"
+    );
+  }
+
+  return data.applications;
+}

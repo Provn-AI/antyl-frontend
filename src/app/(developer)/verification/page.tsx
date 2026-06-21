@@ -2,183 +2,101 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 
-import {
-  startVerification,
-} from "@/services/verification.service";
+import { startVerification } from "@/services/verification.service";
+
+const WHAT_TO_EXPECT = [
+  { text: "Questions based on your own repositories" },
+  { text: "Architecture decisions & trade-offs" },
+  { text: "Implementation details & code choices" },
+  { text: "Debugging scenarios & edge cases" },
+];
+
+const HEADS_UP = "This session cannot be paused once started. Set aside 10 uninterrupted minutes.";
 
 export default function VerificationIntroPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-  const [loading, setLoading] =
-    useState(false);
-
-  const handleStartVerification =
-    async () => {
-      try {
-        setLoading(true);
-
-        const data =
-          await startVerification();
-
-        localStorage.setItem(
-          "verification_session_id",
-          data.session_id
-        );
-
-        router.push(
-          "/verification/loading"
-        );
-      } catch (error) {
-        console.error(error);
-
-        alert(
-          "Failed to start verification."
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleStartVerification = async () => {
+    try {
+      setLoading(true);
+      const data = await startVerification();
+      localStorage.setItem("verification_session_id", data.session_id);
+      router.push("/verification/loading");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to start verification.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
-      <style>{`
-        .page {
-          min-height:100vh;
-          background:#FAF8F5;
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          padding:24px;
-        }
+    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-12 flex items-center justify-center">
+      <div className="w-full max-w-2xl mx-auto">
 
-        .card {
-          width:100%;
-          max-width:700px;
-          background:white;
-          border:1.5px solid #E8E4DF;
-          border-radius:24px;
-          padding:32px;
-        }
+        {/* Logo */}
+        <h1
+          className="text-2xl font-bold mb-10"
+          style={{ color: "#F2754A", fontFamily: "var(--font-fraunces, serif)" }}
+        >
+          Antyl
+        </h1>
 
-        .title {
-          font-size:32px;
-          font-weight:700;
-          margin-bottom:12px;
-          font-family:'DM Sans',sans-serif;
-        }
+        {/* Header */}
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          Skill verification
+        </h2>
+        <p className="text-gray-400 mb-8">
+          We will ask you questions drawn directly from your repositories —
+          no generic leetcode, just your real work.
+        </p>
 
-        .subtitle {
-          color:#B0A89E;
-          margin-bottom:24px;
-          font-family:'DM Sans',sans-serif;
-        }
-
-        .info-box {
-          border:1px solid #FFE1D8;
-          background:#FFF5F2;
-          border-radius:18px;
-          padding:20px;
-          margin-bottom:24px;
-        }
-
-        .estimate {
-          font-size:18px;
-          font-weight:700;
-          color:#FF6B4D;
-          margin-bottom:10px;
-        }
-
-        .list {
-          display:flex;
-          flex-direction:column;
-          gap:10px;
-        }
-
-        .item {
-          color:#444;
-          font-size:14px;
-        }
-
-        .btn {
-          width:100%;
-          border:none;
-          border-radius:50px;
-          padding:16px;
-          cursor:pointer;
-          color:white;
-          font-weight:700;
-          background:linear-gradient(
-            90deg,
-            #FF6B4D,
-            #FFB347
-          );
-        }
-
-        .btn:disabled {
-          opacity:.5;
-        }
-      `}</style>
-
-      <div className="page">
-        <div className="card">
-          <div className="title">
-            Verification Process
-          </div>
-
-          <div className="subtitle">
-            Verify your engineering
-            skills using your own
-            repositories.
-          </div>
-
-          <div className="info-box">
-            <div className="estimate">
-              Estimated Time:
-              30 Minutes
-            </div>
-
-            <div className="list">
-              <div className="item">
-                ✓ Questions based on
-                your repositories
-              </div>
-
-              <div className="item">
-                ✓ Architecture
-                decisions
-              </div>
-
-              <div className="item">
-                ✓ Implementation
-                details
-              </div>
-
-              <div className="item">
-                ✓ Debugging and edge
-                cases
-              </div>
-
-              <div className="item">
-                ✓ Cannot be paused
-                after starting
-              </div>
-            </div>
-          </div>
-
-          <button
-            className="btn"
-            onClick={
-              handleStartVerification
-            }
-            disabled={loading}
-          >
-            {loading
-              ? "Generating Questions..."
-              : "Start Verification"}
-          </button>
+        {/* Time estimate pill */}
+        <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-full px-4 py-2 mb-6">
+          <Clock className="w-4 h-4 text-[#F2754A]" />
+          <span className="text-sm font-semibold text-[#F2754A]">
+            ~10 minutes to complete
+          </span>
         </div>
+
+        {/* What to expect card */}
+        <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+            What to expect
+          </p>
+          <div className="space-y-3">
+            {WHAT_TO_EXPECT.map(({ text }) => (
+              <div key={text} className="flex items-start gap-3">
+                <CheckCircle2 className="w-4 h-4 text-[#F2754A] flex-shrink-0 mt-0.5" />
+                <span className="text-sm font-medium text-gray-700">{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Warning card */}
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-[20px] px-5 py-4 mb-8">
+          <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <p className="text-sm font-medium text-amber-700">{HEADS_UP}</p>
+        </div>
+
+        {/* CTA */}
+        <button
+          type="button"
+          onClick={handleStartVerification}
+          disabled={loading}
+          className="w-full py-3.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md shadow-orange-100"
+        >
+          {loading ? "Generating questions…" : "Start verification"}
+        </button>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
+          Results are added to your Antyl profile within minutes of completion.
+        </p>
       </div>
-    </>
+    </div>
   );
 }

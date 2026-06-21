@@ -3,9 +3,7 @@ const API_URL =
   "http://localhost:8000";
 
 function getToken() {
-  return localStorage.getItem(
-    "access_token"
-  );
+  return localStorage.getItem("access_token");
 }
 
 export async function startVerification() {
@@ -24,18 +22,13 @@ export async function startVerification() {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      data.detail ||
-        "Failed to start verification"
-    );
+    throw new Error(data.detail || "Failed to start verification");
   }
 
   return data;
 }
 
-export async function getVerificationSession(
-  sessionId: string
-) {
+export async function getVerificationSession(sessionId: string) {
   const token = getToken();
 
   const res = await fetch(
@@ -50,10 +43,7 @@ export async function getVerificationSession(
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      data.detail ||
-        "Failed to load session"
-    );
+    throw new Error(data.detail || "Failed to load session");
   }
 
   return data;
@@ -62,7 +52,8 @@ export async function getVerificationSession(
 export async function saveAnswer(
   sessionId: string,
   questionIndex: number,
-  answer: string
+  answer: string,
+  timeTakenSeconds: number
 ) {
   const token = getToken();
 
@@ -71,14 +62,14 @@ export async function saveAnswer(
     {
       method: "POST",
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         session_id: sessionId,
         question_index: questionIndex,
         answer,
+        time_taken_seconds: timeTakenSeconds,
       }),
     }
   );
@@ -86,18 +77,13 @@ export async function saveAnswer(
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      data.detail ||
-        "Failed to save answer"
-    );
+    throw new Error(data.detail || "Failed to save answer");
   }
 
   return data;
 }
 
-export async function completeVerification(
-  sessionId: string
-) {
+export async function completeVerification(sessionId: string) {
   const token = getToken();
 
   const res = await fetch(
@@ -105,8 +91,7 @@ export async function completeVerification(
     {
       method: "POST",
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
@@ -118,10 +103,7 @@ export async function completeVerification(
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      data.detail ||
-        "Failed to complete verification"
-    );
+    throw new Error(data.detail || "Failed to complete verification");
   }
 
   return data;
@@ -142,10 +124,7 @@ export async function getVerificationScore() {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      data.detail ||
-        "Failed to fetch score"
-    );
+    throw new Error(data.detail || "Failed to fetch score");
   }
 
   return data;
@@ -166,10 +145,7 @@ export async function getVerificationCooldown() {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(
-      data.detail ||
-        "Failed to fetch cooldown"
-    );
+    throw new Error(data.detail || "Failed to fetch cooldown");
   }
 
   return data;

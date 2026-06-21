@@ -92,7 +92,7 @@ export default function LandingPage() {
     },
     {
       quote:
-        "As a recruiter, the Trust Score is a game changer. I know exactly who can actually do the job.",
+        "As a recruiter, the Antyl Score is a game changer. I know exactly who can actually do the job.",
       name: "Nidhi Sharma",
       role: "Talent Lead · Zomato",
       initials: "NS",
@@ -140,7 +140,7 @@ export default function LandingPage() {
           <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
         </svg>
       ),
-      title: "Trust score badge",
+      title: "Antyl score badge",
       desc: "One score from 0–100 that tells the whole story. Carries across every job application on Antyl.",
       color: "#22C55E",
       bg: "#EAFAF0",
@@ -155,7 +155,7 @@ export default function LandingPage() {
         </svg>
       ),
       title: "Recruiter matching",
-      desc: "Recruiters filter by Trust Score, skills, and location. Only verified developers appear in their feed.",
+      desc: "Recruiters filter by Antyl Score, skills, and location. Only verified developers appear in their feed.",
       color: "#8B5CF6",
       bg: "#F3EFFE",
     },
@@ -286,7 +286,7 @@ export default function LandingPage() {
       color: "#FF6B4D",
     },
     {
-      quote: "The Trust Score is a game changer. I finally know who can actually do the job before I even call them.",
+      quote: "The Antyl Score is a game changer. I finally know who can actually do the job before I even call them.",
       name: "Nidhi S.",
       role: "Talent Lead",
       company: "Zomato",
@@ -297,7 +297,7 @@ export default function LandingPage() {
       color: "#8B5CF6",
     },
     {
-      quote: "Provn proved my skills without a whiteboard test. My score opened doors I couldn't before.",
+      quote: "Antyl proved my skills without a whiteboard test. My score opened doors I couldn't before.",
       name: "Priya S.",
       role: "Full-Stack Dev",
       company: "PhonePe",
@@ -319,7 +319,7 @@ export default function LandingPage() {
       color: "#22C55E",
     },
     {
-      quote: "As a startup founder, filtering by Trust Score meant our first hire was genuinely excellent.",
+      quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
       name: "Kavya R.",
       role: "Founder & CTO",
       company: "Buildfast",
@@ -869,7 +869,7 @@ export default function LandingPage() {
         .feature-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: .5rem; letter-spacing: -.02em; }
         .feature-desc { font-size: 13.5px; color: var(--gray4); line-height: 1.65; }
 
-        /* ---- TRUST SCORE ---- */
+        /* ---- Antyl SCORE ---- */
         .score-section {
           background: var(--gray1); padding: 6rem 1.5rem;
           border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
@@ -1035,7 +1035,7 @@ export default function LandingPage() {
         <div className="nav-links">
           <a href="#how-it-works" className="nav-link">How it works</a>
           <a href="#features" className="nav-link">Features</a>
-          <a href="#trust-score" className="nav-link">Trust Score</a>
+          <a href="#antyl-score" className="nav-link">Antyl Score</a>
           <a href="#for-recruiters" className="nav-link">For recruiters</a>
         </div>
         <div className="nav-actions">
@@ -1261,13 +1261,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── TRUST SCORE ─── */}
-      <section className="score-section" id="trust-score">
+      {/* ─── Antyl SCORE ─── */}
+      <section className="score-section" id="antyl-score">
         <div className="section-inner">
           <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
             <span className="section-eyebrow">
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
-              Trust Score
+              Antyl Score
             </span>
             <h2 className="section-title">
               One number that tells <em>the whole story</em>
@@ -1416,7 +1416,7 @@ export default function LandingPage() {
                 For recruiters
               </span>
               <h3 className="cta-card-title">Hire people who can actually do the job.</h3>
-              <p className="cta-card-sub">Filter by Trust Score. Every candidate you see is already verified.</p>
+              <p className="cta-card-sub">Filter by Antyl Score. Every candidate you see is already verified.</p>
               <a href="/signup?role=recruiter" className="btn-cta-outline">
                 Post a job
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1443,7 +1443,7 @@ export default function LandingPage() {
               <div className="footer-col-title">Product</div>
               <div className="footer-links">
                 <a href="#how-it-works" className="footer-link">How it works</a>
-                <a href="#trust-score" className="footer-link">Trust Score</a>
+                <a href="#antyl-score" className="footer-link">Antyl Score</a>
                 <a href="#features" className="footer-link">Features</a>
                 <a href="/pricing" className="footer-link">Pricing</a>
               </div>
@@ -1460,7 +1460,7 @@ export default function LandingPage() {
               <div className="footer-col-title">Recruiters</div>
               <div className="footer-links">
                 <a href="/signup?role=recruiter" className="footer-link">Post a job</a>
-                <a href="/candidates" className="footer-link">Browse talent</a>
+                <Link href="/candidates" className="footer-link">Browse talent</Link>
                 <a href="/billing" className="footer-link">Plans</a>
               </div>
             </div>

@@ -323,7 +323,7 @@ export default function OnboardingProfilePage() {
 
       <div className="page-wrap">
         <div className="card">
-          <Link href="/" className="logo">provn</Link>
+          <Link href="/" className="logo">Antyl</Link>
 
           {/* ── Stepper ── */}
           <OnboardingStepper currentStep={1} steps={ONBOARDING_STEPS} />

@@ -1,0 +1,550 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  MapPin,
+  Briefcase,
+  Trash2,
+  ExternalLink,
+  Shield,
+  AlertTriangle,
+  Code2,
+  Pencil,
+  Save,
+  X,
+} from "lucide-react";
+
+import {
+  getMyProfile,
+  getVerificationHistory,
+  disconnectGithub,
+  deleteAccount,
+  updateProfile,
+} from "@/services/developer.service";
+import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
+import DeveloperNavbar from "../components/DeveloperNavbar";
+
+interface Profile {
+  name?: string;
+  bio?: string;
+  city?: string;
+  current_role?: string;
+  years_experience?: number;
+  tech_stack?: string[];
+  trust_score?: number;
+  github_username?: string;
+  linkedin_url?: string;
+}
+
+// ── Mini score ring ───────────────────────────────────────────────────────────
+function MiniScoreRing({ score }: { score: number }) {
+  const radius = 28;
+  const circ = 2 * Math.PI * radius;
+  const offset = circ - (score / 100) * circ;
+
+  return (
+    <div className="relative w-16 h-16 flex-shrink-0">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r={radius} strokeWidth="5" className="fill-none stroke-orange-100" />
+        <circle
+          cx="32" cy="32" r={radius} strokeWidth="5"
+          fill="none" stroke="url(#miniGrad)" strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={offset}
+        />
+        <defs>
+          <linearGradient id="miniGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#F2754A" />
+            <stop offset="100%" stopColor="#FFB347" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-sm font-black text-gray-900">{score}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Confirm modal ─────────────────────────────────────────────────────────────
+type ConfirmState = {
+  open: boolean;
+  title: string;
+  description: string;
+  cta: string;
+  danger?: boolean;
+  onConfirm: () => Promise<void>;
+};
+
+const CONFIRM_CLOSED: ConfirmState = {
+  open: false, title: "", description: "", cta: "",
+  onConfirm: async () => {},
+};
+
+function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  if (!state.open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0">
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6">
+        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${state.danger ? "bg-red-50" : "bg-orange-50"}`}>
+          <AlertTriangle className={`w-5 h-5 ${state.danger ? "text-red-500" : "text-[#F2754A]"}`} />
+        </div>
+        <h3 className="text-base font-bold text-gray-900 mb-1">{state.title}</h3>
+        <p className="text-sm text-gray-400 mb-6">{state.description}</p>
+        <div className="flex gap-3">
+          <button type="button" onClick={onClose}
+            className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">
+            Cancel
+          </button>
+          <button type="button" disabled={busy}
+            onClick={async () => { setBusy(true); try { await state.onConfirm(); } finally { setBusy(false); onClose(); } }}
+            className={`flex-1 py-2.5 rounded-full text-sm font-bold text-white transition-colors disabled:opacity-50 ${state.danger ? "bg-red-500 hover:bg-red-600" : "bg-[#F2754A] hover:bg-[#e0623a]"}`}>
+            {busy ? "…" : state.cta}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── LinkedIn link ─────────────────────────────────────────────────────────────
+function LinkedInLink({ url }: { url: string | undefined }) {
+  if (!url) return <p className="text-sm font-semibold text-gray-800">Not added</p>;
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="text-sm font-semibold text-[#F2754A] hover:underline inline-flex items-center gap-1">
+      View profile <ExternalLink className="w-3 h-3" />
+    </a>
+  );
+}
+
+// ── Editable field ────────────────────────────────────────────────────────────
+function EditableField({
+  label, value, isEditing, inputNode, displayNode,
+}: {
+  label: string;
+  value: string | number;
+  isEditing: boolean;
+  inputNode: React.ReactNode;
+  displayNode: React.ReactNode;
+}) {
+  return (
+    <div>
+      {isEditing && (
+        <label className="block text-xs font-semibold text-gray-400 mb-1">{label}</label>
+      )}
+      {isEditing ? inputNode : displayNode}
+    </div>
+  );
+}
+
+// ── Input style ───────────────────────────────────────────────────────────────
+const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default function ProfilePage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [history, setHistory] = useState<{ score: number; date: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [confirm, setConfirm] = useState<ConfirmState>(CONFIRM_CLOSED);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    bio: "",
+    city: "",
+    current_role: "",
+    years_experience: 0,
+    linkedin_url: "",
+  });
+
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const [profileData, historyData] = await Promise.all([
+          getMyProfile(),
+          getVerificationHistory(),
+        ]);
+        setProfile(profileData);
+        setHistory(historyData);
+        setFormData({
+          name: profileData.name || "",
+          bio: profileData.bio || "",
+          city: profileData.city || "",
+          current_role: profileData.current_role || "",
+          years_experience: profileData.years_experience || 0,
+          linkedin_url: profileData.linkedin_url || "",
+        });
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      await updateProfile(formData);
+      setProfile({ ...profile, ...formData });
+      setIsEditing(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (profile) {
+      setFormData({
+        name: profile.name || "",
+        bio: profile.bio || "",
+        city: profile.city || "",
+        current_role: profile.current_role || "",
+        years_experience: profile.years_experience || 0,
+        linkedin_url: profile.linkedin_url || "",
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const handleDisconnectGithub = async () => {
+    await disconnectGithub();
+    setProfile((p) => p ? { ...p, github_username: undefined } : p);
+  };
+
+  const handleDeleteAccount = async () => {
+    await deleteAccount();
+    localStorage.removeItem("access_token");
+    window.location.href = "/";
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0]">
+        <DeveloperNavbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-[#F2754A] border-t-transparent animate-spin" />
+            <p className="text-sm text-gray-400 font-medium">Loading profile…</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0]">
+        <DeveloperNavbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+          <p className="text-gray-400 font-medium">Profile not found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const initials = (formData.name || profile.name || "??")
+    .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  return (
+    <div className="min-h-screen w-full bg-[#FAF6F0]">
+      <DeveloperNavbar />
+      <ConfirmModal state={confirm} onClose={() => setConfirm(CONFIRM_CLOSED)} />
+
+      <div className="px-4 py-12">
+        <div className="w-full max-w-2xl mx-auto">
+
+          {/* ── Hero card ── */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+            <div className="flex items-start gap-4">
+              {/* Avatar */}
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-100">
+                <span className="text-white font-black text-lg">{initials}</span>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                {/* Name */}
+                {isEditing ? (
+                  <div className="mb-2">
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">Name</label>
+                    <input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className={inputCls}
+                      placeholder="Your name"
+                    />
+                  </div>
+                ) : (
+                  <h2 className="text-xl font-bold text-gray-900 truncate">
+                    {profile.name || "Unnamed Developer"}
+                  </h2>
+                )}
+
+                {/* Role */}
+                {isEditing ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">Current role</label>
+                    <input
+                      value={formData.current_role}
+                      onChange={(e) => setFormData({ ...formData, current_role: e.target.value })}
+                      className={inputCls}
+                      placeholder="e.g. Senior Frontend Engineer"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    {profile.current_role || "Developer"}
+                  </p>
+                )}
+
+                {/* City + experience — only show pills in view mode */}
+                {!isEditing && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {profile.city && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        <MapPin className="w-3 h-3" />{profile.city}
+                      </span>
+                    )}
+                    {profile.years_experience != null && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        <Briefcase className="w-3 h-3" />{profile.years_experience}y exp
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* City + experience — editable */}
+                {isEditing && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">City</label>
+                      <input
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        className={inputCls}
+                        placeholder="Bangalore"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">Experience (years)</label>
+                      <input
+                        type="number"
+                        value={formData.years_experience || ""}
+                        onChange={(e) => setFormData({ ...formData, years_experience: Number(e.target.value) })}
+                        className={inputCls}
+                        placeholder="3"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Score ring — only in view mode */}
+              {!isEditing && profile.trust_score != null && (
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <MiniScoreRing score={profile.trust_score} />
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Score</span>
+                </div>
+              )}
+            </div>
+
+            {/* Bio */}
+            {isEditing ? (
+              <div className="mt-4">
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Bio</label>
+                <textarea
+                  rows={3}
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  className={inputCls + " resize-none"}
+                  placeholder="Tell recruiters about yourself…"
+                />
+              </div>
+            ) : (
+              profile.bio && (
+                <p className="text-sm text-gray-500 leading-relaxed mt-5 pt-5 border-t border-gray-50">
+                  {profile.bio}
+                </p>
+              )
+            )}
+
+            {/* Edit / Save / Cancel buttons */}
+            <div className="flex gap-2 mt-5 pt-5 border-t border-gray-50">
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit profile
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#F2754A] text-white hover:bg-[#e0623a] disabled:opacity-50 transition-colors shadow-md shadow-orange-100"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? "Saving…" : "Save changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* ── Score history ── */}
+          {history.length > 0 && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-5">
+                Score history
+              </p>
+              <ScoreHistoryChart data={history} />
+            </div>
+          )}
+
+          {/* ── Tech stack ── */}
+          {profile.tech_stack && profile.tech_stack.length > 0 && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                Tech stack
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {profile.tech_stack.map((tech) => (
+                  <span key={tech} className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Links ── */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              Links
+            </p>
+
+            <div className="space-y-4">
+              {/* GitHub row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <Code2 className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400">GitHub</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {profile.github_username ? "@" + profile.github_username : "Not connected"}
+                    </p>
+                  </div>
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+              </div>
+
+              {/* LinkedIn row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <ExternalLink className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400">LinkedIn</p>
+                    {isEditing ? (
+                      <input
+                        value={formData.linkedin_url}
+                        onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                        className={inputCls + " mt-1"}
+                        placeholder="https://linkedin.com/in/yourname"
+                      />
+                    ) : (
+                      <LinkedInLink url={profile.linkedin_url} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Danger zone ── */}
+          <div className="bg-white rounded-[24px] border border-red-100 shadow-sm p-6 sm:p-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
+                <Shield className="w-3.5 h-3.5 text-red-500" />
+              </div>
+              <p className="text-xs font-semibold text-red-400 uppercase tracking-widest">
+                Danger zone
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Delete account</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Permanently removes your profile and all data.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirm({
+                  open: true,
+                  title: "Delete account?",
+                  description: "This action cannot be undone. Your profile, score, and all data will be permanently erased.",
+                  cta: "Delete account",
+                  danger: true,
+                  onConfirm: handleDeleteAccount,
+                })}
+                className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-full transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}

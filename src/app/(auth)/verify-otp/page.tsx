@@ -138,7 +138,7 @@ function VerifyOtpForm() {
   }
   else {
     router.push(
-      "/recruiter/dashboard"
+      "/dashboard"
     );
   }
 }

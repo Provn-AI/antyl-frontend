@@ -89,3 +89,135 @@ export async function updateProfile(
 
   return data;
 }
+
+export async function getMyProfile() {
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
+  const res = await fetch(
+    `${API_URL}/developer/profile/me`,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data =
+    await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data.detail ||
+      "Failed to load profile"
+    );
+  }
+
+  return data.profile;
+}
+
+export async function getDeveloperProfile(
+  userId: string
+) {
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
+  const res = await fetch(
+    `${API_URL}/developer/profile/${userId}`,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data =
+    await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data.detail ||
+      "Failed to load profile"
+    );
+  }
+
+  return data.profile;
+}
+
+export async function getVerificationHistory() {
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
+  const res = await fetch(
+    `${
+      process.env
+        .NEXT_PUBLIC_API_URL
+    }/developer/verification/history`,
+    {
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data =
+    await res.json();
+
+  return data.history || [];
+}
+export async function disconnectGithub() {
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
+  const res = await fetch(
+    `${
+      process.env
+        .NEXT_PUBLIC_API_URL
+    }/developer/github/disconnect`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+
+  return res.json();
+}
+
+export async function deleteAccount() {
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
+  const res = await fetch(
+    `${
+      process.env
+        .NEXT_PUBLIC_API_URL
+    }/developer/account`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+
+  return res.json();
+}
+
+

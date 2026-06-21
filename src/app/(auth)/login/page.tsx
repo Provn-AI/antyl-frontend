@@ -250,7 +250,7 @@ export default function LoginPage() {
       <div className="page-wrap">
         <div className="card">
           <Link href="/" className="logo">
-            provn
+            Antyl
           </Link>
 
           <h1 className="card-title">Welcome back</h1>

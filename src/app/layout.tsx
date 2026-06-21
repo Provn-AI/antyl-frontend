@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
+import Navbar from "@/components/Navbar";
+
 export const metadata: Metadata = {
-  title: "Provn — Verified Developer Jobs",
+  title: "Antyl — Turn Time into Opportunities",
   description: "AI-powered developer verification and smart job matching.",
 };
 
@@ -15,7 +17,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+
+ 
+
+  {children}
+
+</AuthProvider>
       </body>
     </html>
   );

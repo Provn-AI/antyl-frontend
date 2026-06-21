@@ -262,7 +262,7 @@ export default function SelectRolePage() {
       <div className="page-wrap">
         <div className="card">
           <Link href="/" className="logo">
-            provn
+            Antyl
           </Link>
 
           <h1 className="card-title">I am a…</h1>
