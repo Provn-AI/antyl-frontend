@@ -397,7 +397,7 @@ export default function OnboardingProfilePage() {
             {/* Bio */}
             <div className="field">
               <label className="field-label" htmlFor="bio">
-                Bio <span style={{ color: "#B0A89E", fontWeight: 400 }}>(optional)</span>
+                Bio <span style={{ color: "#B0A89E", fontWeight: 400 }}></span>
               </label>
               <textarea
                 id="bio"

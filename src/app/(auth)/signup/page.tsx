@@ -23,8 +23,8 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      await sendOtp(email, "signup");
-      // Pass role in the URL so verify-otp can forward it to the backend
+      // Pass role here so backend stores it in Supabase user metadata
+      await sendOtp(email, "signup", role);
       router.push(
         `/verify-otp?email=${encodeURIComponent(email)}&mode=signup&role=${role}`
       );
@@ -95,7 +95,6 @@ export default function SignupPage() {
           margin-bottom: 1.625rem;
         }
 
-        /* ── Google button ── */
         .btn-google {
           width: 100%;
           display: flex;
@@ -120,7 +119,6 @@ export default function SignupPage() {
           box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
 
-        /* ── Divider ── */
         .divider {
           display: flex;
           align-items: center;
@@ -130,7 +128,6 @@ export default function SignupPage() {
         .divider-line { flex: 1; height: 1px; background: #E8E4DF; }
         .divider-text { font-size: 13px; color: #B0A89E; font-weight: 500; }
 
-        /* ── Role section label ── */
         .field-label {
           font-size: 13.5px;
           font-weight: 600;
@@ -139,7 +136,6 @@ export default function SignupPage() {
           display: block;
         }
 
-        /* ── Role cards ── */
         .roles-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -176,7 +172,6 @@ export default function SignupPage() {
           transform: translateY(-1px);
         }
 
-        /* checkmark badge */
         .check-badge {
           position: absolute;
           top: 8px;
@@ -197,7 +192,6 @@ export default function SignupPage() {
           transform: scale(1);
         }
 
-        /* role icon */
         .role-icon {
           width: 40px;
           height: 40px;
@@ -224,7 +218,6 @@ export default function SignupPage() {
         }
         .role-card.selected .role-desc { color: #C97B60; }
 
-        /* ── Email field ── */
         .email-label {
           font-size: 13.5px;
           font-weight: 600;
@@ -254,10 +247,8 @@ export default function SignupPage() {
           border-color: #FF6B4D;
           box-shadow: 0 0 0 3px rgba(255,107,77,0.12);
         }
-        /* coral border once role is selected (signals readiness) */
         .email-input.role-chosen { border-color: #FF6B4D; }
 
-        /* ── Submit button ── */
         .btn-send-otp {
           width: 100%;
           background: linear-gradient(90deg, #FF6B4D, #FFB347);
@@ -294,7 +285,6 @@ export default function SignupPage() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Footer ── */
         .login-link { text-align: center; font-size: 13.5px; color: #B0A89E; }
         .login-link a { color: #FF6B4D; font-weight: 700; text-decoration: none; }
         .login-link a:hover { text-decoration: underline; }
@@ -325,12 +315,8 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={handleSendOTP}>
-
-            {/* ── Role selector ── */}
             <label className="field-label">I am a…</label>
             <div className="roles-grid">
-
-              {/* Developer */}
               <button
                 type="button"
                 className={`role-card${role === "developer" ? " selected" : ""}`}
@@ -354,7 +340,6 @@ export default function SignupPage() {
                 </div>
               </button>
 
-              {/* Recruiter */}
               <button
                 type="button"
                 className={`role-card${role === "recruiter" ? " selected" : ""}`}
@@ -379,10 +364,8 @@ export default function SignupPage() {
                   <div className="role-desc">Hire verified talent</div>
                 </div>
               </button>
-
             </div>
 
-            {/* ── Email ── */}
             <label className="email-label" htmlFor="email">Email</label>
             <input
               id="email"

@@ -2,10 +2,46 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { sendOtp, verifyOtp } from "@/services/auth.services";
+import { sendOtp, verifyOtp, refreshAccessToken } from "@/services/auth.services";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
+
+async function fetchDeveloperProfile(token: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/developer/profile/me`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  // If token expired, try to refresh once
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (!newToken) return null;
+    const retryRes = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/developer/profile/me`,
+      { headers: { Authorization: `Bearer ${newToken}` } }
+    );
+    if (!retryRes.ok) return null;
+    return (await retryRes.json()).profile ?? null;
+  }
+
+  if (!res.ok) return null;
+  return (await res.json()).profile ?? null;
+}
+
+function getOnboardingRoute(profile: {
+  onboarding_completed: boolean;
+  onboarding_step: number;
+}): string {
+  if (profile.onboarding_completed) return "/feed";
+  const stepMap: Record<number, string> = {
+    1: "/onboarding/profile",
+    2: "/onboarding/resume",
+    3: "/onboarding/github",
+    4: "/onboarding/projects",
+  };
+  return stepMap[profile.onboarding_step] ?? "/feed";
+}
 
 function VerifyOtpForm() {
   const router = useRouter();
@@ -13,12 +49,12 @@ function VerifyOtpForm() {
 
   const email = searchParams.get("email") ?? "";
   const mode  = searchParams.get("mode")  ?? "login";
-  // role is only present on signup — forwarded from signup page URL
   const role  = searchParams.get("role") as "developer" | "recruiter" | null;
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [timer, setTimer] = useState(RESEND_SECONDS);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -60,92 +96,46 @@ function VerifyOtpForm() {
     if (code.length < OTP_LENGTH) return;
 
     setLoading(true);
+    setError(null);
+
     try {
-      // On signup: pass role so backend creates the account with the right role.
-      // On login: role is undefined — backend looks up existing user.
-      const { user } = await verifyOtp(
+      const { user, access_token } = await verifyOtp(
         email,
         code,
         mode === "signup" && role ? role : undefined
       );
 
       if (mode === "signup") {
-        // Go straight to onboarding — role is already set
+        // Role already set — go straight to onboarding
         router.push(
-          user.role === "developer" ? "/onboarding/profile" : "/onboarding/recruiter"
+          user.role === "developer"
+            ? "/onboarding/profile"
+            : "/onboarding/recruiter"
         );
-      } else {
-  if (
-    user.role === "developer"
-  ) {
-    const token =
-      localStorage.getItem(
-        "access_token"
-      );
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/developer/profile/me`,
-      {
-        headers: {
-          Authorization:
-            `Bearer ${token}`,
-        },
+        return;
       }
-    );
 
-    const data =
-      await res.json();
+      // ── Login routing ──────────────────────────────────────
+      if (user.role === "recruiter") {
+        router.push("/dashboard");
+        return;
+      }
 
-    const profile =
-      data.profile;
+      // Developer: check how far through onboarding they got.
+      // Profile fetch errors should NOT reset the OTP — handle separately.
+      const profile = await fetchDeveloperProfile(access_token);
+      if (!profile) {
+        // Couldn't fetch profile but login succeeded — safe fallback
+        router.push("/onboarding/profile");
+        return;
+      }
 
-    if (
-      profile.onboarding_completed
-    ) {
-      router.push("/feed");
-    }
-    else if (
-      profile.onboarding_step === 1
-    ) {
-      router.push(
-        "/onboarding/profile"
-      );
-    }
-    else if (
-      profile.onboarding_step === 2
-    ) {
-      router.push(
-        "/onboarding/resume"
-      );
-    }
-    else if (
-      profile.onboarding_step === 3
-    ) {
-      router.push(
-        "/onboarding/github"
-      );
-    }
-    else if (
-      profile.onboarding_step === 4
-    ) {
-      router.push(
-        "/onboarding/projects"
-      );
-    }
-    else {
-      router.push("/feed");
-    }
-  }
-  else {
-    router.push(
-      "/dashboard"
-    );
-  }
-}
+      router.push(getOnboardingRoute(profile));
+
     } catch (err: unknown) {
-      let message = "Failed to verify OTP";
-      if (err instanceof Error) message = err.message;
-      alert(message);
+      // Only OTP errors land here — reset the inputs
+      const message = err instanceof Error ? err.message : "Failed to verify OTP";
+      setError(message);
       setOtp(Array(OTP_LENGTH).fill(""));
       inputRefs.current[0]?.focus();
     } finally {
@@ -155,15 +145,15 @@ function VerifyOtpForm() {
 
   const handleResend = async () => {
     if (timer > 0) return;
+    setError(null);
     try {
       await sendOtp(email, mode as "signup" | "login");
       setTimer(RESEND_SECONDS);
       setOtp(Array(OTP_LENGTH).fill(""));
       inputRefs.current[0]?.focus();
     } catch (err: unknown) {
-      let message = "Failed to resend OTP";
-      if (err instanceof Error) message = err.message;
-      alert(message);
+      const message = err instanceof Error ? err.message : "Failed to resend OTP";
+      setError(message);
     }
   };
 
@@ -188,7 +178,7 @@ function VerifyOtpForm() {
           <input
             key={i}
             ref={(el) => { inputRefs.current[i] = el; }}
-            className={`otp-box${digit ? " filled" : ""}`}
+            className={`otp-box${digit ? " filled" : ""}${error ? " error" : ""}`}
             type="tel"
             inputMode="numeric"
             maxLength={1}
@@ -199,6 +189,8 @@ function VerifyOtpForm() {
           />
         ))}
       </div>
+
+      {error && <p className="error-msg">{error}</p>}
 
       <button
         className="btn-verify"
@@ -235,6 +227,7 @@ export default function VerifyOtpPage() {
           --gray1: #F8F5F0;
           --gray2: #E8E4DF;
           --gray3: #B0A89E;
+          --red: #E53E3E;
           --font: 'DM Sans', sans-serif;
         }
 
@@ -296,7 +289,7 @@ export default function VerifyOtpPage() {
           justify-content: center;
           align-items: center;
           gap: 12px;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
         }
 
         .otp-box {
@@ -319,6 +312,10 @@ export default function VerifyOtpPage() {
           border-color: var(--coral);
           box-shadow: 0 0 0 3px rgba(255,107,77,0.10);
         }
+        .otp-box.error {
+          border-color: var(--red);
+          box-shadow: 0 0 0 3px rgba(229,62,62,0.10);
+        }
         .otp-box:focus {
           border-color: var(--coral);
           box-shadow: 0 0 0 3px rgba(255,107,77,0.14);
@@ -326,6 +323,14 @@ export default function VerifyOtpPage() {
         }
         .otp-box::-webkit-outer-spin-button,
         .otp-box::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        .error-msg {
+          font-size: 13px;
+          color: var(--red);
+          text-align: center;
+          margin-bottom: 1rem;
+          font-weight: 500;
+        }
 
         .btn-verify {
           width: 100%;
