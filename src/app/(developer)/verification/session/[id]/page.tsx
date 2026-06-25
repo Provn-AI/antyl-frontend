@@ -20,6 +20,7 @@ interface Question {
   question_type: string;
   expected_answer_criteria: string;
   difficulty_level: string;
+  options: string[];
 }
 
 interface SessionData {
@@ -45,7 +46,7 @@ export default function VerificationSessionPage() {
   const [session,          setSession]           = useState<SessionData | null>(null);
   const [currentQuestion,  setCurrentQuestion]   = useState(0);
   const [answers,          setAnswers]           = useState<string[]>([]);
-  const [timeRemaining,    setTimeRemaining]     = useState(1800);
+  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes
   const [answerTimes,      setAnswerTimes]       = useState<number[]>([]);
   const [autoSaveFlash,    setAutoSaveFlash]     = useState(false);
 
@@ -63,7 +64,7 @@ export default function VerificationSessionPage() {
         if (mounted) {
           setSession(data);
           setAnswers(data.answers || []);
-          setTimeRemaining(data.time_remaining || 1800);
+          setTimeRemaining(data.time_remaining || 300);
         }
       } catch (error) {
         console.error(error);
@@ -177,7 +178,7 @@ export default function VerificationSessionPage() {
   const currentAnswer  = answers[currentQuestion] || "";
   const totalQuestions = session.questions.length;
   const isLast         = currentQuestion === totalQuestions - 1;
-  const isTimeDanger   = timeRemaining < 100;
+  const isTimeDanger   = timeRemaining < 60;
   const minutes        = Math.floor(timeRemaining / 60);
   const seconds        = timeRemaining % 60;
   const formattedTime  = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
@@ -272,38 +273,41 @@ export default function VerificationSessionPage() {
           </p>
         </div>
 
-        {/* ── Answer textarea ── */}
-        <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden mb-4">
-          <textarea
-            ref={textareaRef}
-            maxLength={1000}
-            value={currentAnswer}
-            onChange={(e) => {
-              const copy = [...answers];
-              copy[currentQuestion] = e.target.value;
-              setAnswers(copy);
-            }}
-            placeholder="Write your answer here…"
-            className="w-full min-h-[220px] px-6 pt-5 pb-3 text-sm text-gray-800 placeholder:text-gray-300 resize-none outline-none leading-relaxed"
-          />
+        {/* ── Answer options ── */}
+<div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-2 mb-4">
+  {question.options.map((option, idx) => {
+    const isSelected = currentAnswer === option;
+    return (
+      <button
+        key={idx}
+        type="button"
+        onClick={() => {
+          const copy = [...answers];
+          copy[currentQuestion] = option;
+          setAnswers(copy);
+        }}
+        className={`w-full flex items-center gap-3 text-left px-5 py-4 rounded-2xl transition-colors mb-1 last:mb-0 ${
+          isSelected ? "bg-orange-50 text-[#F2754A] font-semibold" : "text-gray-700 hover:bg-gray-50"
+        }`}
+      >
+        <span
+          className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold border-2 shrink-0 ${
+            isSelected ? "bg-[#F2754A] border-[#F2754A] text-white" : "border-gray-300 text-gray-400"
+          }`}
+        >
+          {String.fromCharCode(65 + idx)}
+        </span>
+        <span className="text-sm leading-relaxed">{option}</span>
+      </button>
+    );
+  })}
 
-          <div className="flex items-center justify-between px-6 pb-4">
-            <span
-              className={`text-xs font-semibold transition-colors ${
-                autoSaveFlash ? "text-emerald-500" : "text-gray-300"
-              }`}
-            >
-              {autoSaveFlash ? "✓ Auto-saved" : "Auto-saves every 30s"}
-            </span>
-            <span
-              className={`text-xs font-semibold ${
-                currentAnswer.length > 900 ? "text-amber-500" : "text-gray-300"
-              }`}
-            >
-              {1000 - currentAnswer.length} chars left
-            </span>
-          </div>
-        </div>
+  <div className="flex items-center justify-end px-3 py-2">
+    <span className={`text-xs font-semibold transition-colors ${autoSaveFlash ? "text-emerald-500" : "text-gray-300"}`}>
+      {autoSaveFlash ? "✓ Auto-saved" : "Auto-saves every 10s"}
+    </span>
+  </div>
+</div>
 
         {/* ── Navigation ── */}
         <div className="flex items-center justify-between">
@@ -340,10 +344,10 @@ export default function VerificationSessionPage() {
         </div>
 
         {isTimeDanger && (
-          <p className="text-center text-xs font-semibold text-red-500 mt-5 animate-pulse">
-            ⚠ Less than 5 minutes remaining — your answers will auto-submit when time runs out.
-          </p>
-        )}
+  <p className="text-center text-xs font-semibold text-red-500 mt-5 animate-pulse">
+    ⚠ Less than 1 minute remaining — your answers will auto-submit when time runs out.
+  </p>
+)}
       </div>
     </div>
   );

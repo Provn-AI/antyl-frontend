@@ -341,7 +341,7 @@ export default function OnboardingProfilePage() {
                 name="name"
                 className={`field-input${errors.name ? " error" : ""}`}
                 type="text"
-                placeholder="Arjun Kumar"
+                placeholder="Aditya Singh"
                 value={form.name}
                 onChange={handleChange}
                 onBlur={() => handleBlur("name")}

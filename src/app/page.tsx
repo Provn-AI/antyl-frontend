@@ -84,9 +84,9 @@ export default function LandingPage() {
     {
       quote:
         "I got 3 interview calls in the first week without applying to a single job manually.",
-      name: "Arjun Kumar",
+      name: "Aditya Singh",
       role: "Frontend Engineer · Hired at Razorpay",
-      initials: "AK",
+      initials: "AS",
       score: 88,
       tier: "Expert",
     },
@@ -276,7 +276,7 @@ export default function LandingPage() {
   const carouselTestimonials = [
     {
       quote: "Got 3 interview calls in the first week — without applying to a single job manually.",
-      name: "Arjun K.",
+      name: "Aditya Singh",
       role: "Frontend Engineer",
       company: "Razorpay",
       initials: "AK",

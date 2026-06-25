@@ -13,7 +13,7 @@ const WHAT_TO_EXPECT = [
   { text: "Debugging scenarios & edge cases" },
 ];
 
-const HEADS_UP = "This session cannot be paused once started. Set aside 10 uninterrupted minutes.";
+const HEADS_UP = "This session cannot be paused once started. Set aside 5 uninterrupted minutes.";
 
 export default function VerificationIntroPage() {
   const router = useRouter();
@@ -58,7 +58,7 @@ export default function VerificationIntroPage() {
         <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-full px-4 py-2 mb-6">
           <Clock className="w-4 h-4 text-[#F2754A]" />
           <span className="text-sm font-semibold text-[#F2754A]">
-            ~10 minutes to complete
+            ~5 minutes to complete
           </span>
         </div>
 
