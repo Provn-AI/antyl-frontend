@@ -9,7 +9,7 @@ import {
   MapPin,
   Briefcase,
 } from "lucide-react";
-import { createJob } from "@/services/recruiter-job.service";
+import { createJob, autofillJob } from "@/services/recruiter-job.service";
 import TrustScoreSlider from "@/components/jobs/TrustScoreSlider";
 
 interface JobForm {
@@ -38,20 +38,20 @@ function mapExperienceLevel(years: number): string {
   if (years <= 8) return "senior";
   return "lead";
 }
+
 const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
   e.currentTarget.blur();
 };
-
 
 export default function NewJobPage() {
   const router = useRouter();
 
   const [saving, setSaving] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Separate numeric state just for the years input field
   const [experienceYears, setExperienceYears] = useState<number>(0);
 
   const [form, setForm] = useState<JobForm>({
@@ -74,24 +74,53 @@ export default function NewJobPage() {
     .filter(Boolean);
 
   const validate = () => {
-  if (!form.title.trim()) return "Job title is required.";
-  if (!form.description.trim()) return "Job description is required.";
-  if (!form.location.trim() && !form.is_remote)
-    return "Add a location, or mark this as remote.";
-  if (form.salary_max && form.salary_min > form.salary_max)
-    return "Minimum salary can't be greater than maximum salary.";
+    if (!form.title.trim()) return "Job title is required.";
+    if (!form.description.trim()) return "Job description is required.";
+    if (!form.location.trim() && !form.is_remote)
+      return "Add a location, or mark this as remote.";
+    if (form.salary_max && form.salary_min > form.salary_max)
+      return "Minimum salary can't be greater than maximum salary.";
 
-  const techStack = form.required_tech_stack.trim();
-  if (techStack) {
-    const hasComma = techStack.includes(",");
-    const tokenCount = techStack.split(/\s+/).filter(Boolean).length;
-    if (!hasComma && tokenCount > 1) {
-      return "Please separate each skill with a comma (e.g. React, Node, Python).";
+    const techStack = form.required_tech_stack.trim();
+    if (techStack) {
+      const hasComma = techStack.includes(",");
+      const tokenCount = techStack.split(/\s+/).filter(Boolean).length;
+      if (!hasComma && tokenCount > 1) {
+        return "Please separate each skill with a comma (e.g. React, Node, Python).";
+      }
+    }
+
+    return "";
+  };
+
+  async function handleAutofill() {
+    if (!form.title.trim()) {
+      setError("Enter a job title first so AI knows what to fill.");
+      return;
+    }
+    try {
+      setAutofilling(true);
+      setError("");
+      const result = await autofillJob(form.title);
+      const years = result.experience_years ?? 0;
+      setExperienceYears(years);
+      setForm((prev) => ({
+        ...prev,
+        description: result.description,
+        required_tech_stack: result.required_tech_stack,
+        experience_level: result.experience_level,
+        salary_min: result.salary_min,
+        salary_max: result.salary_max,
+        job_type: result.job_type,
+        location: result.location,
+        is_remote: result.is_remote,
+      }));
+    } catch {
+      setError("Auto-fill failed. You can fill in the details manually.");
+    } finally {
+      setAutofilling(false);
     }
   }
-
-  return "";
-};
 
   async function handleSubmit() {
     const validationError = validate();
@@ -148,18 +177,43 @@ export default function NewJobPage() {
         )}
 
         <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 space-y-5">
+
+          {/* Title + Auto-fill */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Job Title
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-gray-900">
+                Job Title
+              </label>
+              <button
+                type="button"
+                onClick={handleAutofill}
+                disabled={autofilling || !form.title.trim()}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[#F2754A] text-[#F2754A] hover:bg-orange-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {autofilling ? (
+                  <>
+                    <span className="animate-spin inline-block w-3 h-3 border border-[#F2754A] border-t-transparent rounded-full" />
+                    Filling…
+                  </>
+                ) : (
+                  <>✦ Auto-fill with AI</>
+                )}
+              </button>
+            </div>
             <input
               className={inputClass}
               placeholder="e.g. Senior Backend Engineer"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
+            {!autofilling && !form.title.trim() && (
+              <p className="text-xs text-gray-400 mt-1.5 px-1">
+                Type a title above, then click Auto-fill to generate details.
+              </p>
+            )}
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Description
@@ -172,6 +226,7 @@ export default function NewJobPage() {
             />
           </div>
 
+          {/* Tech Stack */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Required Tech Stack
@@ -185,8 +240,21 @@ export default function NewJobPage() {
             <p className="text-xs text-gray-400 mt-2">
               Separate each skill with a comma.
             </p>
+            {techTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {techTags.map((tech) => (
+                  <span
+                    key={tech}
+                    className="px-3 py-1 bg-orange-50 text-[#F2754A] text-xs font-semibold rounded-full border border-orange-100"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
+          {/* Experience + Job Type */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -198,6 +266,7 @@ export default function NewJobPage() {
                 className={inputClass}
                 placeholder="e.g. 3"
                 value={experienceYears || ""}
+                onWheel={preventWheelChange}
                 onChange={(e) => {
                   const years = Number(e.target.value);
                   setExperienceYears(years);
@@ -263,6 +332,7 @@ export default function NewJobPage() {
             </div>
           </div>
 
+          {/* Location */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Location
@@ -276,6 +346,7 @@ export default function NewJobPage() {
             />
           </div>
 
+          {/* Remote toggle */}
           <button
             type="button"
             onClick={() => setForm({ ...form, is_remote: !form.is_remote })}
@@ -297,6 +368,7 @@ export default function NewJobPage() {
             </div>
           </button>
 
+          {/* Antyl Score */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               Antyl Score Range
@@ -309,6 +381,7 @@ export default function NewJobPage() {
             />
           </div>
 
+          {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -331,6 +404,7 @@ export default function NewJobPage() {
           </div>
         </div>
 
+        {/* Preview panel */}
         {showPreview && (
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mt-6">
             <h2 className="font-bold text-gray-900 text-lg mb-5">Job Preview</h2>

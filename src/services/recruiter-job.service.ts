@@ -146,3 +146,20 @@ export async function saveCandidateNote(
 
   return res.json();
 }
+
+export async function autofillJob(title: string, context?: string) {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/ai/autofill-job`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ title, context }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Auto-fill failed");
+  return data;
+}
