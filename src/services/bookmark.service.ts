@@ -42,3 +42,21 @@ export async function unbookmarkJob(jobId: string) {
 
   return data;
 }
+
+export async function getBookmarks() {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/bookmarks`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to fetch bookmarks");
+  }
+
+  return data.bookmarks;
+}

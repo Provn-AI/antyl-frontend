@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, FileText, User, LogOut } from "lucide-react";
+import { LayoutGrid, FileText, User, LogOut, Bookmark } from "lucide-react";
 
 const TABS = [
   { label: "Feed",         href: "/feed",         icon: LayoutGrid },
   { label: "Applications", href: "/applications",  icon: FileText   },
+  { label: "Bookmarks",    href: "/bookmarks",     icon: Bookmark   },
   { label: "Profile",      href: "/profile",       icon: User       },
 ];
 
