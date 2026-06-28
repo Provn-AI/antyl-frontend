@@ -1,28 +1,76 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Briefcase, MapPin, DollarSign, Code2, Star, Save } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  MapPin,
+  Briefcase,
+} from "lucide-react";
 import { getJob, updateJob } from "@/services/recruiter-job.service";
+import TrustScoreSlider from "@/components/jobs/TrustScoreSlider";
+
+interface JobForm {
+  title: string;
+  description: string;
+  required_tech_stack: string;
+  experience_level: string;
+  salary_min: number;
+  salary_max: number;
+  job_type: string;
+  location: string;
+  is_remote: boolean;
+  min_score: number;
+  max_score: number;
+}
+
+const inputClass =
+  "w-full border border-gray-200 rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors";
+
+const textareaClass =
+  "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[140px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
+
+function mapExperienceLevel(years: number): string {
+  if (years <= 1) return "entry";
+  if (years <= 4) return "mid";
+  if (years <= 8) return "senior";
+  return "lead";
+}
+
+function experienceLevelToYears(level: string): number {
+  switch (level) {
+    case "entry": return 1;
+    case "mid": return 3;
+    case "senior": return 6;
+    case "lead": return 9;
+    default: return 0;
+  }
+}
+
+const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
+  e.currentTarget.blur();
+};
 
 export default function EditJobPage({
   params,
 }: {
-  params: {
-    jobId: string;
-  };
+  params: Promise<{ jobId: string }>;
 }) {
+  const { jobId } = React.use(params);
   const router = useRouter();
+
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [experienceYears, setExperienceYears] = useState<number>(0);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<JobForm>({
     title: "",
     description: "",
     required_tech_stack: "",
-    experience_level: 0,
+    experience_level: "entry",
     salary_min: 0,
     salary_max: 0,
     job_type: "full_time",
@@ -32,15 +80,22 @@ export default function EditJobPage({
     max_score: 100,
   });
 
+  const techTags = form.required_tech_stack
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   useEffect(() => {
     async function loadJob() {
       try {
-        const job = await getJob(params.jobId);
+        const job = await getJob(jobId);
+        const years = experienceLevelToYears(job.experience_level);
+        setExperienceYears(years);
         setForm({
           title: job.title || "",
           description: job.description || "",
           required_tech_stack: (job.required_tech_stack || []).join(", "),
-          experience_level: job.experience_level || 0,
+          experience_level: job.experience_level || "entry",
           salary_min: job.salary_min || 0,
           salary_max: job.salary_max || 0,
           job_type: job.job_type || "full_time",
@@ -57,33 +112,47 @@ export default function EditJobPage({
       }
     }
     loadJob();
-  }, [params.jobId]);
+  }, [jobId]);
+
+  const validate = () => {
+    if (!form.title.trim()) return "Job title is required.";
+    if (!form.description.trim()) return "Job description is required.";
+    if (!form.location.trim() && !form.is_remote)
+      return "Add a location, or mark this as remote.";
+    if (form.salary_max && form.salary_min > form.salary_max)
+      return "Minimum salary can't be greater than maximum salary.";
+    const techStack = form.required_tech_stack.trim();
+    if (techStack) {
+      const hasComma = techStack.includes(",");
+      const tokenCount = techStack.split(/\s+/).filter(Boolean).length;
+      if (!hasComma && tokenCount > 1)
+        return "Please separate each skill with a comma (e.g. React, Node, Python).";
+    }
+    return "";
+  };
 
   async function handleSubmit() {
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     try {
       setSaving(true);
-      setSuccess(false);
-      await updateJob(params.jobId, {
+      setError("");
+      await updateJob(jobId, {
         ...form,
-        required_tech_stack: form.required_tech_stack
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
+        required_tech_stack: techTags,
       });
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setTimeout(() => router.push("/jobs"), 1200);
     } catch (err) {
       console.error(err);
-      setError("Failed to save changes. Please try again.");
+      setError("We couldn't save this job. Please try again.");
     } finally {
       setSaving(false);
     }
   }
-
-  const inputClass =
-    "w-full bg-white border border-gray-100 rounded-2xl px-4 py-3 text-sm text-gray-800 placeholder:text-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F2754A]/30 focus:border-[#F2754A] transition";
-
-  const labelClass = "block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5";
 
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-10">
@@ -91,41 +160,27 @@ export default function EditJobPage({
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="p-2 rounded-full bg-white border border-gray-100 shadow-sm text-gray-400 hover:text-gray-700 transition"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">Edit Job</h1>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Edit Job</h1>
           <button
             type="button"
-            onClick={handleSubmit}
-            disabled={saving}
-            className="flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full text-white disabled:opacity-60 transition"
-            style={{
-              background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-            }}
+            onClick={() => router.push("/jobs")}
+            className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
           >
-            <Save className="w-4 h-4" />
-            {saving ? "Saving..." : "Save Changes"}
+            Back to jobs
           </button>
         </div>
 
-        {/* Success banner */}
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-100 text-green-700 text-sm font-medium px-5 py-3 rounded-2xl">
-            ✓ Job updated successfully.
+          <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-2xl px-5 py-3 mb-6">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>Job updated successfully. Redirecting...</span>
           </div>
         )}
 
-        {/* Error banner */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-100 text-red-600 text-sm font-medium px-5 py-3 rounded-2xl">
-            {error}
+          <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 rounded-2xl px-5 py-3 mb-6">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -138,195 +193,201 @@ export default function EditJobPage({
             <p className="text-gray-400 text-sm mt-4">Loading job details...</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 space-y-5">
 
-            {/* Basic Info */}
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Briefcase className="w-4 h-4 text-[#F2754A]" />
-                <span className="text-sm font-semibold text-gray-700">Basic Info</span>
-              </div>
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Job Title
+              </label>
+              <input
+                className={inputClass}
+                placeholder="e.g. Senior Backend Engineer"
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
+            </div>
 
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Description
+              </label>
+              <textarea
+                className={textareaClass}
+                placeholder="Describe the role, responsibilities, and what you're looking for..."
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </div>
+
+            {/* Tech Stack */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Required Tech Stack
+              </label>
+              <input
+                className={inputClass}
+                placeholder="React, Node, Python"
+                value={form.required_tech_stack}
+                onChange={(e) => setForm({ ...form, required_tech_stack: e.target.value })}
+              />
+              <p className="text-xs text-gray-400 mt-2">
+                Separate each skill with a comma.
+              </p>
+              {techTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {techTags.map((tech) => (
+                    <span
+                      key={tech}
+                      className="px-3 py-1 bg-orange-50 text-[#F2754A] text-xs font-semibold rounded-full border border-orange-100"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Experience + Job Type + Salary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className={labelClass}>Job Title</label>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Experience (years)
+                </label>
                 <input
+                  type="number"
+                  min={0}
                   className={inputClass}
-                  placeholder="e.g. Senior Frontend Engineer"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="e.g. 3"
+                  value={experienceYears || ""}
+                  onWheel={preventWheelChange}
+                  onChange={(e) => {
+                    const years = Number(e.target.value);
+                    setExperienceYears(years);
+                    setForm({ ...form, experience_level: mapExperienceLevel(years) });
+                  }}
                 />
+                {experienceYears > 0 && (
+                  <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
+                    Maps to: {mapExperienceLevel(experienceYears)}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className={labelClass}>Description</label>
-                <textarea
-                  rows={6}
-                  className={inputClass}
-                  placeholder="Describe the role, responsibilities, and what success looks like..."
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>Job Type</label>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Job Type
+                </label>
                 <select
                   className={inputClass}
                   value={form.job_type}
                   onChange={(e) => setForm({ ...form, job_type: e.target.value })}
                 >
-                  <option value="full_time">Full-time</option>
-                  <option value="part_time">Part-time</option>
+                  <option value="full_time">Full Time</option>
+                  <option value="part_time">Part Time</option>
                   <option value="contract">Contract</option>
                   <option value="internship">Internship</option>
                 </select>
               </div>
-            </div>
-
-            {/* Tech & Experience */}
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Code2 className="w-4 h-4 text-[#F2754A]" />
-                <span className="text-sm font-semibold text-gray-700">Tech & Experience</span>
-              </div>
 
               <div>
-                <label className={labelClass}>Tech Stack</label>
-                <input
-                  className={inputClass}
-                  placeholder="React, Node.js, PostgreSQL"
-                  value={form.required_tech_stack}
-                  onChange={(e) => setForm({ ...form, required_tech_stack: e.target.value })}
-                />
-                <p className="text-xs text-gray-400 mt-1.5 ml-1">Separate with commas</p>
-              </div>
-
-              <div>
-                <label className={labelClass}>Years of Experience</label>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Min Salary (₹)
+                </label>
                 <input
                   type="number"
                   min={0}
                   className={inputClass}
-                  placeholder="3"
-                  value={form.experience_level}
-                  onChange={(e) => setForm({ ...form, experience_level: Number(e.target.value) })}
+                  placeholder="e.g. 800000"
+                  value={form.salary_min || ""}
+                  onChange={(e) => setForm({ ...form, salary_min: Number(e.target.value) })}
+                  onWheel={preventWheelChange}
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Max Salary (₹)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  className={inputClass}
+                  placeholder="e.g. 1500000"
+                  value={form.salary_max || ""}
+                  onChange={(e) => setForm({ ...form, salary_max: Number(e.target.value) })}
+                  onWheel={preventWheelChange}
+                />
+                {form.salary_max > 0 && form.salary_min > form.salary_max && (
+                  <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">
+                    Max salary must be greater than min salary.
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Location */}
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <MapPin className="w-4 h-4 text-[#F2754A]" />
-                <span className="text-sm font-semibold text-gray-700">Location</span>
-              </div>
-
-              <div>
-                <label className={labelClass}>City / Region</label>
-                <input
-                  className={inputClass}
-                  placeholder="San Francisco, CA"
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                />
-              </div>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <div
-                  onClick={() => setForm({ ...form, is_remote: !form.is_remote })}
-                  className={`w-10 h-5 rounded-full transition-colors flex items-center px-0.5 ${
-                    form.is_remote ? "bg-[#F2754A]" : "bg-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                      form.is_remote ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </div>
-                <span className="text-sm font-medium text-gray-700">Remote OK</span>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Location
               </label>
+              <input
+                className={inputClass}
+                placeholder="e.g. Mumbai, India"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                disabled={form.is_remote}
+              />
             </div>
 
-            {/* Salary */}
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <DollarSign className="w-4 h-4 text-[#F2754A]" />
-                <span className="text-sm font-semibold text-gray-700">Salary Range</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Minimum</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className={inputClass}
-                    placeholder="60000"
-                    value={form.salary_min}
-                    onChange={(e) => setForm({ ...form, salary_min: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Maximum</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className={inputClass}
-                    placeholder="120000"
-                    value={form.salary_max}
-                    onChange={(e) => setForm({ ...form, salary_max: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Scoring */}
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-1">
-                <Star className="w-4 h-4 text-[#F2754A]" />
-                <span className="text-sm font-semibold text-gray-700">Applicant Score Range</span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Min Score</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    className={inputClass}
-                    value={form.min_score}
-                    onChange={(e) => setForm({ ...form, min_score: Number(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Max Score</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    className={inputClass}
-                    value={form.max_score}
-                    onChange={(e) => setForm({ ...form, max_score: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom save button */}
+            {/* Remote toggle */}
             <button
               type="button"
-              onClick={handleSubmit}
-              disabled={saving}
-              className="w-full py-3.5 rounded-full text-white font-semibold text-sm disabled:opacity-60 transition"
-              style={{
-                background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-              }}
+              onClick={() => setForm({ ...form, is_remote: !form.is_remote })}
+              className="flex items-center justify-between w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4"
             >
-              {saving ? "Saving..." : "Save Changes"}
+              <span className="text-sm font-medium text-gray-900">
+                Remote Position
+              </span>
+              <div
+                className={`w-11 h-6 rounded-full p-0.5 transition-colors ${
+                  form.is_remote ? "bg-[#F2754A]" : "bg-gray-300"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                    form.is_remote ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </div>
             </button>
 
+            {/* Antyl Score */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Antyl Score Range
+              </label>
+              <TrustScoreSlider
+                minScore={form.min_score}
+                maxScore={form.max_score}
+                onMinChange={(value) => setForm({ ...form, min_score: value })}
+                onMaxChange={(value) => setForm({ ...form, max_score: value })}
+              />
+            </div>
+
+            {/* Save button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={saving}
+                className="w-full px-6 py-3.5 rounded-full font-semibold text-white transition-opacity disabled:opacity-50"
+                style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -205,7 +205,7 @@ export default function RecruiterDashboard() {
                     <button
                       key={job.id}
                       type="button"
-                      onClick={() => router.push(`/recruiter/jobs/${job.id}`)}
+                      onClick={() => router.push(`/jobs`)}
                       className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-4 hover:bg-gray-50 transition-colors text-left"
                     >
                       <div className="min-w-0">
