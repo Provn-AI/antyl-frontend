@@ -9,6 +9,16 @@ import {
   getVerificationCooldown,
 } from "@/services/verification.service";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface Suggestion {
+  title: string;
+  description: string;
+  before: string;
+  after: string;
+  dimension: string;
+}
+
 interface ScoreData {
   overall_score: number;
   tier: string;
@@ -18,22 +28,26 @@ interface ScoreData {
     project_complexity: number;
     communication: number;
   };
-  improvement_suggestions: string[];
+  improvement_suggestions: (Suggestion | string)[];
 }
 
+// ── Config ────────────────────────────────────────────────────────────────────
+
 const TIER_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  Elite:    { label: "Elite",    color: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-100" },
-  Senior:   { label: "Senior",   color: "text-[#F2754A]",   bg: "bg-orange-50",  border: "border-orange-100" },
-  Mid:      { label: "Mid",      color: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-100"  },
-  Junior:   { label: "Junior",   color: "text-sky-600",     bg: "bg-sky-50",     border: "border-sky-100"    },
+  Elite:  { label: "Elite",  color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-100" },
+  Senior: { label: "Senior", color: "text-[#F2754A]",  bg: "bg-orange-50", border: "border-orange-100" },
+  Mid:    { label: "Mid",    color: "text-amber-600",  bg: "bg-amber-50",  border: "border-amber-100"  },
+  Junior: { label: "Junior", color: "text-sky-600",    bg: "bg-sky-50",    border: "border-sky-100"    },
 };
 
 const DIMENSIONS = [
-  { key: "technical_depth",    label: "Technical Depth"     },
-  { key: "code_quality",       label: "Code Quality"        },
-  { key: "project_complexity", label: "Project Complexity"  },
-  { key: "communication",      label: "Communication"       },
+  { key: "technical_depth",    label: "Technical Depth"    },
+  { key: "code_quality",       label: "Code Quality"       },
+  { key: "project_complexity", label: "Project Complexity" },
+  { key: "communication",      label: "Communication"      },
 ] as const;
+
+// ── Score ring ────────────────────────────────────────────────────────────────
 
 function ScoreRing({ score }: { score: number }) {
   const radius = 54;
@@ -68,11 +82,13 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+// ── Dimension bar ─────────────────────────────────────────────────────────────
+
 function DimensionBar({ label, value }: { label: string; value: number }) {
   const color =
     value >= 80 ? "text-emerald-600" :
-    value >= 60 ? "text-[#F2754A]"  :
-    value >= 40 ? "text-amber-500"  : "text-rose-500";
+    value >= 60 ? "text-[#F2754A]"   :
+    value >= 40 ? "text-amber-500"   : "text-rose-500";
 
   return (
     <div>
@@ -83,18 +99,87 @@ function DimensionBar({ label, value }: { label: string; value: number }) {
       <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
-          style={{
-            width: `${value}%`,
-            background: "linear-gradient(90deg, #F2754A, #FFB347)",
-          }}
+          style={{ width: `${value}%`, background: "linear-gradient(90deg, #F2754A, #FFB347)" }}
         />
       </div>
     </div>
   );
 }
 
+// ── Suggestion card ───────────────────────────────────────────────────────────
+
+function SuggestionCard({ suggestion, index }: { suggestion: Suggestion | string; index: number }) {
+  const [tab, setTab] = useState<"before" | "after">("before");
+
+  // Fallback for plain string (old format)
+  if (typeof suggestion === "string") {
+    return (
+      <div className="flex items-start gap-3">
+        <span className="w-5 h-5 rounded-full bg-orange-50 text-[#F2754A] text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+          {index + 1}
+        </span>
+        <p className="text-sm text-gray-600 leading-relaxed">{suggestion}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-100 overflow-hidden">
+      {/* Header */}
+      <div className="px-5 pt-5 pb-3">
+        <div className="flex items-start gap-3">
+          <span className="w-5 h-5 rounded-full bg-orange-50 text-[#F2754A] text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">
+            {index + 1}
+          </span>
+          <div>
+            <p className="text-sm font-bold text-gray-900">{suggestion.title}</p>
+            <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{suggestion.description}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Before / After toggle */}
+      <div className="flex border-t border-gray-100">
+        <button
+          type="button"
+          onClick={() => setTab("before")}
+          className={`flex-1 py-2 text-xs font-bold transition-colors ${
+            tab === "before"
+              ? "bg-red-50 text-red-500 border-b-2 border-red-400"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          Before
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("after")}
+          className={`flex-1 py-2 text-xs font-bold transition-colors ${
+            tab === "after"
+              ? "bg-emerald-50 text-emerald-600 border-b-2 border-emerald-500"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          After
+        </button>
+      </div>
+
+      {/* Content */}
+      <div
+        className={`px-5 py-4 text-xs font-mono leading-relaxed whitespace-pre-wrap ${
+          tab === "before" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"
+        }`}
+      >
+        {tab === "before" ? suggestion.before : suggestion.after}
+      </div>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function VerificationResultPage() {
-  const router  = useRouter();
+  const router = useRouter();
   const [loading,  setLoading]  = useState(true);
   const [score,    setScore]    = useState<ScoreData | null>(null);
   const [cooldown, setCooldown] = useState({ days: 0, hours: 0 });
@@ -201,14 +286,9 @@ export default function VerificationResultPage() {
                 How to improve
               </p>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {score.improvement_suggestions.map((suggestion, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className="w-5 h-5 rounded-full bg-orange-50 text-[#F2754A] text-[10px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <p className="text-sm text-gray-600 leading-relaxed">{suggestion}</p>
-                </div>
+                <SuggestionCard key={i} suggestion={suggestion} index={i} />
               ))}
             </div>
           </div>
