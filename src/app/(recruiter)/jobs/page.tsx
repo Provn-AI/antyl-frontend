@@ -11,6 +11,7 @@ import {
   AlertCircle,
   PlusCircle,
   LucideIcon,
+  Pencil,
 } from "lucide-react";
 import {
   getRecruiterJobs,
@@ -89,7 +90,7 @@ export default function JobsPage() {
           <h1 className="text-3xl font-bold text-gray-900">My Jobs</h1>
           <button
             type="button"
-            onClick={() => router.push("/jobs/new")}
+            onClick={() => router.push("/jobs/new ")}
             className="flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full text-white"
             style={{
               background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
@@ -185,19 +186,31 @@ export default function JobsPage() {
               >
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <button
-                    type="button"
-                    onClick={() => router.push(`/jobs/${job.id}`)}
-                    className="text-left min-w-0"
-                  >
-                    <p className="font-bold text-gray-900 text-lg hover:text-[#F2754A] transition-colors">
-                      {job.title}
-                    </p>
-                    <p className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
-                      <Users className="w-3.5 h-3.5" />
-                      {job.applicant_count}{" "}
-                      {job.applicant_count === 1 ? "applicant" : "applicants"}
-                    </p>
-                  </button>
+  type="button"
+  onClick={() => router.push(`/jobs/${job.id}/edit`)}
+  className="text-left min-w-0"
+>
+  <div className="flex items-center gap-2">
+    <p className="font-bold text-gray-900 text-lg hover:text-[#F2754A] transition-colors">
+      {job.title}
+    </p>
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        router.push(`/jobs/${job.id}/edit`);
+      }}
+      className="p-1.5 rounded-full text-gray-400 hover:text-[#F2754A] hover:bg-orange-50 transition-colors"
+    >
+      <Pencil className="w-3.5 h-3.5" />
+    </button>
+  </div>
+  <p className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+    <Users className="w-3.5 h-3.5" />
+    {job.applicant_count}{" "}
+    {job.applicant_count === 1 ? "applicant" : "applicants"}
+  </p>
+</button>
 
                   <div className="flex gap-2">
                     {statusActions.map((action) => {
