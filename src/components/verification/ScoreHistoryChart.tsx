@@ -161,9 +161,9 @@ export default function ScoreHistoryChart({ data }: Props) {
         </ResponsiveContainer>
       </div>
 
-      <p className="text-[11px] text-gray-300 font-semibold text-center mt-3">
-        Dashed line at 70 — target threshold
-      </p>
+     <p className="text-[11px] font-semibold text-center mt-3 text-orange-400">
+  Dashed line at 70 — Target Threshold
+</p>
     </div>
   );
 }

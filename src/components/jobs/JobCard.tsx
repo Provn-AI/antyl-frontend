@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, MapPin, Briefcase, X, Check, Building2 } from "lucide-react";
+import { Heart, MapPin, Briefcase, X, Check, Building2, AlignCenter } from "lucide-react";
 
 import JobDetailModal from "./JobDetailModal";
 import { bookmarkJob, unbookmarkJob } from "@/services/bookmark.service";
@@ -179,26 +179,21 @@ export default function JobCard({ job, onApply }: JobCardProps) {
 
           {/* Swipe hint footer */}
           <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-300">
-              <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
-                <X className="w-3.5 h-3.5 text-gray-400" />
-              </div>
-              Skip
+           
             </div>
 
-            <p className="text-[11px] font-semibold text-gray-300">
-              Tap card for details
-            </p>
+            <p
+  className="text-[11px] font-semibold text-gray-300"
+  style={{ textAlign: "center" }}
+>
+  Tap card for details
+</p>
 
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#F2754A]">
-              Apply
-              <div className="w-7 h-7 rounded-full bg-orange-50 flex items-center justify-center">
-                <Check className="w-3.5 h-3.5 text-[#F2754A]" />
-              </div>
+            
             </div>
           </div>
-        </div>
-      </div>
+    
+
 
       <JobDetailModal
         job={job}
