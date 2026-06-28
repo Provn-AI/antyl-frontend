@@ -38,6 +38,10 @@ function mapExperienceLevel(years: number): string {
   if (years <= 8) return "senior";
   return "lead";
 }
+const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
+  e.currentTarget.blur();
+};
+
 
 export default function NewJobPage() {
   const router = useRouter();
@@ -70,14 +74,24 @@ export default function NewJobPage() {
     .filter(Boolean);
 
   const validate = () => {
-    if (!form.title.trim()) return "Job title is required.";
-    if (!form.description.trim()) return "Job description is required.";
-    if (!form.location.trim() && !form.is_remote)
-      return "Add a location, or mark this as remote.";
-    if (form.salary_max && form.salary_min > form.salary_max)
-      return "Minimum salary can't be greater than maximum salary.";
-    return "";
-  };
+  if (!form.title.trim()) return "Job title is required.";
+  if (!form.description.trim()) return "Job description is required.";
+  if (!form.location.trim() && !form.is_remote)
+    return "Add a location, or mark this as remote.";
+  if (form.salary_max && form.salary_min > form.salary_max)
+    return "Minimum salary can't be greater than maximum salary.";
+
+  const techStack = form.required_tech_stack.trim();
+  if (techStack) {
+    const hasComma = techStack.includes(",");
+    const tokenCount = techStack.split(/\s+/).filter(Boolean).length;
+    if (!hasComma && tokenCount > 1) {
+      return "Please separate each skill with a comma (e.g. React, Node, Python).";
+    }
+  }
+
+  return "";
+};
 
   async function handleSubmit() {
     const validationError = validate();
@@ -224,6 +238,7 @@ export default function NewJobPage() {
                 placeholder="e.g. 800000"
                 value={form.salary_min || ""}
                 onChange={(e) => setForm({ ...form, salary_min: Number(e.target.value) })}
+                onWheel={preventWheelChange}
               />
             </div>
 
@@ -238,7 +253,13 @@ export default function NewJobPage() {
                 placeholder="e.g. 1500000"
                 value={form.salary_max || ""}
                 onChange={(e) => setForm({ ...form, salary_max: Number(e.target.value) })}
+                onWheel={preventWheelChange}
               />
+              {form.salary_max > 0 && form.salary_min > form.salary_max && (
+                <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">
+                  Max salary must be greater than min salary.
+                </p>
+              )}
             </div>
           </div>
 

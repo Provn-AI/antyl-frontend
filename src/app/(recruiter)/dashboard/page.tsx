@@ -87,7 +87,7 @@ export default function RecruiterDashboard() {
 
           <button
             type="button"
-            onClick={() => router.push("/recruiter/jobs/new")}
+            onClick={() => router.push("/jobs/new")}
             className="flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full text-white"
             style={{
               background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",

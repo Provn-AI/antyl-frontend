@@ -177,7 +177,15 @@ export default function PreferencesPage() {
         </h1>
 
         <OnboardingStepper currentStep={4} />
-
+        
+        <button
+          type="button"
+          onClick={() => router.push("/onboarding/github")}
+          className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors mt-6"
+        >
+          ← Back
+        </button>
+        
         <div className="mt-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Set your preferences
@@ -250,7 +258,7 @@ export default function PreferencesPage() {
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mt-4">
             <p className="text-sm font-semibold text-gray-700 mb-4">
               Salary range{" "}
-              <span className="text-gray-400 font-normal">(₹ LPA)</span>
+              <span className="text-gray-400 font-normal">Eg: (₹ 15 LPA)</span>
             </p>
 
             <div className="grid grid-cols-2 gap-3">

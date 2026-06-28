@@ -12,6 +12,7 @@ import {
   Pencil,
   Save,
   X,
+  FileText,
 } from "lucide-react";
 
 import {
@@ -24,6 +25,8 @@ import {
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
 
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 interface Profile {
   name?: string;
   bio?: string;
@@ -34,9 +37,15 @@ interface Profile {
   trust_score?: number;
   github_username?: string;
   linkedin_url?: string;
+  resume_url?: string;
+  resume_parsed_data?: {
+    work_history?: { company: string; role: string; duration: string }[];
+    education?: { degree: string; institution: string; year: string }[];
+  };
 }
 
 // ── Mini score ring ───────────────────────────────────────────────────────────
+
 function MiniScoreRing({ score }: { score: number }) {
   const radius = 28;
   const circ = 2 * Math.PI * radius;
@@ -66,6 +75,7 @@ function MiniScoreRing({ score }: { score: number }) {
 }
 
 // ── Confirm modal ─────────────────────────────────────────────────────────────
+
 type ConfirmState = {
   open: boolean;
   title: string;
@@ -110,6 +120,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
 }
 
 // ── LinkedIn link ─────────────────────────────────────────────────────────────
+
 function LinkedInLink({ url }: { url: string | undefined }) {
   if (!url) return <p className="text-sm font-semibold text-gray-800">Not added</p>;
   return (
@@ -120,30 +131,12 @@ function LinkedInLink({ url }: { url: string | undefined }) {
   );
 }
 
-// ── Editable field ────────────────────────────────────────────────────────────
-function EditableField({
-  label, value, isEditing, inputNode, displayNode,
-}: {
-  label: string;
-  value: string | number;
-  isEditing: boolean;
-  inputNode: React.ReactNode;
-  displayNode: React.ReactNode;
-}) {
-  return (
-    <div>
-      {isEditing && (
-        <label className="block text-xs font-semibold text-gray-400 mb-1">{label}</label>
-      )}
-      {isEditing ? inputNode : displayNode}
-    </div>
-  );
-}
-
 // ── Input style ───────────────────────────────────────────────────────────────
+
 const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [history, setHistory] = useState<{ score: number; date: string }[]>([]);
@@ -264,13 +257,11 @@ export default function ProfilePage() {
           {/* ── Hero card ── */}
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
             <div className="flex items-start gap-4">
-              {/* Avatar */}
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-100">
                 <span className="text-white font-black text-lg">{initials}</span>
               </div>
 
               <div className="flex-1 min-w-0">
-                {/* Name */}
                 {isEditing ? (
                   <div className="mb-2">
                     <label className="block text-xs font-semibold text-gray-400 mb-1">Name</label>
@@ -287,7 +278,6 @@ export default function ProfilePage() {
                   </h2>
                 )}
 
-                {/* Role */}
                 {isEditing ? (
                   <div>
                     <label className="block text-xs font-semibold text-gray-400 mb-1">Current role</label>
@@ -304,7 +294,6 @@ export default function ProfilePage() {
                   </p>
                 )}
 
-                {/* City + experience — only show pills in view mode */}
                 {!isEditing && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {profile.city && (
@@ -320,7 +309,6 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {/* City + experience — editable */}
                 {isEditing && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
@@ -346,7 +334,6 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* Score ring — only in view mode */}
               {!isEditing && profile.trust_score != null && (
                 <div className="flex flex-col items-center gap-1 flex-shrink-0">
                   <MiniScoreRing score={profile.trust_score} />
@@ -355,7 +342,6 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Bio */}
             {isEditing ? (
               <div className="mt-4">
                 <label className="block text-xs font-semibold text-gray-400 mb-1">Bio</label>
@@ -375,7 +361,6 @@ export default function ProfilePage() {
               )
             )}
 
-            {/* Edit / Save / Cancel buttons */}
             <div className="flex gap-2 mt-5 pt-5 border-t border-gray-50">
               {!isEditing ? (
                 <button
@@ -436,14 +421,76 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {/* ── Resume ── */}
+          {profile.resume_parsed_data && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                  Resume
+                </p>
+                {profile.resume_url && (
+                  <a
+                    href={profile.resume_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#F2754A] bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    View PDF
+                  </a>
+                )}
+              </div>
+
+              {profile.resume_parsed_data.work_history && profile.resume_parsed_data.work_history.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                    Experience
+                  </p>
+                  <div className="space-y-3">
+                    {profile.resume_parsed_data.work_history.map((job, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{job.role}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{job.company} · {job.duration}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.resume_parsed_data.education && profile.resume_parsed_data.education.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                    Education
+                  </p>
+                  <div className="space-y-3">
+                    {profile.resume_parsed_data.education.map((edu, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <FileText className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{edu.institution} · {edu.year}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Links ── */}
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
               Links
             </p>
-
             <div className="space-y-4">
-              {/* GitHub row */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
@@ -456,40 +503,14 @@ export default function ProfilePage() {
                     </p>
                   </div>
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
 
-              {/* LinkedIn row */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
                     <ExternalLink className="w-4 h-4 text-gray-500" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs font-semibold text-gray-400">LinkedIn</p>
                     {isEditing ? (
                       <input
@@ -517,7 +538,6 @@ export default function ProfilePage() {
                 Danger zone
               </p>
             </div>
-
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-gray-800">Delete account</p>
