@@ -7,6 +7,9 @@ import Navbar from "@/components/Navbar";
 export const metadata: Metadata = {
   title: "Antyl — Turn Time into Opportunities",
   description: "AI-powered developer verification and smart job matching.",
+  icons: {
+    icon: "/Antyl.svg",
+  },
 };
 
 export default function RootLayout({
