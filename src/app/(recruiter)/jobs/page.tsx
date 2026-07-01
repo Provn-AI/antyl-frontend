@@ -12,16 +12,16 @@ import {
   PlusCircle,
   LucideIcon,
   Pencil,
-  Eye,                    // ← add this
-  X,                      // ← add this (for modal close)
-  MapPin,                 // ← add this
-  Wifi,                   // ← add this (remote badge)
-  IndianRupee,            // ← add this
+  Eye,
+  X,
+  MapPin,
+  Wifi,
+  IndianRupee,
 } from "lucide-react";
 import {
   getRecruiterJobs,
   updateJobStatus,
-  getJob,                 // ← add this import
+  getJob,
 } from "@/services/recruiter-job.service";
 
 interface Job {
@@ -31,7 +31,6 @@ interface Job {
   applicant_count: number;
 }
 
-// ← add this interface for the full preview data
 interface JobDetail {
   id: string;
   title: string;
@@ -73,9 +72,17 @@ export default function JobsPage() {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // ← add these three lines
   const [previewJob, setPreviewJob] = useState<JobDetail | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  // BUG 005 FIX: snapshot of which jobs are shown in the current tab.
+  // This is recomputed only when the tab changes (or jobs first load) —
+  // NOT on every status update — so a card doesn't instantly vanish from
+  // the list the moment you click a status button on it. The status
+  // button itself still reflects the live/current status (see render below),
+  // so you actually see the highlight change before the card leaves the list
+  // (which only happens once you switch tabs and come back).
+  const [visibleJobs, setVisibleJobs] = useState<Job[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -83,6 +90,11 @@ export default function JobsPage() {
         setError("");
         const data = await getRecruiterJobs();
         setJobs(data);
+        // Set the initial snapshot for whatever tab is active right now.
+        // Doing this here (in the async success callback) rather than in
+        // a separate effect keyed on [jobs] avoids the "setState
+        // synchronously within an effect" cascading-render warning.
+        setVisibleJobs(data.filter((job: Job) => job.status === tab));
       } catch (err) {
         console.error(err);
         setError("We couldn't load your jobs. Please try again.");
@@ -91,7 +103,19 @@ export default function JobsPage() {
       }
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // BUG 005 FIX: the snapshot is now only ever updated from event handlers
+  // (this one, and changeStatus below via handleTabChange) — never from an
+  // effect reacting to `jobs` changing. That's what keeps a card from
+  // instantly vanishing from the list the moment its status changes: the
+  // snapshot simply isn't recomputed until the user deliberately switches
+  // tabs.
+  function handleTabChange(status: string) {
+    setTab(status);
+    setVisibleJobs(jobs.filter((job) => job.status === status));
+  }
 
   async function changeStatus(jobId: string, status: string) {
     try {
@@ -107,7 +131,6 @@ export default function JobsPage() {
     }
   }
 
-  // ← add this handler
   async function openPreview(jobId: string) {
     setPreviewLoading(true);
     setPreviewJob(null);
@@ -121,7 +144,6 @@ export default function JobsPage() {
     }
   }
 
-  const filteredJobs = jobs.filter((job) => job.status === tab);
   const countFor = (status: string) =>
     jobs.filter((job) => job.status === status).length;
 
@@ -148,7 +170,7 @@ export default function JobsPage() {
           {tabs.map((status) => (
             <button
               key={status}
-              onClick={() => setTab(status)}
+              onClick={() => handleTabChange(status)}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold capitalize transition-colors ${
                 tab === status
                   ? "text-white"
@@ -198,7 +220,7 @@ export default function JobsPage() {
               Try again
             </button>
           </div>
-        ) : filteredJobs.length === 0 ? (
+        ) : visibleJobs.length === 0 ? (
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-16 text-center">
             <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
               <Briefcase className="w-6 h-6 text-[#F2754A]" />
@@ -212,83 +234,90 @@ export default function JobsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredJobs.map((job) => (
-              <div
-                key={job.id}
-                className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6"
-              >
-                <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="min-w-0">
-                    {/* ← title now calls openPreview, not router.push */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openPreview(job.id)}
-                        className="font-bold text-gray-900 text-lg hover:text-[#F2754A] transition-colors text-left"
-                      >
-                        {job.title}
-                      </button>
+            {visibleJobs.map((vJob) => {
+              // Look up the live/current version of this job so the status
+              // button highlight reflects the just-clicked status, even
+              // though the card itself stays put in visibleJobs until the
+              // tab is switched.
+              const job = jobs.find((j) => j.id === vJob.id) ?? vJob;
 
-                      {/* Eye — preview */}
-                      <button
-                        type="button"
-                        onClick={() => openPreview(job.id)}
-                        className="p-1.5 rounded-full text-gray-400 hover:text-[#F2754A] hover:bg-orange-50 transition-colors"
-                        title="Preview job"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
+              return (
+                <div
+                  key={job.id}
+                  className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6"
+                >
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openPreview(job.id)}
+                          className="font-bold text-gray-900 text-lg hover:text-[#F2754A] transition-colors text-left"
+                        >
+                          {job.title}
+                        </button>
 
-                      {/* Pencil — edit */}
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/jobs/${job.id}/edit`)}
-                        className="p-1.5 rounded-full text-gray-400 hover:text-[#F2754A] hover:bg-orange-50 transition-colors"
-                        title="Edit job"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
+                        {/* Eye — preview */}
+                        <button
+                          type="button"
+                          onClick={() => openPreview(job.id)}
+                          className="p-1.5 rounded-full text-gray-400 hover:text-[#F2754A] hover:bg-orange-50 transition-colors"
+                          title="Preview job"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Pencil — edit */}
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/jobs/${job.id}/edit`)}
+                          className="p-1.5 rounded-full text-gray-400 hover:text-[#F2754A] hover:bg-orange-50 transition-colors"
+                          title="Edit job"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <p className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+                        <Users className="w-3.5 h-3.5" />
+                        {job.applicant_count}{" "}
+                        {job.applicant_count === 1 ? "applicant" : "applicants"}
+                      </p>
                     </div>
 
-                    <p className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
-                      <Users className="w-3.5 h-3.5" />
-                      {job.applicant_count}{" "}
-                      {job.applicant_count === 1 ? "applicant" : "applicants"}
-                    </p>
-                  </div>
+                    <div className="flex gap-2">
+                      {statusActions.map((action) => {
+                        const Icon = action.icon;
+                        const isCurrent = job.status === action.status;
+                        const isUpdating = updatingId === job.id;
 
-                  <div className="flex gap-2">
-                    {statusActions.map((action) => {
-                      const Icon = action.icon;
-                      const isCurrent = job.status === action.status;
-                      const isUpdating = updatingId === job.id;
-
-                      return (
-                        <button
-                          key={action.status}
-                          onClick={() => changeStatus(job.id, action.status)}
-                          disabled={isCurrent || isUpdating}
-                          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full border transition-colors disabled:cursor-default ${
-                            isCurrent
-                              ? "text-white border-transparent"
-                              : "text-gray-500 border-gray-200 hover:border-gray-300"
-                          }`}
-                          style={isCurrent ? { background: action.activeColor } : undefined}
-                        >
-                          <Icon className="w-3.5 h-3.5" />
-                          {action.label}
-                        </button>
-                      );
-                    })}
+                        return (
+                          <button
+                            key={action.status}
+                            onClick={() => changeStatus(job.id, action.status)}
+                            disabled={isCurrent || isUpdating}
+                            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full border transition-colors disabled:cursor-default ${
+                              isCurrent
+                                ? "text-white border-transparent"
+                                : "text-gray-500 border-gray-200 hover:border-gray-300"
+                            }`}
+                            style={isCurrent ? { background: action.activeColor } : undefined}
+                          >
+                            <Icon className="w-3.5 h-3.5" />
+                            {action.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* ← Job Preview Modal */}
+      {/* Job Preview Modal */}
       {(previewJob || previewLoading) && (
         <JobPreviewModal
           job={previewJob}
@@ -317,7 +346,6 @@ function JobPreviewModal({
   onClose: () => void;
   onEdit: (id: string) => void;
 }) {
-  // close on backdrop click
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
