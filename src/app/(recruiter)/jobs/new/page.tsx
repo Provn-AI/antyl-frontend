@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -8,6 +8,8 @@ import {
   Eye,
   MapPin,
   Briefcase,
+  X,
+  IndianRupee,
 } from "lucide-react";
 import { createJob, autofillJob } from "@/services/recruiter-job.service";
 import TrustScoreSlider from "@/components/jobs/TrustScoreSlider";
@@ -25,6 +27,22 @@ interface JobForm {
   min_score: number;
   max_score: number;
 }
+
+const DRAFT_KEY = "antyl_new_job_draft";
+
+const EMPTY_FORM: JobForm = {
+  title: "",
+  description: "",
+  required_tech_stack: "",
+  experience_level: "entry",
+  salary_min: 0,
+  salary_max: 0,
+  job_type: "full_time",
+  location: "",
+  is_remote: false,
+  min_score: 0,
+  max_score: 100,
+};
 
 const inputClass =
   "w-full border border-gray-200 rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors";
@@ -52,26 +70,47 @@ export default function NewJobPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const [experienceYears, setExperienceYears] = useState<number>(0);
-
-  const [form, setForm] = useState<JobForm>({
-    title: "",
-    description: "",
-    required_tech_stack: "",
-    experience_level: "entry",
-    salary_min: 0,
-    salary_max: 0,
-    job_type: "full_time",
-    location: "",
-    is_remote: false,
-    min_score: 0,
-    max_score: 100,
+  const [experienceYears, setExperienceYears] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (!saved) return 0;
+      return JSON.parse(saved).experienceYears ?? 0;
+    } catch {
+      return 0;
+    }
   });
+
+  const [form, setForm] = useState<JobForm>(() => {
+    if (typeof window === "undefined") return EMPTY_FORM;
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (!saved) return EMPTY_FORM;
+      return JSON.parse(saved).form ?? EMPTY_FORM;
+    } catch {
+      return EMPTY_FORM;
+    }
+  });
+
+  // Derived — no state needed
+  const hasDraft =
+    JSON.stringify(form) !== JSON.stringify(EMPTY_FORM) || experienceYears !== 0;
+
+  // Auto-save whenever form changes — no setState inside
+  useEffect(() => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, experienceYears }));
+  }, [form, experienceYears]);
 
   const techTags = form.required_tech_stack
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+
+  function discardDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    setForm(EMPTY_FORM);
+    setExperienceYears(0);
+  }
 
   const validate = () => {
     if (!form.title.trim()) return "Job title is required.";
@@ -138,6 +177,7 @@ export default function NewJobPage() {
         required_tech_stack: techTags,
       });
 
+      localStorage.removeItem(DRAFT_KEY);
       setSuccess(true);
       setTimeout(() => router.push("/jobs"), 1200);
     } catch (err) {
@@ -151,15 +191,36 @@ export default function NewJobPage() {
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-10">
       <div className="w-full max-w-2xl mx-auto">
+
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create Job</h1>
-          <button
-            type="button"
-            onClick={() => router.push("/jobs")}
-            className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
-          >
-            Back to jobs
-          </button>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">Create Job</h1>
+            {hasDraft && (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-[#F2754A] border border-orange-100">
+                Draft saved
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {hasDraft && (
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="text-xs font-semibold text-gray-400 hover:text-red-400 transition-colors"
+              >
+                Discard draft
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => router.push("/jobs")}
+              className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              Back to jobs
+            </button>
+          </div>
         </div>
 
         {success && (
@@ -235,7 +296,9 @@ export default function NewJobPage() {
               className={inputClass}
               placeholder="React, Node, Python"
               value={form.required_tech_stack}
-              onChange={(e) => setForm({ ...form, required_tech_stack: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, required_tech_stack: e.target.value })
+              }
             />
             <p className="text-xs text-gray-400 mt-2">
               Separate each skill with a comma.
@@ -254,7 +317,7 @@ export default function NewJobPage() {
             )}
           </div>
 
-          {/* Experience + Job Type */}
+          {/* Experience + Job Type + Salary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -306,7 +369,9 @@ export default function NewJobPage() {
                 className={inputClass}
                 placeholder="e.g. 800000"
                 value={form.salary_min || ""}
-                onChange={(e) => setForm({ ...form, salary_min: Number(e.target.value) })}
+                onChange={(e) =>
+                  setForm({ ...form, salary_min: Number(e.target.value) })
+                }
                 onWheel={preventWheelChange}
               />
             </div>
@@ -321,7 +386,9 @@ export default function NewJobPage() {
                 className={inputClass}
                 placeholder="e.g. 1500000"
                 value={form.salary_max || ""}
-                onChange={(e) => setForm({ ...form, salary_max: Number(e.target.value) })}
+                onChange={(e) =>
+                  setForm({ ...form, salary_max: Number(e.target.value) })
+                }
                 onWheel={preventWheelChange}
               />
               {form.salary_max > 0 && form.salary_min > form.salary_max && (
@@ -385,11 +452,11 @@ export default function NewJobPage() {
           <div className="flex gap-3 pt-2">
             <button
               type="button"
-              onClick={() => setShowPreview((prev) => !prev)}
+              onClick={() => setShowPreview(true)}
               className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
             >
               <Eye className="w-4 h-4" />
-              {showPreview ? "Hide Preview" : "Preview"}
+              Preview
             </button>
 
             <button
@@ -403,62 +470,121 @@ export default function NewJobPage() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Preview panel */}
-        {showPreview && (
-          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mt-6">
-            <h2 className="font-bold text-gray-900 text-lg mb-5">Job Preview</h2>
-
-            <div className="space-y-4">
+      {/* Preview Modal */}
+      {showPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
+          onClick={() => setShowPreview(false)}
+        >
+          <div
+            className="bg-white rounded-[28px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 p-6 pb-0">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-gray-900">
                   {form.title || "Untitled role"}
-                </h3>
-
-                <div className="flex items-center gap-3 text-sm text-gray-400 mt-2">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {form.is_remote ? "Remote" : form.location || "Location not set"}
+                </h2>
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  {(form.location || form.is_remote) && (
+                    <span className="flex items-center gap-1 text-sm text-gray-500">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {form.is_remote ? "Remote" : form.location}
+                    </span>
+                  )}
+                  {form.is_remote && (
+                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
+                      Remote
+                    </span>
+                  )}
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-[#F2754A] capitalize">
+                    {form.job_type.replace(/_/g, " ")}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Briefcase className="w-3.5 h-3.5" />
-                    {form.job_type.replace("_", " ")}
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">
+                    {form.experience_level}
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3 text-sm">
-                <span className="bg-gray-50 rounded-full px-3 py-1.5 font-medium text-gray-700">
-                  ₹{form.salary_min.toLocaleString()} – ₹{form.salary_max.toLocaleString()}
-                </span>
-                <span className="bg-gray-50 rounded-full px-3 py-1.5 font-medium text-gray-700">
-                  {experienceYears}+ years
-                </span>
-                <span className="bg-orange-50 rounded-full px-3 py-1.5 font-medium text-[#F2754A] capitalize">
-                  {form.experience_level} level
-                </span>
-                <span className="bg-orange-50 rounded-full px-3 py-1.5 font-medium text-[#F2754A]">
-                  Antyl Score {form.min_score}–{form.max_score}
-                </span>
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                <IndianRupee className="w-4 h-4 text-[#F2754A]" />
+                {form.salary_min.toLocaleString()} – {form.salary_max.toLocaleString()}
+                <span className="font-normal text-gray-400">/ year</span>
               </div>
 
               {form.description && (
-                <p className="text-gray-600 leading-relaxed">{form.description}</p>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                    Description
+                  </p>
+                  <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+                    {form.description}
+                  </p>
+                </div>
               )}
 
               {techTags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {techTags.map((tech) => (
-                    <span key={tech} className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700">
-                      {tech}
-                    </span>
-                  ))}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                    Tech Stack
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {techTags.map((tech) => (
+                      <span
+                        key={tech}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#FAF6F0] text-gray-700 border border-gray-100"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                  Antyl Score Range
+                </p>
+                <span
+                  className="text-sm font-bold px-3 py-1.5 rounded-full text-white"
+                  style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+                >
+                  {form.min_score} – {form.max_score}
+                </span>
+              </div>
+
+              {experienceYears > 0 && (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Briefcase className="w-4 h-4" />
+                  {experienceYears}+ years ·{" "}
+                  <span className="capitalize">{form.experience_level} level</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                className="text-sm font-semibold px-5 py-2.5 rounded-full text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
