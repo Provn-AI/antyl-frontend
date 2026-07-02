@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   getJobCandidates,
@@ -20,6 +20,7 @@ import {
   SlidersHorizontal,
   CheckCircle,
   SkipForward,
+  StickyNote,
 } from "lucide-react";
 
 interface Candidate {
@@ -41,6 +42,7 @@ interface Candidate {
   status: string;
   applied_via: string;
   applied_at: string;
+  note?: string | null;
 }
 
 // ── Score ring ────────────────────────────────────────────────────────────────
@@ -118,6 +120,28 @@ export default function CandidatesPage() {
   const [minScore, setMinScore] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
+  // EN-013: resume now opens in a same-page modal (iframe) instead of a new
+  // browser tab (target="_blank"). This URL drives that modal — it can be
+  // opened either straight from the candidate list card or from inside the
+  // candidate drawer.
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+
+  // BUG-FIX: skip now persists to the backend (status -> "rejected") instead
+  // of only removing the candidate from local state. This toast lets the
+  // recruiter undo an accidental skip within a short window.
+  const [skippedCandidate, setSkippedCandidate] = useState<Candidate | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // BUG-FIX: success animation shown when a candidate is marked "Interested"
+  // before the drawer closes, so it's visually clear they moved to the pipeline.
+  const [matchSuccessName, setMatchSuccessName] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     async function load() {
       try {
@@ -138,6 +162,16 @@ export default function CandidatesPage() {
     try {
       await saveCandidateNote(selected.developer_id, jobId, note);
       setNoteSaved(true);
+
+      // BUG-FIX: reflect the saved note back into list + drawer immediately
+      // instead of waiting for a refetch, so the preview on the card updates.
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.application_id === selected.application_id ? { ...c, note } : c
+        )
+      );
+      setSelected((prev) => (prev ? { ...prev, note } : prev));
+
       setTimeout(() => setNoteSaved(false), 2000);
     } catch (error) {
       console.error(error);
@@ -146,10 +180,41 @@ export default function CandidatesPage() {
     }
   };
 
-  const handleSkip = () => {
+  // BUG-FIX: skip now persists via updateCandidateStatus instead of only
+  // updating local state, which is why skipped candidates were reappearing
+  // after a refresh. Also stores the original candidate so it can be undone.
+  const handleSkip = async () => {
     if (!selected) return;
-    setCandidates((prev) => prev.filter((c) => c.application_id !== selected.application_id));
+    const candidate = selected; // keep original status/data for undo
     setSelected(null);
+    setCandidates((prev) => prev.filter((c) => c.application_id !== candidate.application_id));
+
+    try {
+      await updateCandidateStatus(candidate.application_id, "rejected");
+    } catch (err) {
+      console.error(err);
+      // rollback the optimistic removal if the API call failed
+      setCandidates((prev) => [candidate, ...prev]);
+      return;
+    }
+
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setSkippedCandidate(candidate);
+    undoTimerRef.current = setTimeout(() => setSkippedCandidate(null), 5000);
+  };
+
+  const handleUndoSkip = async () => {
+    if (!skippedCandidate) return;
+    const candidate = skippedCandidate;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setSkippedCandidate(null);
+
+    try {
+      await updateCandidateStatus(candidate.application_id, candidate.status);
+      setCandidates((prev) => [candidate, ...prev]);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (loading) {
@@ -248,11 +313,23 @@ export default function CandidatesPage() {
             {filtered.map((c) => {
               const status = STATUS[c.status] ?? STATUS.sent;
               return (
-                <button
+                // NOTE: switched from <button> to <div role="button"> here so
+                // we can nest the resume icon <button> inside without invalid
+                // button-in-button HTML. Keyboard accessibility (Enter/Space)
+                // is preserved via onKeyDown.
+                <div
                   key={c.application_id}
-                  type="button"
-                  onClick={() => { setSelected(c); setNote(""); }}
-                  className="w-full text-left bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6 hover:border-[#F2754A] transition-all group"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => { setSelected(c); setNote(c.note ?? ""); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelected(c);
+                      setNote(c.note ?? "");
+                    }
+                  }}
+                  className="w-full text-left bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6 hover:border-[#F2754A] transition-all group cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
                     {/* Avatar */}
@@ -265,6 +342,24 @@ export default function CandidatesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-bold text-gray-900 truncate">{c.name}</p>
+
+                        {/* EN-013: resume icon button next to the name — only
+                            rendered when a resume exists, hidden otherwise. */}
+                        {c.resume_url && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setResumeUrl(c.resume_url!);
+                            }}
+                            title="View resume"
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex-shrink-0 text-[11px] font-bold"
+                          >
+                            <FileText className="w-3 h-3" />
+                            View resume
+                          </button>
+                        )}
+
                         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${status.bg} ${status.color}`}>
                           {status.label}
                         </span>
@@ -291,6 +386,15 @@ export default function CandidatesPage() {
                           {c.applied_via === "auto" ? "Auto" : "Manual"}
                         </span>
                       </div>
+
+                      {/* BUG-FIX: small note preview on the card, only shown
+                          when a note exists for this candidate. */}
+                      {c.note && (
+                        <p className="mt-1.5 flex items-center gap-1 text-[11px] text-gray-400 italic truncate">
+                          <StickyNote className="w-3 h-3 flex-shrink-0" />
+                          {c.note}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -298,7 +402,7 @@ export default function CandidatesPage() {
                       <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#F2754A] transition-colors" />
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -427,18 +531,18 @@ export default function CandidatesPage() {
                 </Section>
               ) : null}
 
-              {/* Resume */}
+              {/* Resume — EN-013: opens the same-page modal instead of
+                  navigating to a new browser tab. */}
               {selected.resume_url && (
                 <Section title="Resume">
-                  <a
-                    href={selected.resume_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setResumeUrl(selected.resume_url!)}
                     className="inline-flex items-center gap-2 text-sm font-bold text-[#F2754A] hover:underline"
                   >
                     <FileText className="w-4 h-4" />
                     View resume
-                  </a>
+                  </button>
                 </Section>
               )}
 
@@ -484,11 +588,18 @@ export default function CandidatesPage() {
                 type="button"
                 onClick={async () => {
                   if (!selected) return;
+                  const candidateName = selected.name;
                   try {
                     await updateCandidateStatus(selected.application_id, "matched");
-                    setSelected(null);
-                    const data = await getJobCandidates(jobId);
-                    setCandidates(data);
+                    // BUG-FIX: play the success animation over the drawer
+                    // first, then close + refetch once it's done.
+                    setMatchSuccessName(candidateName);
+                    setTimeout(async () => {
+                      setMatchSuccessName(null);
+                      setSelected(null);
+                      const data = await getJobCandidates(jobId);
+                      setCandidates(data);
+                    }, 1300);
                   } catch (err) {
                     console.error(err);
                   }
@@ -499,7 +610,111 @@ export default function CandidatesPage() {
                 Interested
               </button>
             </div>
+
+            {/* BUG-FIX: success animation overlay — covers just the drawer
+                (not the whole screen) so it reads as "this candidate moved
+                to your pipeline" rather than a generic full-page state. */}
+            {matchSuccessName && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/95 backdrop-blur-sm">
+                <div className="match-success-ring w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <path
+                      d="M10 21l6 6 14-14"
+                      stroke="#10b981"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="match-success-check"
+                    />
+                  </svg>
+                </div>
+                <div className="text-center">
+                  <p className="text-base font-bold text-gray-900">Moved to your pipeline</p>
+                  <p className="text-sm text-gray-400 mt-0.5">{matchSuccessName} is now in Matched</p>
+                </div>
+                <style jsx>{`
+                  .match-success-ring {
+                    animation: match-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                  }
+                  .match-success-check {
+                    stroke-dasharray: 30;
+                    stroke-dashoffset: 30;
+                    animation: match-draw 0.4s 0.15s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+                  }
+                  @keyframes match-pop {
+                    0% { transform: scale(0.4); opacity: 0; }
+                    100% { transform: scale(1); opacity: 1; }
+                  }
+                  @keyframes match-draw {
+                    to { stroke-dashoffset: 0; }
+                  }
+                `}</style>
+              </div>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* ── Resume modal (EN-013) ──
+          Renders the resume inline via an iframe on top of everything else
+          (including the drawer, hence z-[60]) instead of opening a new tab. */}
+      {resumeUrl && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
+          onClick={() => setResumeUrl(null)}
+        >
+          <div
+            className="relative w-full max-w-3xl h-[85vh] bg-white rounded-[24px] shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 flex-shrink-0">
+              <p className="flex items-center gap-2 text-sm font-bold text-gray-900">
+                <FileText className="w-4 h-4 text-[#F2754A]" />
+                Resume
+              </p>
+              <button
+                type="button"
+                onClick={() => setResumeUrl(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+            <iframe
+              src={resumeUrl}
+              title="Candidate resume"
+              className="flex-1 w-full border-0"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Undo-skip toast ──
+          BUG-FIX: gives the recruiter a way to reverse an accidental skip.
+          Auto-dismisses after 5s (see undoTimerRef in handleSkip). */}
+      {skippedCandidate && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-4 bg-gray-900 text-white rounded-full pl-5 pr-2 py-2.5 shadow-2xl">
+          <span className="text-sm font-semibold">
+            Skipped {skippedCandidate.name}
+          </span>
+          <button
+            type="button"
+            onClick={handleUndoSkip}
+            className="text-sm font-bold text-[#F2754A] hover:text-[#ff8a5e] px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+              setSkippedCandidate(null);
+            }}
+            className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>

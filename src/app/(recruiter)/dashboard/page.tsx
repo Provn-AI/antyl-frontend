@@ -9,7 +9,9 @@ import {
   AlertCircle,
   ChevronRight,
   PlusCircle,
+  PartyPopper,
 } from "lucide-react";
+import { getMatches } from "@/services/match.service";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -20,6 +22,19 @@ interface Job {
   status: string;
   applicant_count: number;
   created_at?: string;
+}
+
+// BUG-FIX: the dashboard previously only fetched /recruiter/jobs, which
+// never touches the matches table or pipeline_stage — so a candidate
+// reaching "hired" had no effect anywhere on this page. Pulling matches in
+// alongside jobs lets us surface hires here too.
+interface Match {
+  match_id: string;
+  name: string;
+  trust_score: number;
+  job_title: string;
+  job_id: string;
+  pipeline_stage: string;
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -39,27 +54,32 @@ export default function RecruiterDashboard() {
   const router = useRouter();
 
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    async function loadJobs() {
+    async function loadDashboard() {
       try {
         setError("");
         const token = localStorage.getItem("access_token");
 
-        const res = await fetch(`${API_URL}/recruiter/jobs`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        // BUG-FIX: fetch jobs and matches together so hires (which only
+        // live in the matches/pipeline data) are reflected on this page.
+        const [jobsRes, matchesData] = await Promise.all([
+          fetch(`${API_URL}/recruiter/jobs`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          getMatches(),
+        ]);
 
-        if (!res.ok) {
+        if (!jobsRes.ok) {
           throw new Error("Failed to load jobs");
         }
 
-        const data = await res.json();
-        setJobs(data.jobs || []);
+        const jobsData = await jobsRes.json();
+        setJobs(jobsData.jobs || []);
+        setMatches(matchesData || []);
       } catch (err) {
         console.error(err);
         setError("We couldn't load your dashboard. Please try again.");
@@ -68,7 +88,7 @@ export default function RecruiterDashboard() {
       }
     }
 
-    loadJobs();
+    loadDashboard();
   }, []);
 
   const activeJobs = jobs.filter((j) => j.status === "active").length;
@@ -76,6 +96,11 @@ export default function RecruiterDashboard() {
     (sum, job) => sum + (job.applicant_count || 0),
     0
   );
+
+  // BUG-FIX: this is the actual source of truth for hires — pipeline_stage
+  // on the matches table, not anything derived from jobs/applications.
+  const hiredMatches = matches.filter((m) => m.pipeline_stage === "hired");
+  const hiredCount = hiredMatches.length;
 
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-10">
@@ -131,7 +156,8 @@ export default function RecruiterDashboard() {
         ) : (
           <>
             {/* Stat cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {/* BUG-FIX: grid widened to 4 columns to fit the new Hires card */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
@@ -167,7 +193,59 @@ export default function RecruiterDashboard() {
                   {totalApplicants}
                 </div>
               </div>
+
+              {/* BUG-FIX: new Hires stat card, driven by matches.pipeline_stage */}
+              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                    <PartyPopper className="w-4.5 h-4.5 text-emerald-600" />
+                  </div>
+                  <span className="text-sm text-gray-400">Hires</span>
+                </div>
+                <div className="text-3xl font-bold text-gray-900">
+                  {hiredCount}
+                </div>
+              </div>
             </div>
+
+            {/* BUG-FIX: Recently Hired section — this is the part that was
+                completely missing. Without it, a hire was invisible anywhere
+                on the dashboard even though the pipeline stage updated. */}
+            {hiredCount > 0 && (
+              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <PartyPopper className="w-5 h-5 text-emerald-600" />
+                  <h2 className="font-bold text-gray-900 text-lg">
+                    Recently Hired
+                  </h2>
+                </div>
+                <div className="space-y-2">
+                  {hiredMatches.map((m) => (
+                    <button
+                      key={m.match_id}
+                      type="button"
+                      onClick={() => router.push("/pipeline")}
+                      className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-3 hover:bg-emerald-50/60 transition-colors text-left"
+                    >
+                      <div className="min-w-0 flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-black text-xs">
+                            {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">{m.name}</p>
+                          <p className="text-sm text-gray-400 truncate">{m.job_title}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 flex-shrink-0">
+                        Hired
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Recent activity */}
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8">
@@ -201,31 +279,48 @@ export default function RecruiterDashboard() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {jobs.map((job) => (
-                    <button
-                      key={job.id}
-                      type="button"
-                      onClick={() => router.push(`/jobs`)}
-                      className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-4 hover:bg-gray-50 transition-colors text-left"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold text-gray-900 truncate">
-                            {job.title}
+                  {jobs.map((job) => {
+                    // BUG-FIX: flag jobs that have at least one hire so it's
+                    // visible even without opening the Recently Hired list.
+                    const jobHires = hiredMatches.filter((m) => m.job_id === job.id).length;
+                    return (
+                      <button
+                        key={job.id}
+                        type="button"
+                        // BUG-FIX: this previously always pushed to `/jobs`
+                        // regardless of which job was clicked, so there was
+                        // no way to reach a specific job's candidates from
+                        // the dashboard. Routes to that job's candidates
+                        // page now — confirm this path matches your actual
+                        // route structure (assumed /candidates/[jobId]).
+                        onClick={() => router.push(`/candidates/${job.id}`)}
+                        className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-4 hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <p className="font-semibold text-gray-900 truncate">
+                              {job.title}
+                            </p>
+                            <StatusBadge status={job.status} />
+                            {jobHires > 0 && (
+                              <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                                <PartyPopper className="w-3 h-3" />
+                                {jobHires} hired
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-400">
+                            {job.applicant_count}{" "}
+                            {job.applicant_count === 1
+                              ? "applicant"
+                              : "applicants"}
                           </p>
-                          <StatusBadge status={job.status} />
                         </div>
-                        <p className="text-sm text-gray-400">
-                          {job.applicant_count}{" "}
-                          {job.applicant_count === 1
-                            ? "applicant"
-                            : "applicants"}
-                        </p>
-                      </div>
 
-                      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                    </button>
-                  ))}
+                        <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

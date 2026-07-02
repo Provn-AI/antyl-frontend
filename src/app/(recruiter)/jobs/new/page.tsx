@@ -10,8 +10,10 @@ import {
   Briefcase,
   X,
   IndianRupee,
+  Zap,
 } from "lucide-react";
 import { createJob, autofillJob } from "@/services/recruiter-job.service";
+import { getBalance } from "@/services/billing.service";
 import TrustScoreSlider from "@/components/jobs/TrustScoreSlider";
 
 interface JobForm {
@@ -69,6 +71,29 @@ export default function NewJobPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // FEATURE: credit balance, fetched once on mount so the recruiter sees
+  // whether they can even post before filling out the whole form.
+  const [balance, setBalance] = useState<number | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadBalance() {
+      try {
+        const bal = await getBalance();
+        setBalance(bal);
+      } catch (err) {
+        console.error(err);
+        // Don't block the form on a balance-fetch failure — worst case the
+        // recruiter finds out via the 402 on submit instead.
+      } finally {
+        setBalanceLoading(false);
+      }
+    }
+    loadBalance();
+  }, []);
+
+  const outOfCredits = balance !== null && balance <= 0;
 
   const [experienceYears, setExperienceYears] = useState<number>(() => {
     if (typeof window === "undefined") return 0;
@@ -162,6 +187,11 @@ export default function NewJobPage() {
   }
 
   async function handleSubmit() {
+    if (outOfCredits) {
+      setError("You're out of job posting credits. Buy more to continue.");
+      return;
+    }
+
     const validationError = validate();
     if (validationError) {
       setError(validationError);
@@ -182,7 +212,17 @@ export default function NewJobPage() {
       setTimeout(() => router.push("/jobs"), 1200);
     } catch (err) {
       console.error(err);
-      setError("We couldn't create this job. Please try again.");
+      // FEATURE: a 402 here means the backend's own credit check caught it
+      // even though our balance fetch on load said otherwise — e.g. credits
+      // were spent from another tab in between. Give a real message with a
+      // way out instead of the generic fallback.
+      const message = err instanceof Error ? err.message : "";
+      if (message.toLowerCase().includes("credit")) {
+        setError(message);
+        setBalance(0);
+      } else {
+        setError("We couldn't create this job. Please try again.");
+      }
     } finally {
       setSaving(false);
     }
@@ -193,7 +233,7 @@ export default function NewJobPage() {
       <div className="w-full max-w-2xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-gray-900">Create Job</h1>
             {hasDraft && (
@@ -221,6 +261,46 @@ export default function NewJobPage() {
               Back to jobs
             </button>
           </div>
+        </div>
+
+        {/* FEATURE: credit balance banner — visible before the recruiter
+            invests time filling out the form. */}
+        <div
+          className={`flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5 mb-6 border ${
+            outOfCredits
+              ? "bg-red-50 border-red-100"
+              : "bg-white border-gray-100 shadow-sm"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                outOfCredits ? "bg-red-100" : "bg-orange-50"
+              }`}
+            >
+              <Zap className={`w-4 h-4 ${outOfCredits ? "text-red-500" : "text-[#F2754A]"}`} />
+            </div>
+            <p className="text-sm font-semibold text-gray-700">
+              {balanceLoading ? (
+                "Checking your credits…"
+              ) : outOfCredits ? (
+                <span className="text-red-600">You are out of job posting credits.</span>
+              ) : (
+                <>
+                  <span className="font-black">{balance}</span> job posting credit{balance !== 1 ? "s" : ""} remaining
+                </>
+              )}
+            </p>
+          </div>
+          {(outOfCredits || (balance !== null && balance <= 2)) && (
+            <button
+              type="button"
+              onClick={() => router.push("/billing")}
+              className="text-xs font-bold px-3.5 py-2 rounded-full text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors flex-shrink-0"
+            >
+              Buy credits
+            </button>
+          )}
         </div>
 
         {success && (
@@ -462,11 +542,12 @@ export default function NewJobPage() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={saving}
+              disabled={saving || outOfCredits}
+              title={outOfCredits ? "Buy more credits to post a job" : undefined}
               className="flex-1 px-6 py-3.5 rounded-full font-semibold text-white transition-opacity disabled:opacity-50"
               style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
             >
-              {saving ? "Creating..." : "Create Job"}
+              {saving ? "Creating..." : outOfCredits ? "Out of credits" : "Create Job"}
             </button>
           </div>
         </div>
