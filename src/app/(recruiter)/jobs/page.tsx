@@ -17,6 +17,8 @@ import {
   MapPin,
   Wifi,
   IndianRupee,
+  CheckCircle2,
+  ChevronRight,
 } from "lucide-react";
 import {
   getRecruiterJobs,
@@ -55,6 +57,11 @@ interface StatusAction {
   activeColor: string;
 }
 
+interface ActionToast {
+  type: "success" | "error";
+  message: string;
+}
+
 const tabs = ["active", "paused", "closed"];
 
 const statusActions: StatusAction[] = [
@@ -75,13 +82,15 @@ export default function JobsPage() {
   const [previewJob, setPreviewJob] = useState<JobDetail | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // Toast for status-change feedback (success or error)
+  const [actionToast, setActionToast] = useState<ActionToast | null>(null);
+
   // BUG 005 FIX: snapshot of which jobs are shown in the current tab.
   // This is recomputed only when the tab changes (or jobs first load) —
   // NOT on every status update — so a card doesn't instantly vanish from
   // the list the moment you click a status button on it. The status
   // button itself still reflects the live/current status (see render below),
-  // so you actually see the highlight change before the card leaves the list
-  // (which only happens once you switch tabs and come back).
+  // so you actually see the highlight change before the card leaves the list.
   const [visibleJobs, setVisibleJobs] = useState<Job[]>([]);
 
   useEffect(() => {
@@ -90,10 +99,6 @@ export default function JobsPage() {
         setError("");
         const data = await getRecruiterJobs();
         setJobs(data);
-        // Set the initial snapshot for whatever tab is active right now.
-        // Doing this here (in the async success callback) rather than in
-        // a separate effect keyed on [jobs] avoids the "setState
-        // synchronously within an effect" cascading-render warning.
         setVisibleJobs(data.filter((job: Job) => job.status === tab));
       } catch (err) {
         console.error(err);
@@ -106,12 +111,11 @@ export default function JobsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // BUG 005 FIX: the snapshot is now only ever updated from event handlers
-  // (this one, and changeStatus below via handleTabChange) — never from an
-  // effect reacting to `jobs` changing. That's what keeps a card from
-  // instantly vanishing from the list the moment its status changes: the
-  // snapshot simply isn't recomputed until the user deliberately switches
-  // tabs.
+  function showActionToast(toast: ActionToast) {
+    setActionToast(toast);
+    setTimeout(() => setActionToast(null), 2200);
+  }
+
   function handleTabChange(status: string) {
     setTab(status);
     setVisibleJobs(jobs.filter((job) => job.status === status));
@@ -121,11 +125,32 @@ export default function JobsPage() {
     try {
       setUpdatingId(jobId);
       await updateJobStatus(jobId, status);
+
       setJobs((prev) =>
         prev.map((job) => (job.id === jobId ? { ...job, status } : job))
       );
+
+      showActionToast({
+        type: "success",
+        message: `Job marked as ${status}.`,
+      });
+
+      // Let the user see the status button update + toast first, then
+      // drop the card from the current tab's view if it no longer belongs.
+      setTimeout(() => {
+        setVisibleJobs((prev) =>
+          status === tab ? prev : prev.filter((job) => job.id !== jobId)
+        );
+      }, 700);
     } catch (err) {
       console.error(err);
+      showActionToast({
+        type: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to update job status. Please try again.",
+      });
     } finally {
       setUpdatingId(null);
     }
@@ -139,6 +164,11 @@ export default function JobsPage() {
       setPreviewJob(data);
     } catch (err) {
       console.error(err);
+      showActionToast({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Failed to load job preview.",
+      });
     } finally {
       setPreviewLoading(false);
     }
@@ -150,6 +180,24 @@ export default function JobsPage() {
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-10">
       <div className="w-full max-w-4xl mx-auto">
+        {/* Action toast */}
+        {actionToast && (
+          <div
+            className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-sm ${
+              actionToast.type === "success"
+                ? "bg-green-50 text-green-600"
+                : "bg-red-50 text-red-500"
+            }`}
+          >
+            {actionToast.type === "success" ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <AlertCircle className="w-4 h-4" />
+            )}
+            {actionToast.message}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Jobs</h1>
           <button
@@ -235,10 +283,6 @@ export default function JobsPage() {
         ) : (
           <div className="space-y-3">
             {visibleJobs.map((vJob) => {
-              // Look up the live/current version of this job so the status
-              // button highlight reflects the just-clicked status, even
-              // though the card itself stays put in visibleJobs until the
-              // tab is switched.
               const job = jobs.find((j) => j.id === vJob.id) ?? vJob;
 
               return (
@@ -283,6 +327,16 @@ export default function JobsPage() {
                         {job.applicant_count}{" "}
                         {job.applicant_count === 1 ? "applicant" : "applicants"}
                       </p>
+
+                      {/* Read more — opens full job preview modal */}
+                      <button
+                        type="button"
+                        onClick={() => openPreview(job.id)}
+                        className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] mt-2 hover:underline"
+                      >
+                        Read more
+                        <ChevronRight className="w-3 h-3" />
+                      </button>
                     </div>
 
                     <div className="flex gap-2">
@@ -304,7 +358,7 @@ export default function JobsPage() {
                             style={isCurrent ? { background: action.activeColor } : undefined}
                           >
                             <Icon className="w-3.5 h-3.5" />
-                            {action.label}
+                            {isUpdating ? "..." : action.label}
                           </button>
                         );
                       })}

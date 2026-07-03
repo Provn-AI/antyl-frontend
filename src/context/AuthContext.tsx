@@ -16,6 +16,8 @@ import {
   logout,
 } from "@/services/auth.services";
 
+import { initFetchInterceptor } from "@/services/fetchInterceptor";
+
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
@@ -43,6 +45,12 @@ export function AuthProvider({
 }: {
   children: ReactNode;
 }) {
+  // Patch fetch globally so any 401 from our backend
+  // triggers logout + redirect to /login automatically
+  useEffect(() => {
+    initFetchInterceptor();
+  }, []);
+
   // Initialize directly from localStorage
   const [user, setUser] = useState<AuthUser | null>(() => {
     const token = getStoredToken();
