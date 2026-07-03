@@ -87,7 +87,7 @@ export default function RecruiterLayout({
           type="button"
           onClick={() => {
             localStorage.removeItem("access_token");
-            window.location.href = "/login";
+            window.location.href = "/";
           }}
           className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors mt-2"
         >
