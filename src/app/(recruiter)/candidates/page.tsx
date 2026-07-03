@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Users, ChevronRight, Plus, Briefcase, Circle } from "lucide-react";
+import { Users, ChevronRight, Plus, Briefcase, Circle, CheckCircle2 } from "lucide-react";
 
 interface Job {
   id: string;
@@ -19,6 +19,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   paused:   { label: "Paused",   color: "text-amber-600",   bg: "bg-amber-50"   },
   closed:   { label: "Closed",   color: "text-gray-400",    bg: "bg-gray-100"   },
   draft:    { label: "Draft",    color: "text-blue-500",    bg: "bg-blue-50"    },
+  filled:   { label: "Filled",   color: "text-violet-600",  bg: "bg-violet-50"  },
 };
 
 export default function CandidatesIndexPage() {
@@ -46,6 +47,7 @@ export default function CandidatesIndexPage() {
 
   const totalApplicants = jobs.reduce((sum, j) => sum + j.applicant_count, 0);
   const activeJobs = jobs.filter((j) => j.status === "active").length;
+  const filledJobs = jobs.filter((j) => j.status === "filled").length;
 
   if (loading) {
     return (
@@ -85,7 +87,7 @@ export default function CandidatesIndexPage() {
 
         {/* Stat pills — only show when there are jobs */}
         {jobs.length > 0 && (
-          <div className="flex gap-3 mb-6">
+          <div className="flex gap-3 mb-6 flex-wrap">
             <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-full px-4 py-2 shadow-sm">
               <Users className="w-4 h-4 text-[#F2754A]" />
               <span className="text-sm font-bold text-gray-800">{totalApplicants}</span>
@@ -96,6 +98,13 @@ export default function CandidatesIndexPage() {
               <span className="text-sm font-bold text-gray-800">{activeJobs}</span>
               <span className="text-xs font-semibold text-gray-400">active</span>
             </div>
+            {filledJobs > 0 && (
+              <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-full px-4 py-2 shadow-sm">
+                <CheckCircle2 className="w-4 h-4 text-violet-500" />
+                <span className="text-sm font-bold text-gray-800">{filledJobs}</span>
+                <span className="text-xs font-semibold text-gray-400">filled</span>
+              </div>
+            )}
           </div>
         )}
 
