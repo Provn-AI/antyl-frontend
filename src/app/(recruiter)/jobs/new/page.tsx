@@ -256,7 +256,7 @@ export default function NewJobPage() {
             <button
               type="button"
               onClick={() => router.push("/jobs")}
-              className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+              className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
             >
               Back to jobs
             </button>
@@ -323,7 +323,7 @@ export default function NewJobPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-semibold text-gray-900">
-                Job Title
+                Job Title<span className="ml-1 text-red-500">*</span>
               </label>
               <button
                 type="button"
