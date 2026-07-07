@@ -208,8 +208,8 @@ export default function PipelinePage() {
                 {/* Cards */}
                 <div className="flex flex-col gap-2 min-h-[120px]">
                   {cols.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center rounded-2xl border border-dashed border-gray-200 py-6">
-                      <p className="text-[10px] font-semibold text-gray-300">Empty</p>
+                    <div className={`flex-1 flex items-center justify-center rounded-2xl border border-dashed ${border} bg-white/70 py-6 transition-all duration-200 hover:bg-opacity-80 hover:shadow-sm hover:-translate-y-0.5`}>
+                      <p className={`text-[10px] font-semibold ${color}`}>Empty</p>
                     </div>
                   ) : (
                     cols.map((match) => (
