@@ -53,6 +53,10 @@ export default function TrustScoreSlider({
           className="w-full"
         />
 
+        <div className="flex justify-between text-sm mt-3 text-black">
+          <span>Experience Level: {maxScore}</span>
+        </div>
+
         <input
           type="range"
           min={0}
@@ -65,7 +69,7 @@ export default function TrustScoreSlider({
               )
             )
           }
-          className="w-full mt-3"
+          className="w-full"
         />
 
       </div>
