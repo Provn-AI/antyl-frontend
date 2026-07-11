@@ -79,6 +79,28 @@ export async function updateProfile(
   return data;
 }
 
+export async function uploadProfilePhoto(file: File) {
+
+  const token = localStorage.getItem("access_token");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/developer/profile/photo`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to upload photo");
+  }
+
+  const data = await res.json();
+  return data.profile.avatar_url as string;
+}
+
 export async function getMyProfile() {
   const token =
     localStorage.getItem(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   MapPin,
   Briefcase,
@@ -21,6 +21,7 @@ import {
   disconnectGithub,
   deleteAccount,
   updateProfile,
+  uploadProfilePhoto,
 } from "@/services/developer.service";
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
@@ -38,6 +39,7 @@ interface Profile {
   github_username?: string;
   linkedin_url?: string;
   resume_url?: string;
+  avatar_url?: string;
   resume_parsed_data?: {
     work_history?: { company: string; role: string; duration: string }[];
     education?: { degree: string; institution: string; year: string }[];
@@ -135,6 +137,9 @@ function LinkedInLink({ url }: { url: string | undefined }) {
 
 const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
 
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
@@ -152,6 +157,10 @@ export default function ProfilePage() {
     years_experience: 0,
     linkedin_url: "",
   });
+
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -218,6 +227,41 @@ export default function ProfilePage() {
     window.location.href = "/";
   };
 
+  const handlePhotoClick = () => {
+    if (avatarUploading) return;
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    setAvatarError("");
+
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      setAvatarError("Use a JPEG, PNG, or WEBP image");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE) {
+      setAvatarError("Image must be under 5MB");
+      e.target.value = "";
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const uploadedUrl = await uploadProfilePhoto(file);
+      setProfile({ ...profile, avatar_url: uploadedUrl });
+    } catch (error) {
+      console.error(error);
+      setAvatarError("Upload failed. Try again.");
+    } finally {
+      setAvatarUploading(false);
+      e.target.value = "";
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF6F0]">
@@ -257,8 +301,40 @@ export default function ProfilePage() {
           {/* ── Hero card ── */}
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-100">
-                <span className="text-white font-black text-lg">{initials}</span>
+              <div
+                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-100 relative overflow-hidden cursor-pointer group"
+                onClick={handlePhotoClick}
+                title="Change profile photo"
+              >
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.name || "Profile photo"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-black text-lg">{initials}</span>
+                )}
+
+                {avatarUploading && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  </div>
+                )}
+
+                {!avatarUploading && (
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <Pencil className="w-4 h-4 text-white" />
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
               </div>
 
               <div className="flex-1 min-w-0">
@@ -341,6 +417,10 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+
+            {avatarError && (
+              <p className="text-xs font-semibold text-red-500 mt-3">{avatarError}</p>
+            )}
 
             {isEditing ? (
               <div className="mt-4">

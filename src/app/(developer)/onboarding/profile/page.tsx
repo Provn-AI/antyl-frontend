@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import OnboardingStepper from "@/components/developer/OnboardingStepper";
 import { ONBOARDING_STEPS } from "@/components/developer/OnboardingStepper";
 import {
   updateProfile,
+  uploadProfilePhoto,
 } from "@/services/developer.service";
 
 // ─────────────────────────────────────────────
@@ -45,6 +46,8 @@ const CITIES = [
 ];
 
 const BIO_LIMIT = 150;
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 // ─────────────────────────────────────────────
 // Page
@@ -52,6 +55,7 @@ const BIO_LIMIT = 150;
 
 export default function OnboardingProfilePage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<ProfileForm>({
     name: "",
@@ -62,6 +66,10 @@ export default function OnboardingProfilePage() {
 
   const [touched, setTouched] = useState<Partial<Record<keyof ProfileForm, boolean>>>({});
   const [loading, setLoading] = useState(false);
+
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
 
   // ── Validation ──────────────────────────────
 
@@ -92,6 +100,41 @@ export default function OnboardingProfilePage() {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
 
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarError("");
+
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      setAvatarError("Use a JPEG, PNG, or WEBP image");
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE) {
+      setAvatarError("Image must be under 5MB");
+      return;
+    }
+
+    // instant local preview
+    const localPreview = URL.createObjectURL(file);
+    setAvatarPreview(localPreview);
+    setAvatarUploading(true);
+
+    try {
+      const uploadedUrl = await uploadProfilePhoto(file);
+      setAvatarPreview(uploadedUrl);
+    } catch {
+      setAvatarError("Upload failed. Please try again.");
+      setAvatarPreview(null);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -102,16 +145,14 @@ export default function OnboardingProfilePage() {
     setLoading(true);
 
     try {
-      // TODO: replace with → import { saveProfile } from "@/services/developer.service";
-      // await saveProfile(form);
-    await updateProfile({
-      name: form.name,
-      city: form.city,
-      current_role: form.currentRole,
-      bio: form.bio,
-    });
+      await updateProfile({
+        name: form.name,
+        city: form.city,
+        current_role: form.currentRole,
+        bio: form.bio,
+      });
 
-    router.push("/onboarding/resume");
+      router.push("/onboarding/resume");
     } catch {
       alert("Failed to save profile. Please try again.");
     } finally {
@@ -180,6 +221,66 @@ export default function OnboardingProfilePage() {
           font-weight: 400;
           margin-bottom: 1.75rem;
         }
+
+        /* ── Avatar upload ── */
+        .avatar-row {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .avatar-circle {
+          width: 72px;
+          height: 72px;
+          border-radius: 50%;
+          background: #F8F5F0;
+          border: 1.5px dashed #E8E4DF;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          overflow: hidden;
+          flex-shrink: 0;
+          position: relative;
+          transition: border-color 0.15s;
+        }
+
+        .avatar-circle:hover { border-color: #FF6B4D; }
+
+        .avatar-circle img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .avatar-circle .avatar-placeholder {
+          color: #B0A89E;
+        }
+
+        .avatar-circle .avatar-spinner {
+          position: absolute;
+          inset: 0;
+          background: rgba(255,255,255,0.75);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .avatar-meta { display: flex; flex-direction: column; gap: 0.3rem; }
+
+        .avatar-label {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1A1A1A;
+        }
+
+        .avatar-hint {
+          font-size: 12px;
+          color: #B0A89E;
+        }
+
+        .avatar-hint.error { color: #FF3B30; }
 
         /* ── Field ── */
         .field {
@@ -330,6 +431,38 @@ export default function OnboardingProfilePage() {
 
           <h1 className="card-title">Set up your profile</h1>
           <p className="card-sub">Tell companies a little about yourself</p>
+
+          {/* Avatar upload */}
+          <div className="avatar-row">
+            <div className="avatar-circle" onClick={handlePhotoClick}>
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Profile photo" />
+              ) : (
+                <svg className="avatar-placeholder" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              )}
+              {avatarUploading && (
+                <div className="avatar-spinner">
+                  <span className="spinner" style={{ borderTopColor: "#FF6B4D", borderColor: "rgba(255,107,77,0.25)" }} />
+                </div>
+              )}
+            </div>
+            <div className="avatar-meta">
+              <span className="avatar-label">Profile photo</span>
+              <span className={`avatar-hint${avatarError ? " error" : ""}`}>
+                {avatarError || "JPEG, PNG, or WEBP · up to 5MB"}
+              </span>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoChange}
+              style={{ display: "none" }}
+            />
+          </div>
 
           <form onSubmit={handleSubmit} noValidate>
 

@@ -253,7 +253,6 @@ export default function NewJobPage() {
                 Discard draft
               </button>
             )}
-<<<<<<< HEAD
             <button
               type="button"
               onClick={() => router.push("/jobs")}
@@ -261,9 +260,7 @@ export default function NewJobPage() {
             >
               Back to jobs
             </button>
-=======
           
->>>>>>> 0b51032 (Commit)
           </div>
         </div>
 

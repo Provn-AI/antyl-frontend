@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Building2 } from "lucide-react";
+import { AlertCircle, Building2, Pencil } from "lucide-react";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -23,6 +23,9 @@ const inputClass =
 const textareaClass =
   "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[120px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
 
+const MAX_LOGO_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 export default function RecruiterOnboardingPage() {
   const router = useRouter();
 
@@ -39,10 +42,67 @@ export default function RecruiterOnboardingPage() {
     remote_policy: "",
   });
 
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const isValid =
     form.company_name.trim() !== "" &&
     form.industry.trim() !== "" &&
     form.company_size.trim() !== "";
+
+  const handleLogoClick = () => {
+    if (logoUploading) return;
+    fileInputRef.current?.click();
+  };
+
+  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLogoError("");
+
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+      setLogoError("Use a JPEG, PNG, or WEBP image");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_LOGO_SIZE) {
+      setLogoError("Image must be under 5MB");
+      e.target.value = "";
+      return;
+    }
+
+    setLogoUploading(true);
+
+    try {
+      const token = localStorage.getItem("access_token");
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_URL}/recruiter/profile/logo`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to upload logo");
+      }
+
+      const data = await res.json();
+      setLogoUrl(data.profile.logo_url);
+    } catch (err) {
+      console.error(err);
+      setLogoError("Upload failed. Please try again.");
+    } finally {
+      setLogoUploading(false);
+      e.target.value = "";
+    }
+  }
 
   async function handleSubmit() {
     if (!isValid) return;
@@ -89,16 +149,52 @@ export default function RecruiterOnboardingPage() {
 
         <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-10">
           <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-              <Building2 className="w-4.5 h-4.5 text-[#F2754A]" />
+            <div
+              className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center relative overflow-hidden cursor-pointer group flex-shrink-0"
+              onClick={handleLogoClick}
+              title="Upload company logo"
+            >
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt="Company logo"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Building2 className="w-4.5 h-4.5 text-[#F2754A]" />
+              )}
+
+              {logoUploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                </div>
+              )}
+
+              {!logoUploading && (
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <Pencil className="w-3.5 h-3.5 text-white" />
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleLogoChange}
+                className="hidden"
+              />
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
               Recruiter Profile
             </h2>
           </div>
-          <p className="text-gray-400 mb-8 ml-[52px]">
+          <p className="text-gray-400 mb-2 ml-[52px]">
             Tell developers about your company
           </p>
+          {logoError && (
+            <p className="text-xs font-semibold text-red-500 mb-6 ml-[52px]">{logoError}</p>
+          )}
+          {!logoError && <div className="mb-6" />}
 
           {error && (
             <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 rounded-2xl px-5 py-3 mb-6">
