@@ -60,3 +60,22 @@ export async function connectGithub(
 
   return data;
 }
+
+export async function skipGithub() {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/github/skip`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to skip GitHub verification");
+  }
+
+  return data;
+}

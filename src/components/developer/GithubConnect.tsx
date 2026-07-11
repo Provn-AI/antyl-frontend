@@ -7,6 +7,8 @@ interface GithubConnectProps {
   username?: string | null;
   onConnected?: (username: string) => void;
   onDisconnected?: () => void;
+  onSkip?: () => void;
+  skipping?: boolean;
 }
 
 const API_URL =
@@ -18,6 +20,8 @@ export default function GithubConnect({
   username = null,
   onConnected,
   onDisconnected,
+  onSkip,
+  skipping = false,
 }: GithubConnectProps) {
   const [isConnected, setIsConnected] =
     useState(connected);
@@ -148,6 +152,7 @@ export default function GithubConnect({
             #FF6B4D,
             #FFB347
           );
+          font-family:'DM Sans',sans-serif;
         }
 
         .disconnect-btn {
@@ -157,6 +162,65 @@ export default function GithubConnect({
         .btn:disabled {
           opacity:.5;
           cursor:not-allowed;
+        }
+
+        .skip-divider {
+          display:flex;
+          align-items:center;
+          gap:10px;
+          margin-top:20px;
+        }
+
+        .skip-divider::before,
+        .skip-divider::after {
+          content:'';
+          flex:1;
+          height:1px;
+          background:#EEEAE4;
+        }
+
+        .skip-divider span {
+          font-size:11px;
+          font-weight:600;
+          color:#C7BFB5;
+          font-family:'DM Sans',sans-serif;
+          letter-spacing:0.02em;
+          white-space:nowrap;
+        }
+
+        .skip-btn {
+          width:100%;
+          margin-top:12px;
+          border:1.5px solid #EEEAE4;
+          background:#FDFBF9;
+          border-radius:50px;
+          padding:12px 16px;
+          cursor:pointer;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:7px;
+          font-weight:600;
+          font-size:13px;
+          color:#9C9border-box;
+          color:#8A8177;
+          font-family:'DM Sans',sans-serif;
+          transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+
+        .skip-btn:hover:not(:disabled) {
+          background:#FFF5F2;
+          border-color:#FFD3C4;
+          color:#FF6B4D;
+        }
+
+        .skip-btn:disabled {
+          opacity:.5;
+          cursor:not-allowed;
+        }
+
+        .skip-btn svg {
+          flex-shrink:0;
         }
       `}</style>
 
@@ -193,15 +257,53 @@ export default function GithubConnect({
         )}
 
         {!isConnected ? (
-          <button
-            className="btn"
-            onClick={connectGithub}
-            disabled={loading}
-          >
-            {loading
-              ? "Connecting..."
-              : "Connect GitHub"}
-          </button>
+          <>
+            <button
+              className="btn"
+              onClick={connectGithub}
+              disabled={loading}
+            >
+              {loading
+                ? "Connecting..."
+                : "Connect GitHub"}
+            </button>
+
+            {onSkip && (
+              <>
+                <div className="skip-divider">
+                  <span>OR</span>
+                </div>
+
+                <button
+                  type="button"
+                  className="skip-btn"
+                  onClick={onSkip}
+                  disabled={skipping}
+                >
+                  {skipping ? (
+                    "Skipping..."
+                  ) : (
+                    <>
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="13 17 18 12 13 7" />
+                        <polyline points="6 17 11 12 6 7" />
+                      </svg>
+                      I don&apos;t have relevant public repos
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </>
         ) : (
           <button
             className="btn disconnect-btn"

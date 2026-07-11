@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
+import { skipGithub } from "@/services/github.service";
 
 import GithubConnect from "@/components/developer/GithubConnect";
 import RepositoryList, {
@@ -24,6 +25,8 @@ export default function GithubPage() {
   const [fetchError, setFetchError] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [skipping, setSkipping] = useState(false);
+  const [skipError, setSkipError] = useState("");
 
   const fetchRepos = async () => {
     try {
@@ -110,6 +113,24 @@ export default function GithubPage() {
     }
   };
 
+  const handleSkip = async () => {
+    try {
+      setSkipping(true);
+      setSkipError("");
+      await skipGithub();
+      router.push("/onboarding/preferences");
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to skip GitHub verification.";
+      setSkipError(message);
+    } finally {
+      setSkipping(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-12">
       <div className="w-full max-w-2xl mx-auto">
@@ -143,7 +164,16 @@ export default function GithubPage() {
               setRepos([]);
               setSelectedIds([]);
             }}
+            onSkip={handleSkip}
+            skipping={skipping}
           />
+
+          {skipError && (
+            <div className="flex items-center gap-2 text-sm text-red-500 mt-4">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{skipError}</span>
+            </div>
+          )}
 
           {loadingRepos && (
             <div className="flex items-center gap-2 text-gray-500 mt-6">
