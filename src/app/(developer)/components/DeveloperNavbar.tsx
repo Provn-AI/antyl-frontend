@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutGrid, FileText, User, LogOut, Bookmark, Bell, Sparkles, Eye, MessageCircle } from "lucide-react";
+import { LayoutGrid, FileText, User, LogOut, Bookmark, Bell, Sparkles, Eye, MessageCircle, Trophy } from "lucide-react";
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/services/notification.service";
 
 interface AntylNotification {
@@ -18,9 +18,10 @@ interface AntylNotification {
 
 const TABS = [
   { label: "Feed",         href: "/feed",         icon: LayoutGrid },
+  { label: "Leaderboard",  href: "/leaderboard",  icon: Trophy     }, 
   { label: "Applications", href: "/applications",  icon: FileText   },
   { label: "Bookmarks",    href: "/bookmarks",     icon: Bookmark   },
- { label: "Messages",     href: "/messages",      icon: MessageCircle },
+  { label: "Messages",     href: "/messages",      icon: MessageCircle },
   { label: "Profile",      href: "/profile",       icon: User       },
 ];
 
