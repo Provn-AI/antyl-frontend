@@ -46,3 +46,22 @@ export async function markAllNotificationsRead() {
   return res.json();
 }
 
+export async function markNotificationRead(notificationId: string) {
+  const token =
+    localStorage.getItem(
+      "access_token"
+    );
+
+  const res = await fetch(
+    `${API_URL}/notifications/${notificationId}/read`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  );
+
+  return res.json();
+}

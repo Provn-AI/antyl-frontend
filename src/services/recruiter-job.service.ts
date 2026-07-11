@@ -163,3 +163,12 @@ export async function autofillJob(title: string, context?: string) {
   if (!res.ok) throw new Error(data.detail || "Auto-fill failed");
   return data;
 }
+
+export async function trackResumeViewed(applicationId: string) {
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(
+    `${API_URL}/recruiter/candidate/${applicationId}/resume-viewed`,
+    { method: "POST", headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) console.error("Failed to track resume view");
+}

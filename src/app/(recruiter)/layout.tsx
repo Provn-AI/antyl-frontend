@@ -11,7 +11,9 @@ import {
   LogOut,
   KanbanIcon,
    CircleUser,
+   MessageCircle,
 } from "lucide-react";
+
 import PipelinePage from "./pipeline/page";
 import { pipeline } from "stream";
 
@@ -23,14 +25,15 @@ export default function RecruiterLayout({
   const pathname = usePathname();
 
   const menu = [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Jobs", href: "/jobs", icon: Briefcase },
-    { label: "Create Job", href: "/jobs/new", icon: PlusCircle },
-    { label: "Candidates", href: "/candidates", icon: Users },
-    { label: "Billing", href: "/billing", icon: CreditCard },
-    {label: "Kanaban Pipeline", href:"/pipeline", icon: KanbanIcon},
-    {label: "Profile", href:"/recruiter_profile", icon: CircleUser}
-  ];
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Jobs", href: "/jobs", icon: Briefcase },
+  { label: "Create Job", href: "/jobs/new", icon: PlusCircle },
+  { label: "Candidates", href: "/candidates", icon: Users },
+  { label: "Messages", href: "/recruiter_messages", icon: MessageCircle },
+  { label: "Billing", href: "/billing", icon: CreditCard },
+  { label: "Kanaban Pipeline", href: "/pipeline", icon: KanbanIcon },
+  { label: "Profile", href: "/recruiter_profile", icon: CircleUser },
+];  
 
   const isActive = (href: string) => {
     if (href === "/jobs") {

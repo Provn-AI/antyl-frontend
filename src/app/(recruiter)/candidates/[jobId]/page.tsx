@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import {
   getJobCandidates,
   saveCandidateNote,
+  trackResumeViewed,
 } from "@/services/recruiter-job.service";
 import { updateCandidateStatus } from "@/services/update-candidate.service";
 import {
@@ -361,9 +362,10 @@ export default function CandidatesPage() {
                           <button
                             type="button"
                             onClick={(e) => {
-                              e.stopPropagation();
-                              setResumeUrl(c.resume_url!);
-                            }}
+  e.stopPropagation();
+  setResumeUrl(c.resume_url!);
+  trackResumeViewed(c.application_id);
+}}
                             title="View resume"
                             className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex-shrink-0 text-[11px] font-bold"
                           >
@@ -569,7 +571,10 @@ export default function CandidatesPage() {
                     {selected.resume_url && (
                       <button
                         type="button"
-                        onClick={() => setResumeUrl(selected.resume_url!)}
+                        onClick={() => {
+  setResumeUrl(selected.resume_url!);
+  trackResumeViewed(selected.application_id);
+}}
                         className="inline-flex items-center gap-2 text-sm font-bold text-[#F2754A] hover:underline"
                       >
                         <FileText className="w-4 h-4" />

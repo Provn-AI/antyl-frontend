@@ -146,7 +146,7 @@ export default function ApplicationsPage() {
     return (
       <div className="min-h-screen bg-[#FAF6F0]">
         <DeveloperNavbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] md:ml-56">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-[#F2754A] border-t-transparent animate-spin" />
             <p className="text-sm text-gray-400 font-medium">Loading applications…</p>
@@ -166,7 +166,7 @@ export default function ApplicationsPage() {
         onClose={() => setWithdrawId(null)}
       />
 
-      <div className="px-4 py-12">
+      <div className="px-4 py-12 md:ml-56">
         <div className="w-full max-w-2xl mx-auto">
 
           {/* Header */}
