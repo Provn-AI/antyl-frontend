@@ -3,8 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { LayoutGrid, FileText, User, LogOut, Bookmark, Bell, Sparkles, Eye, MessageCircle, Trophy } from "lucide-react";
+import {
+  LayoutGrid,
+  FileText,
+  User,
+  LogOut,
+  Bookmark,
+  Bell,
+  Sparkles,
+  Eye,
+  MessageCircle,
+  Trophy,
+  Flame,
+  Medal,
+  Crown,
+  X,
+} from "lucide-react";
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/services/notification.service";
+import { pingStreak } from "@/services/streak.service";
 
 interface AntylNotification {
   id: string;
@@ -18,7 +34,7 @@ interface AntylNotification {
 
 const TABS = [
   { label: "Feed",         href: "/feed",         icon: LayoutGrid },
-  { label: "Leaderboard",  href: "/leaderboard",  icon: Trophy     }, 
+  { label: "Leaderboard",  href: "/leaderboard",  icon: Trophy     },
   { label: "Applications", href: "/applications",  icon: FileText   },
   { label: "Bookmarks",    href: "/bookmarks",     icon: Bookmark   },
   { label: "Messages",     href: "/messages",      icon: MessageCircle },
@@ -27,6 +43,19 @@ const TABS = [
 
 const POLL_INTERVAL_MS = 25000;
 const PANEL_WIDTH = 320;
+
+const MILESTONE_TYPES = ["streak_daily", "streak_week", "streak_month", "podium_finish", "field_leader"];
+
+const MILESTONE_STYLES: Record<
+  string,
+  { icon: typeof Flame; color: string; title: string }
+> = {
+  streak_daily: { icon: Flame, color: "#F2754A", title: "Streak Alive!" },
+  streak_week: { icon: Flame, color: "#F2754A", title: "7-Day Streak!" },
+  streak_month: { icon: Trophy, color: "#FFB347", title: "30-Day Streak!" },
+  podium_finish: { icon: Medal, color: "#E3B27B", title: "Podium Finish!" },
+  field_leader: { icon: Crown, color: "#FFD37A", title: "Field Leader!" },
+};
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -42,7 +71,56 @@ function timeAgo(iso: string) {
 function NotifIcon({ type }: { type: string }) {
   if (type === "match") return <Sparkles className="w-3.5 h-3.5 text-emerald-500" />;
   if (type === "profile_viewed") return <Eye className="w-3.5 h-3.5 text-blue-500" />;
+  if (type === "streak_daily") return <Flame className="w-3.5 h-3.5 text-[#F2754A]" />;
+  if (type === "streak_week") return <Flame className="w-3.5 h-3.5 text-[#F2754A]" />;
+  if (type === "streak_month") return <Trophy className="w-3.5 h-3.5 text-[#FFB347]" />;
+  if (type === "podium_finish") return <Medal className="w-3.5 h-3.5 text-[#E3B27B]" />;
+  if (type === "field_leader") return <Crown className="w-3.5 h-3.5 text-[#FFD37A]" />;
   return <Bell className="w-3.5 h-3.5 text-gray-400" />;
+}
+
+// ── Milestone celebration popup ──
+
+function MilestoneCelebration({
+  notification,
+  onClose,
+}: {
+  notification: AntylNotification;
+  onClose: () => void;
+}) {
+  const style = MILESTONE_STYLES[notification.type];
+  if (!style) return null;
+  const Icon = style.icon;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-white rounded-[24px] shadow-2xl p-7 text-center">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center"
+        >
+          <X className="w-3.5 h-3.5 text-gray-400" />
+        </button>
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+          style={{ background: `linear-gradient(135deg, ${style.color}, #FFB347)` }}
+        >
+          <Icon className="w-7 h-7 text-white" />
+        </div>
+        <h3 className="text-lg font-bold text-gray-900 mb-1">{style.title}</h3>
+        <p className="text-sm text-gray-500">{notification.message}</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-6 w-full py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors"
+        >
+          Nice!
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function BellButton({
@@ -177,17 +255,35 @@ export default function DeveloperNavbar() {
   const [notifications, setNotifications] = useState<AntylNotification[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [celebration, setCelebration] = useState<AntylNotification | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const desktopBellRef = useRef<HTMLButtonElement>(null);
   const mobileBellRef = useRef<HTMLButtonElement>(null);
+  const shownCelebrationIds = useRef<Set<string>>(new Set());
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  // Daily login streak — idempotent server-side, safe to call on every mount.
+  useEffect(() => {
+    pingStreak().catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await getNotifications();
+        const data: AntylNotification[] = await getNotifications();
         setNotifications(data);
+
+        const milestone = data.find(
+          (n) =>
+            MILESTONE_TYPES.includes(n.type) &&
+            !n.is_read &&
+            !shownCelebrationIds.current.has(n.id)
+        );
+        if (milestone) {
+          shownCelebrationIds.current.add(milestone.id);
+          setCelebration(milestone);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -223,6 +319,11 @@ export default function DeveloperNavbar() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleCelebrationClose = () => {
+    if (celebration) handleMarkRead(celebration.id);
+    setCelebration(null);
   };
 
   const handleLogout = () => {
@@ -340,6 +441,11 @@ export default function DeveloperNavbar() {
           onClose={() => setPanelOpen(false)}
           anchorRect={anchorRect}
         />
+      )}
+
+      {/* ── Milestone celebration popup ── */}
+      {celebration && (
+        <MilestoneCelebration notification={celebration} onClose={handleCelebrationClose} />
       )}
     </>
   );

@@ -13,6 +13,7 @@ import {
   Save,
   X,
   FileText,
+  Flame,
 } from "lucide-react";
 
 import {
@@ -23,8 +24,11 @@ import {
   updateProfile,
   uploadProfilePhoto,
 } from "@/services/developer.service";
+import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service";
+import { getMyStreak, StreakSummary } from "@/services/streak.service";
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
+import { BadgeIcon } from "../components/BadgeIcon";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -145,6 +149,9 @@ const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [history, setHistory] = useState<{ score: number; date: string }[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badgeCatalog, setBadgeCatalog] = useState<Record<string, BadgeCatalogEntry>>({});
+  const [streak, setStreak] = useState<StreakSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState<ConfirmState>(CONFIRM_CLOSED);
   const [isEditing, setIsEditing] = useState(false);
@@ -165,12 +172,17 @@ export default function ProfilePage() {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const [profileData, historyData] = await Promise.all([
+        const [profileData, historyData, badgeData, streakData] = await Promise.all([
           getMyProfile(),
           getVerificationHistory(),
+          getMyBadges(),
+          getMyStreak(),
         ]);
         setProfile(profileData);
         setHistory(historyData);
+        setBadges(badgeData.badges);
+        setBadgeCatalog(badgeData.catalog);
+        setStreak(streakData);
         setFormData({
           name: profileData.name || "",
           bio: profileData.bio || "",
@@ -290,6 +302,11 @@ export default function ProfilePage() {
   const initials = (formData.name || profile.name || "??")
     .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
+  const badgeCounts = badges.reduce((acc, b) => {
+    acc[b.badge_key] = (acc[b.badge_key] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0]">
       <DeveloperNavbar />
@@ -380,6 +397,12 @@ export default function ProfilePage() {
                     {profile.years_experience != null && (
                       <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
                         <Briefcase className="w-3 h-3" />{profile.years_experience}y exp
+                      </span>
+                    )}
+                    {streak && streak.current_streak_days > 0 && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
+                        <Flame className="w-3 h-3" />
+                        {streak.current_streak_days}-day streak
                       </span>
                     )}
                   </div>
@@ -498,6 +521,54 @@ export default function ProfilePage() {
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ── Streak & Badges ── */}
+          {(streak || badges.length > 0) && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                Streak & Badges
+              </p>
+
+              {streak && (
+                <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-50">
+                  <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    <Flame className="w-5 h-5 text-[#F2754A]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">
+                      {streak.current_streak_days} day{streak.current_streak_days === 1 ? "" : "s"} streak
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Longest: {streak.longest_streak_days} days · {streak.days_to_week_bonus} days to next bonus
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {badges.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {Object.entries(badgeCounts).map(([key, count]) => {
+                    const meta = badgeCatalog[key];
+                    if (!meta) return null;
+                    return (
+                      <div key={key} className="flex flex-col items-center text-center gap-2 p-3 rounded-2xl bg-gray-50">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center"
+                          style={{ background: `linear-gradient(135deg, ${meta.color}, #FFB347)` }}
+                        >
+                          <BadgeIcon icon={meta.icon} className="w-5 h-5 text-white" />
+                        </div>
+                        <p className="text-xs font-bold text-gray-800">{meta.label}</p>
+                        {count > 1 && <p className="text-[10px] text-gray-400">×{count}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">No badges yet — keep your streak going!</p>
+              )}
             </div>
           )}
 

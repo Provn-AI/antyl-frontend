@@ -18,7 +18,10 @@ import {
   LeaderboardEntry,
   MyRank,
 } from "@/services/leaderboard.service";
+import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service";
 import DeveloperNavbar from "../components/DeveloperNavbar";
+import WeekTimer from "../components/WeekTimer";
+import { BadgeIcon } from "../components/BadgeIcon";
 
 // ─────────────────────────────────────────────
 // Rank movement badge
@@ -208,10 +211,12 @@ export default function LeaderboardPage() {
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [myRank, setMyRank] = useState<MyRank | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badgeCatalog, setBadgeCatalog] = useState<Record<string, BadgeCatalogEntry>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Single effect: load fields + own rank + the initial (own-field)
+  // Single effect: load fields + own rank + badges + the initial (own-field)
   // entries together in one pass — no effect watching selectedField, so
   // there's no effect-triggers-effect chain / cascading renders.
   useEffect(() => {
@@ -219,12 +224,15 @@ export default function LeaderboardPage() {
       setLoading(true);
       setError("");
       try {
-        const [fieldsData, rank] = await Promise.all([
+        const [fieldsData, rank, badgeData] = await Promise.all([
           getLeaderboardFields(),
           getMyRank(),
+          getMyBadges(),
         ]);
         setFields(fieldsData);
         setMyRank(rank);
+        setBadges(badgeData.badges);
+        setBadgeCatalog(badgeData.catalog);
 
         const initialField = rank?.field_of_work ?? null;
         const data = await getLeaderboard(initialField ?? undefined);
@@ -261,43 +269,67 @@ export default function LeaderboardPage() {
 
       <main className="flex-1 px-4 md:px-8 py-6 md:py-10 max-w-3xl mx-auto w-full">
         {/* Header */}
-        <div className="flex items-center gap-2.5 mb-1">
-          <Trophy className="w-5 h-5 text-[#F2754A]" />
-          <h1
-            className="text-2xl font-bold text-gray-900"
-            style={{ fontFamily: "var(--font-fraunces, serif)" }}
-          >
-            Leaderboard
-          </h1>
+        <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <Trophy className="w-5 h-5 text-[#F2754A]" />
+            <h1
+              className="text-2xl font-bold text-gray-900"
+              style={{ fontFamily: "var(--font-fraunces, serif)" }}
+            >
+              Leaderboard
+            </h1>
+          </div>
+          <WeekTimer />
         </div>
         <p className="text-sm text-gray-400 mb-6">
-          Ranked by Antyl Score within each field. Recalculated daily.
+          Ranked by Antyl Score within each field. Recalculated daily, movement resets weekly.
         </p>
 
         {/* Your rank card */}
         {myRank && myRank.rank && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <RankBadge rank={myRank.rank} />
-              <div>
-                <p className="text-sm font-bold text-gray-900">Your rank</p>
-                <p className="text-xs text-gray-400">{myRank.field_label}</p>
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <RankBadge rank={myRank.rank} />
+                <div>
+                  <p className="text-sm font-bold text-gray-900">Your rank</p>
+                  <p className="text-xs text-gray-400">{myRank.field_label}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-lg font-bold text-gray-900">
+                    {myRank.score}
+                  </p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">
+                    Score
+                  </p>
+                </div>
+                <MovementBadge
+                  rank={myRank.rank}
+                  previousRank={myRank.previous_rank ?? null}
+                />
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-lg font-bold text-gray-900">
-                  {myRank.score}
-                </p>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wide">
-                  Score
-                </p>
+
+            {badges.length > 0 && (
+              <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
+                {badges.slice(0, 6).map((b, i) => {
+                  const meta = badgeCatalog[b.badge_key];
+                  if (!meta) return null;
+                  return (
+                    <div
+                      key={i}
+                      title={meta.label}
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ background: `linear-gradient(135deg, ${meta.color}, #FFB347)` }}
+                    >
+                      <BadgeIcon icon={meta.icon} className="w-4 h-4 text-white" />
+                    </div>
+                  );
+                })}
               </div>
-              <MovementBadge
-                rank={myRank.rank}
-                previousRank={myRank.previous_rank ?? null}
-              />
-            </div>
+            )}
           </div>
         )}
 
