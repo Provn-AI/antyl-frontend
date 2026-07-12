@@ -209,9 +209,9 @@ export default function FeedPage() {
                   onClick={() => handleSwipe("left")}
                   disabled={swiping}
                   aria-label="Skip"
-                  className="w-14 h-14 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors disabled:opacity-50"
+                  className="butn butn__new butn--small butn--skip"
                 >
-                  <X className="w-6 h-6" />
+                  <span>Skip</span>
                 </button>
 
                 <button
@@ -219,14 +219,119 @@ export default function FeedPage() {
                   onClick={() => handleSwipe("right")}
                   disabled={swiping}
                   aria-label="Apply"
-                  className="w-14 h-14 rounded-full flex items-center justify-center text-white disabled:opacity-50"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-                  }}
+                  className="butn butn__new butn--small butn--apply"
                 >
-                  <Heart className="w-6 h-6" />
+                  <span>Apply</span>
                 </button>
+
+                <style jsx>{`
+                  .butn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.95rem;
+                    text-transform: none;
+                    text-decoration: none;
+                    padding: 0 16px;
+                    height: 48px;
+                    min-width: 84px;
+                    width: auto;
+                    margin-right: 0;
+                    border-radius: 8px;
+                    border: none;
+                    color: #111827;
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.25s ease-in-out;
+                    cursor: pointer;
+                  }
+
+                  .butn span {
+                    z-index: 20;
+                    pointer-events: none;
+                    font-weight: 600;
+                  }
+
+                  .butn::before {
+                    background: #fff;
+                    content: "";
+                    height: 120px;
+                    opacity: 0;
+                    position: absolute;
+                    top: -40px;
+                    transform: rotate(35deg);
+                    width: 60px;
+                    transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
+                    z-index: 10;
+                  }
+
+                  .butn::after {
+                    background: #fff;
+                    content: "";
+                    height: 200px;
+                    opacity: 0;
+                    position: absolute;
+                    top: -60px;
+                    transform: rotate(35deg);
+                    transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
+                    width: 100px;
+                    z-index: 9;
+                  }
+
+                  .butn__new::before {
+                    left: -50%;
+                  }
+
+                  .butn__new::after {
+                    left: -100%;
+                  }
+
+                  .butn:hover,
+                  .butn:active {
+                    transform: translateY(-3px);
+                    color: #fff;
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+                  }
+
+                  .butn__new:hover::before {
+                    left: 120%;
+                    opacity: 0.6;
+                  }
+
+                  .butn__new:hover::after {
+                    left: 220%;
+                    opacity: 0.65;
+                  }
+
+                  /* Skip button (light) */
+                  .butn--skip {
+                    background: #ffffff;
+                    border: 1px solid #e5e7eb;
+                    color: #6b7280;
+                  }
+
+                  .butn--skip::before,
+                  .butn--skip::after {
+                    background: rgba(0,0,0,0.06);
+                  }
+
+                  .butn--skip:hover {
+                    color: #fff;
+                    background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
+                  }
+
+                  /* Apply button (gradient) */
+                  .butn--apply {
+                    background: linear-gradient(90deg, #F2754A 0%, #F8B36B 100%);
+                    color: #ffffff;
+                  }
+
+                  .butn--apply::before,
+                  .butn--apply::after {
+                    background: rgba(255,255,255,0.22);
+                  }
+
+                `}</style>
               </div>
 
               <p className="text-sm text-gray-400 mt-5">
