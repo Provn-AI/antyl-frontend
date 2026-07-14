@@ -18,9 +18,13 @@ import {
   Medal,
   Crown,
   X,
+  BookOpen,
+  ShieldCheck,
 } from "lucide-react";
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/services/notification.service";
 import { pingStreak } from "@/services/streak.service";
+import { checkIsAdmin } from "@/services/weeklyQuestion.service";
+import WeeklyQuestionPopup from "./WeeklyQuestionPopup";
 
 interface AntylNotification {
   id: string;
@@ -38,6 +42,7 @@ const TABS = [
   { label: "Applications", href: "/applications",  icon: FileText   },
   { label: "Bookmarks",    href: "/bookmarks",     icon: Bookmark   },
   { label: "Messages",     href: "/messages",      icon: MessageCircle },
+  { label: "Blog",         href: "/blog",          icon: BookOpen   },
   { label: "Profile",      href: "/profile",       icon: User       },
 ];
 
@@ -260,12 +265,18 @@ export default function DeveloperNavbar() {
   const desktopBellRef = useRef<HTMLButtonElement>(null);
   const mobileBellRef = useRef<HTMLButtonElement>(null);
   const shownCelebrationIds = useRef<Set<string>>(new Set());
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   // Daily login streak — idempotent server-side, safe to call on every mount.
   useEffect(() => {
     pingStreak().catch(() => {});
+  }, []);
+
+  // Admin tab visibility — email whitelist check, backend is the real gate.
+  useEffect(() => {
+    checkIsAdmin().then(setIsAdmin);
   }, []);
 
   useEffect(() => {
@@ -369,6 +380,24 @@ export default function DeveloperNavbar() {
               </Link>
             );
           })}
+
+          {isAdmin && (
+            <Link
+              href="/admin/weekly-question"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
+                pathname === "/admin/weekly-question"
+                  ? "bg-orange-50 text-[#F2754A]"
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+              }`}
+            >
+              <ShieldCheck
+                className={`w-4 h-4 flex-shrink-0 ${
+                  pathname === "/admin/weekly-question" ? "text-[#F2754A]" : "text-gray-400"
+                }`}
+              />
+              Admin
+            </Link>
+          )}
         </nav>
 
         <button
@@ -400,6 +429,14 @@ export default function DeveloperNavbar() {
               panelOpen={panelOpen}
               onClick={() => openPanel(mobileBellRef)}
             />
+            {isAdmin && (
+              <Link
+                href="/admin/weekly-question"
+                className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center flex-shrink-0"
+              >
+                <ShieldCheck className="w-4 h-4 text-gray-500" />
+              </Link>
+            )}
             <button
               type="button"
               onClick={handleLogout}
@@ -447,6 +484,11 @@ export default function DeveloperNavbar() {
       {celebration && (
         <MilestoneCelebration notification={celebration} onClose={handleCelebrationClose} />
       )}
+
+      {/* Weekly question popup — checks itself on mount whether there's
+          an unanswered question for this user; audience is derived
+          server-side from the JWT, no prop needed. */}
+      <WeeklyQuestionPopup />
     </>
   );
 }

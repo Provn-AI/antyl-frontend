@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Briefcase,
@@ -10,12 +11,14 @@ import {
   CreditCard,
   LogOut,
   KanbanIcon,
-   CircleUser,
-   MessageCircle,
+  CircleUser,
+  MessageCircle,
+  BookOpen,
+  ShieldCheck,
 } from "lucide-react";
 
-import PipelinePage from "./pipeline/page";
-import { pipeline } from "stream";
+import { checkIsAdmin } from "@/services/weeklyQuestion.service";
+import WeeklyQuestionPopup from "../(developer)/components/WeeklyQuestionPopup";
 
 export default function RecruiterLayout({
   children,
@@ -23,6 +26,12 @@ export default function RecruiterLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Admin tab visibility — email whitelist check, backend is the real gate.
+  useEffect(() => {
+    checkIsAdmin().then(setIsAdmin);
+  }, []);
 
   const menu = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -32,7 +41,11 @@ export default function RecruiterLayout({
   { label: "Messages", href: "/recruiter_messages", icon: MessageCircle },
   { label: "Billing", href: "/billing", icon: CreditCard },
   { label: "Kanaban Pipeline", href: "/pipeline", icon: KanbanIcon },
+  { label: "Blog", href: "/blog", icon: BookOpen },
   { label: "Profile", href: "/recruiter_profile", icon: CircleUser },
+  ...(isAdmin
+    ? [{ label: "Admin", href: "/admin/weekly-question", icon: ShieldCheck }]
+    : []),
 ];  
 
   const isActive = (href: string) => {
@@ -101,6 +114,11 @@ export default function RecruiterLayout({
 
       {/* Content */}
       <main className="flex-1 overflow-auto">{children}</main>
+
+      {/* Weekly question popup — checks itself on mount whether there's
+          an unanswered question for this recruiter; audience is derived
+          server-side from the JWT, no prop needed. */}
+      <WeeklyQuestionPopup />
     </div>
   );
 }
