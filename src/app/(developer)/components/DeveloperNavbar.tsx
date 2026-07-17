@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  LayoutGrid,
+  Newspaper,
   FileText,
   User,
   LogOut,
@@ -20,11 +20,15 @@ import {
   X,
   BookOpen,
   ShieldCheck,
+  LayoutDashboard,
+  HelpCircle
 } from "lucide-react";
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/services/notification.service";
 import { pingStreak } from "@/services/streak.service";
 import { checkIsAdmin } from "@/services/weeklyQuestion.service";
 import WeeklyQuestionPopup from "./WeeklyQuestionPopup";
+import OnboardingTour from "@/components/OnboardingTour";
+import { developerTourSteps, DEVELOPER_TOUR_KEY } from "@/lib/tourSteps";
 
 interface AntylNotification {
   id: string;
@@ -37,13 +41,14 @@ interface AntylNotification {
 }
 
 const TABS = [
-  { label: "Feed",         href: "/feed",         icon: LayoutGrid },
-  { label: "Leaderboard",  href: "/leaderboard",  icon: Trophy     },
-  { label: "Applications", href: "/applications",  icon: FileText   },
-  { label: "Bookmarks",    href: "/bookmarks",     icon: Bookmark   },
-  { label: "Messages",     href: "/messages",      icon: MessageCircle },
-  { label: "Blog",         href: "/blog",          icon: BookOpen   },
-  { label: "Profile",      href: "/profile",       icon: User       },
+  { label: "Feed",         href: "/feed",         icon: Newspaper,       tourId: "nav-feed" },
+  { label: "Dashboard",    href: "/developer_dashboard", icon: LayoutDashboard, tourId: "nav-dashboard" },
+  { label: "Leaderboard",  href: "/leaderboard",  icon: Trophy,          tourId: "nav-leaderboard" },
+  { label: "Applications", href: "/applications", icon: FileText,        tourId: "nav-applications" },
+  { label: "Bookmarks",    href: "/bookmarks",    icon: Bookmark,        tourId: "nav-bookmarks" },
+  { label: "Messages",     href: "/messages",     icon: MessageCircle,   tourId: "nav-messages" },
+  { label: "Blog",         href: "/blog",         icon: BookOpen,        tourId: "nav-blog" },
+  { label: "Profile",      href: "/profile",      icon: User,            tourId: "nav-profile" },
 ];
 
 const POLL_INTERVAL_MS = 25000;
@@ -51,10 +56,7 @@ const PANEL_WIDTH = 320;
 
 const MILESTONE_TYPES = ["streak_daily", "streak_week", "streak_month", "podium_finish", "field_leader"];
 
-const MILESTONE_STYLES: Record<
-  string,
-  { icon: typeof Flame; color: string; title: string }
-> = {
+const MILESTONE_STYLES: Record<string, { icon: typeof Flame; color: string; title: string }> = {
   streak_daily: { icon: Flame, color: "#F2754A", title: "Streak Alive!" },
   streak_week: { icon: Flame, color: "#F2754A", title: "7-Day Streak!" },
   streak_month: { icon: Trophy, color: "#FFB347", title: "30-Day Streak!" },
@@ -266,6 +268,7 @@ export default function DeveloperNavbar() {
   const mobileBellRef = useRef<HTMLButtonElement>(null);
   const shownCelebrationIds = useRef<Set<string>>(new Set());
   const [isAdmin, setIsAdmin] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -277,6 +280,16 @@ export default function DeveloperNavbar() {
   // Admin tab visibility — email whitelist check, backend is the real gate.
   useEffect(() => {
     checkIsAdmin().then(setIsAdmin);
+  }, []);
+
+  // First-login onboarding tour — desktop only, since the sidebar (where
+  // every data-tour anchor lives) is hidden below md.
+  useEffect(() => {
+    if (window.innerWidth < 768) return;
+    if (!localStorage.getItem(DEVELOPER_TOUR_KEY)) {
+      const t = setTimeout(() => setTourActive(true), 500);
+      return () => clearTimeout(t);
+    }
   }, []);
 
   useEffect(() => {
@@ -354,21 +367,24 @@ export default function DeveloperNavbar() {
           >
             Antyl
           </Link>
-          <BellButton
-            buttonRef={desktopBellRef}
-            unreadCount={unreadCount}
-            panelOpen={panelOpen}
-            onClick={() => openPanel(desktopBellRef)}
-          />
+          <div data-tour="nav-bell">
+            <BellButton
+              buttonRef={desktopBellRef}
+              unreadCount={unreadCount}
+              panelOpen={panelOpen}
+              onClick={() => openPanel(desktopBellRef)}
+            />
+          </div>
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          {TABS.map(({ label, href, icon: Icon }) => {
+          {TABS.map(({ label, href, icon: Icon, tourId }) => {
             const active = pathname === href;
             return (
               <Link
                 key={href}
                 href={href}
+                data-tour={tourId}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
                   active
                     ? "bg-orange-50 text-[#F2754A]"
@@ -384,6 +400,7 @@ export default function DeveloperNavbar() {
           {isAdmin && (
             <Link
               href="/admin/weekly-question"
+              data-tour="nav-admin"
               className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
                 pathname === "/admin/weekly-question"
                   ? "bg-orange-50 text-[#F2754A]"
@@ -399,6 +416,15 @@ export default function DeveloperNavbar() {
             </Link>
           )}
         </nav>
+
+        <button
+          type="button"
+          onClick={() => setTourActive(true)}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left"
+        >
+          <HelpCircle className="w-4 h-4 flex-shrink-0" />
+          Take a tour
+        </button>
 
         <button
           type="button"
@@ -489,6 +515,15 @@ export default function DeveloperNavbar() {
           an unanswered question for this user; audience is derived
           server-side from the JWT, no prop needed. */}
       <WeeklyQuestionPopup />
+
+      {/* First-login onboarding tour — desktop only, replayable via the
+          "Take a tour" sidebar button. */}
+      <OnboardingTour
+        steps={developerTourSteps}
+        storageKey={DEVELOPER_TOUR_KEY}
+        active={tourActive}
+        onFinish={() => setTourActive(false)}
+      />
     </>
   );
 }

@@ -14,6 +14,7 @@ import {
   X,
   FileText,
   Flame,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -23,6 +24,9 @@ import {
   deleteAccount,
   updateProfile,
   uploadProfilePhoto,
+  getAutoApplyStatus,
+  toggleAutoApply,
+  AutoApplyStatus,
 } from "@/services/developer.service";
 import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service";
 import { getMyStreak, StreakSummary } from "@/services/streak.service";
@@ -169,6 +173,9 @@ export default function ProfilePage() {
   const [avatarError, setAvatarError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
+  const [autoApplyToggling, setAutoApplyToggling] = useState(false);
+
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -195,6 +202,13 @@ export default function ProfilePage() {
         console.error(error);
       } finally {
         setLoading(false);
+      }
+
+      try {
+        const status = await getAutoApplyStatus();
+        setAutoApply(status);
+      } catch (error) {
+        console.error(error);
       }
     }
     loadProfile();
@@ -271,6 +285,20 @@ export default function ProfilePage() {
     } finally {
       setAvatarUploading(false);
       e.target.value = "";
+    }
+  };
+
+  const handleToggleAutoApply = async () => {
+    if (!autoApply || autoApplyToggling) return;
+    setAutoApplyToggling(true);
+    const next = !autoApply.is_enabled;
+    try {
+      await toggleAutoApply(next);
+      setAutoApply({ ...autoApply, is_enabled: next });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setAutoApplyToggling(false);
     }
   };
 
@@ -524,6 +552,86 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {/* ── Verification ── */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              Verification
+            </p>
+
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-5 h-5 text-[#F2754A]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-gray-900">
+                  {profile.trust_score != null
+                    ? `Antyl Score: ${profile.trust_score}/100`
+                    : "Not verified yet"}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {profile.trust_score != null
+                    ? "Re-verify every 7 days to keep your score fresh"
+                    : "Verify your skills to unlock matching and the leaderboard"}
+                </p>
+              </div>
+            </div>
+
+            
+              < a href="/verification"
+              className="inline-block mt-4 text-xs font-bold text-[#F2754A] hover:underline"
+            >
+              {profile.trust_score != null ? "Re-verify →" : "Start verification →"}
+            </a>
+          </div>
+
+          {/* ── Auto-apply ── */}
+          {autoApply && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                  Auto-apply
+                </p>
+                <button
+                  type="button"
+                  onClick={handleToggleAutoApply}
+                  disabled={autoApplyToggling}
+                  role="switch"
+                  aria-checked={autoApply.is_enabled}
+                  className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                    autoApply.is_enabled ? "bg-[#F2754A]" : "bg-gray-200"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                      autoApply.is_enabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4 mt-4">
+                <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-5 h-5 text-[#F2754A]" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900">
+                    {autoApply.is_enabled ? "Actively applying for you" : "Turned off"}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {autoApply.used}/{autoApply.limit} auto-applied today · resets midnight IST
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="/settings/auto-apply"
+                className="inline-block mt-4 text-xs font-bold text-[#F2754A] hover:underline"
+              >
+                Edit match preferences →
+              </a>
+            </div>
+          )}
+
           {/* ── Streak & Badges ── */}
           {(streak || badges.length > 0) && (
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
@@ -654,6 +762,33 @@ export default function ProfilePage() {
                     </p>
                   </div>
                 </div>
+
+                {profile.github_username ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setConfirm({
+                        open: true,
+                        title: "Disconnect GitHub?",
+                        description:
+                          "Your repositories will no longer be used for verification. Your existing Antyl Score stays as-is until you next re-verify.",
+                        cta: "Disconnect",
+                        danger: true,
+                        onConfirm: handleDisconnectGithub,
+                      })
+                    }
+                    className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  
+                   <a href="/onboarding/github"
+                    className="text-xs font-bold text-[#F2754A] hover:underline"
+                  >
+                    Connect →
+                  </a>
+                )}
               </div>
 
               <div className="flex items-center justify-between">

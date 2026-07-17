@@ -232,3 +232,97 @@ export async function deleteAccount() {
 }
 
 
+export interface AutoApplyStatus {
+  is_enabled: boolean;
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
+export async function getAutoApplyStatus(): Promise<AutoApplyStatus> {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/autoapply/status`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to load auto-apply status");
+  }
+
+  return data;
+}
+
+export async function toggleAutoApply(isEnabled: boolean) {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/autoapply/toggle`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ is_enabled: isEnabled }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to update auto-apply");
+  }
+
+  return data;
+}
+
+export interface AutoApplyPreferences {
+  is_enabled?: boolean;
+  min_similarity_score: number;
+  preferred_tech_stack: string[];
+  job_type: string[];
+  preferred_locations: string[];
+}
+
+export async function getAutoApplyPreferences(): Promise<AutoApplyPreferences> {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/autoapply/preferences`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to load preferences");
+  }
+
+  return data.preferences;
+}
+
+export async function saveAutoApplyPreferences(
+  payload: Omit<AutoApplyPreferences, "is_enabled">
+) {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/autoapply/preferences`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to save preferences");
+  }
+
+  return data.preferences;
+}

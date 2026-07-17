@@ -7,11 +7,11 @@ import {
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { Heart, X, Rocket, CheckCircle2 } from "lucide-react";
+import { X, Rocket, CheckCircle2, Clock } from "lucide-react";
 
 import JobCard from "@/components/jobs/JobCard";
 import DeveloperNavbar from "../components/DeveloperNavbar";
-import { swipeJob } from "@/services/swipe.service";
+import { swipeJob, getSwipeStatus } from "@/services/swipe.service";
 import { getJobFeed } from "@/services/job.service";
 
 interface Job {
@@ -26,14 +26,16 @@ interface Job {
   similarity_score: number;
 }
 
-type ToastState = "applied" | "skipped" | null;
+type ToastState = "applied" | "skipped" | "limit_reached" | null;
 
 function SwipeCard({
   job,
   onSwipe,
+  applyDisabled,
 }: {
   job: Job;
   onSwipe: (direction: "left" | "right") => void;
+  applyDisabled: boolean;
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-8, 0, 8]);
@@ -47,7 +49,7 @@ function SwipeCard({
       dragConstraints={{ left: 0, right: 0 }}
       whileDrag={{ scale: 1.03 }}
       onDragEnd={(_, info) => {
-        if (info.offset.x > 120) onSwipe("right");
+        if (info.offset.x > 120 && !applyDisabled) onSwipe("right");
         else if (info.offset.x < -120) onSwipe("left");
       }}
       initial={{ scale: 0.95, opacity: 0 }}
@@ -55,12 +57,14 @@ function SwipeCard({
       exit={{ opacity: 0 }}
       className="relative w-full cursor-grab active:cursor-grabbing"
     >
-      <motion.div
-        style={{ opacity: applyOpacity }}
-        className="absolute top-6 left-6 z-10 rotate-[-12deg] border-3 border-green-500 text-green-500 font-extrabold text-2xl px-4 py-1 rounded-xl pointer-events-none"
-      >
-        APPLY
-      </motion.div>
+      {!applyDisabled && (
+        <motion.div
+          style={{ opacity: applyOpacity }}
+          className="absolute top-6 left-6 z-10 rotate-[-12deg] border-3 border-green-500 text-green-500 font-extrabold text-2xl px-4 py-1 rounded-xl pointer-events-none"
+        >
+          APPLY
+        </motion.div>
+      )}
 
       <motion.div
         style={{ opacity: skipOpacity }}
@@ -69,7 +73,12 @@ function SwipeCard({
         SKIP
       </motion.div>
 
-      <JobCard job={job} onApply={() => onSwipe("right")} />
+      <JobCard
+        job={job}
+        onApply={() => {
+          if (!applyDisabled) onSwipe("right");
+        }}
+      />
     </motion.div>
   );
 }
@@ -81,15 +90,25 @@ export default function FeedPage() {
   const [toast, setToast] = useState<ToastState>(null);
   const [swiping, setSwiping] = useState(false);
 
+  const [applyLimit, setApplyLimit] = useState(10);
+  const [applyRemaining, setApplyRemaining] = useState(10);
+  const [statusLoaded, setStatusLoaded] = useState(false);
+
   useEffect(() => {
     async function loadJobs() {
       try {
-        const data = await getJobFeed();
-        setJobs(data);
+        const [jobsData, statusData] = await Promise.all([
+          getJobFeed(),
+          getSwipeStatus(),
+        ]);
+        setJobs(jobsData);
+        setApplyLimit(statusData.limit);
+        setApplyRemaining(statusData.remaining);
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
+        setStatusLoaded(true);
       }
     }
 
@@ -98,20 +117,42 @@ export default function FeedPage() {
 
   const showToast = (type: ToastState) => {
     setToast(type);
-    setTimeout(() => setToast(null), 1500);
+    setTimeout(() => setToast(null), 1800);
   };
 
   const handleSwipe = async (direction: "left" | "right") => {
     const job = jobs[currentIndex];
     if (!job || swiping) return;
 
+    if (direction === "right" && applyRemaining <= 0) {
+      showToast("limit_reached");
+      return;
+    }
+
     try {
       setSwiping(true);
       await swipeJob(job.id, direction);
-      showToast(direction === "right" ? "applied" : "skipped");
+
+      if (direction === "right") {
+        setApplyRemaining((prev) => Math.max(prev - 1, 0));
+        showToast("applied");
+      } else {
+        showToast("skipped");
+      }
+
       setCurrentIndex((prev) => prev + 1);
     } catch (error) {
-      console.error(error);
+      const err = error as Error & { status?: number };
+
+      if (err.status === 429) {
+        setApplyRemaining(0);
+        showToast("limit_reached");
+      } else if (err.status === 409) {
+        // Already swiped/applied — just move past it, no need to alarm the user
+        setCurrentIndex((prev) => prev + 1);
+      } else {
+        console.error(error);
+      }
     } finally {
       setSwiping(false);
     }
@@ -119,6 +160,7 @@ export default function FeedPage() {
 
   const currentJob = jobs[currentIndex];
   const hasFinishedFeed = !loading && jobs.length > 0 && !currentJob;
+  const applyDisabled = applyRemaining <= 0;
 
   return (
     <>
@@ -135,27 +177,50 @@ export default function FeedPage() {
                 className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-sm ${
                   toast === "applied"
                     ? "bg-green-50 text-green-600"
-                    : "bg-red-50 text-red-500"
+                    : toast === "skipped"
+                    ? "bg-red-50 text-red-500"
+                    : "bg-orange-50 text-[#F2754A]"
                 }`}
               >
-                {toast === "applied" ? (
+                {toast === "applied" && (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
                     Applied
                   </>
-                ) : (
+                )}
+                {toast === "skipped" && (
                   <>
                     <X className="w-4 h-4" />
                     Skipped
+                  </>
+                )}
+                {toast === "limit_reached" && (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    Daily apply limit reached
                   </>
                 )}
               </motion.div>
             )}
           </AnimatePresence>
 
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Find your next role
-          </h1>
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Find your next role
+            </h1>
+
+            {statusLoaded && (
+              <span
+                className={`text-sm font-semibold px-3 py-1.5 rounded-full ${
+                  applyDisabled
+                    ? "bg-gray-100 text-gray-400"
+                    : "bg-orange-50 text-[#F2754A]"
+                }`}
+              >
+                {applyRemaining}/{applyLimit} applies left today
+              </span>
+            )}
+          </div>
 
           {loading ? (
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm py-24 text-center">
@@ -193,12 +258,21 @@ export default function FeedPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center">
+              {applyDisabled && (
+                <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3 mb-5 flex items-center gap-2 text-sm text-[#F2754A] font-medium">
+                  <Clock className="w-4 h-4 flex-shrink-0" />
+                  You have used all {applyLimit} applies today. You can still
+                  skip through roles — applying resumes at midnight IST.
+                </div>
+              )}
+
               <div className="relative w-full" style={{ minHeight: 420 }}>
                 <AnimatePresence>
                   <SwipeCard
                     key={currentJob.id}
                     job={currentJob}
                     onSwipe={handleSwipe}
+                    applyDisabled={applyDisabled}
                   />
                 </AnimatePresence>
               </div>
@@ -217,9 +291,14 @@ export default function FeedPage() {
                 <button
                   type="button"
                   onClick={() => handleSwipe("right")}
-                  disabled={swiping}
+                  disabled={swiping || applyDisabled}
                   aria-label="Apply"
                   className="butn butn__new butn--small butn--apply"
+                  style={
+                    applyDisabled
+                      ? { opacity: 0.5, cursor: "not-allowed" }
+                      : undefined
+                  }
                 >
                   <span>Apply</span>
                 </button>
@@ -290,7 +369,7 @@ export default function FeedPage() {
                   .butn:active {
                     transform: translateY(-3px);
                     color: #fff;
-                    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
                   }
 
                   .butn__new:hover::before {
@@ -303,7 +382,6 @@ export default function FeedPage() {
                     opacity: 0.65;
                   }
 
-                  /* Skip button (light) */
                   .butn--skip {
                     background: #ffffff;
                     border: 1px solid #e5e7eb;
@@ -312,7 +390,7 @@ export default function FeedPage() {
 
                   .butn--skip::before,
                   .butn--skip::after {
-                    background: rgba(0,0,0,0.06);
+                    background: rgba(0, 0, 0, 0.06);
                   }
 
                   .butn--skip:hover {
@@ -320,7 +398,6 @@ export default function FeedPage() {
                     background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
                   }
 
-                  /* Apply button (gradient) */
                   .butn--apply {
                     background: linear-gradient(90deg, #F2754A 0%, #F8B36B 100%);
                     color: #ffffff;
@@ -328,9 +405,8 @@ export default function FeedPage() {
 
                   .butn--apply::before,
                   .butn--apply::after {
-                    background: rgba(255,255,255,0.22);
+                    background: rgba(255, 255, 255, 0.22);
                   }
-
                 `}</style>
               </div>
 

@@ -15,10 +15,13 @@ import {
   MessageCircle,
   BookOpen,
   ShieldCheck,
+  HelpCircle,
 } from "lucide-react";
 
 import { checkIsAdmin } from "@/services/weeklyQuestion.service";
 import WeeklyQuestionPopup from "../(developer)/components/WeeklyQuestionPopup";
+import OnboardingTour from "@/components/OnboardingTour";
+import { recruiterTourSteps, RECRUITER_TOUR_KEY } from "@/lib/tourSteps";
 
 export default function RecruiterLayout({
   children,
@@ -27,26 +30,37 @@ export default function RecruiterLayout({
 }) {
   const pathname = usePathname();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
 
   // Admin tab visibility — email whitelist check, backend is the real gate.
   useEffect(() => {
     checkIsAdmin().then(setIsAdmin);
   }, []);
 
+  // First-login onboarding tour — desktop only, since the sidebar (where
+  // every data-tour anchor lives) is hidden below md.
+  useEffect(() => {
+    if (window.innerWidth < 768) return;
+    if (!localStorage.getItem(RECRUITER_TOUR_KEY)) {
+      const t = setTimeout(() => setTourActive(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   const menu = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Jobs", href: "/jobs", icon: Briefcase },
-  { label: "Create Job", href: "/jobs/new", icon: PlusCircle },
-  { label: "Candidates", href: "/candidates", icon: Users },
-  { label: "Messages", href: "/recruiter_messages", icon: MessageCircle },
-  { label: "Billing", href: "/billing", icon: CreditCard },
-  { label: "Kanaban Pipeline", href: "/pipeline", icon: KanbanIcon },
-  { label: "Blog", href: "/blog", icon: BookOpen },
-  { label: "Profile", href: "/recruiter_profile", icon: CircleUser },
-  ...(isAdmin
-    ? [{ label: "Admin", href: "/admin/weekly-question", icon: ShieldCheck }]
-    : []),
-];  
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, tourId: "nav-dashboard" },
+    { label: "Jobs", href: "/jobs", icon: Briefcase, tourId: "nav-jobs" },
+    { label: "Create Job", href: "/jobs/new", icon: PlusCircle, tourId: "nav-jobs-new" },
+    { label: "Candidates", href: "/candidates", icon: Users, tourId: "nav-candidates" },
+    { label: "Messages", href: "/recruiter_messages", icon: MessageCircle, tourId: "nav-messages" },
+    { label: "Billing", href: "/billing", icon: CreditCard, tourId: "nav-billing" },
+    { label: "Kanaban Pipeline", href: "/pipeline", icon: KanbanIcon, tourId: "nav-pipeline" },
+    { label: "Blog", href: "/blog", icon: BookOpen, tourId: "nav-blog" },
+    { label: "Profile", href: "/recruiter_profile", icon: CircleUser, tourId: "nav-profile" },
+    ...(isAdmin
+      ? [{ label: "Admin", href: "/admin/weekly-question", icon: ShieldCheck, tourId: "nav-admin" }]
+      : []),
+  ];
 
   const isActive = (href: string) => {
     if (href === "/jobs") {
@@ -78,6 +92,7 @@ export default function RecruiterLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour={item.tourId}
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
                   active
                     ? "text-white"
@@ -101,11 +116,20 @@ export default function RecruiterLayout({
 
         <button
           type="button"
+          onClick={() => setTourActive(true)}
+          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors mt-2"
+        >
+          <HelpCircle className="w-4.5 h-4.5" />
+          Take a tour
+        </button>
+
+        <button
+          type="button"
           onClick={() => {
             localStorage.removeItem("access_token");
             window.location.href = "/";
           }}
-          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors mt-2"
+          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors"
         >
           <LogOut className="w-4.5 h-4.5" />
           Log out
@@ -119,6 +143,15 @@ export default function RecruiterLayout({
           an unanswered question for this recruiter; audience is derived
           server-side from the JWT, no prop needed. */}
       <WeeklyQuestionPopup />
+
+      {/* First-login onboarding tour — desktop only, replayable via the
+          "Take a tour" sidebar button. */}
+      <OnboardingTour
+        steps={recruiterTourSteps}
+        storageKey={RECRUITER_TOUR_KEY}
+        active={tourActive}
+        onFinish={() => setTourActive(false)}
+      />
     </div>
   );
 }
