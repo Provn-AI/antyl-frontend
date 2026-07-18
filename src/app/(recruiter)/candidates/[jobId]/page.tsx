@@ -469,14 +469,18 @@ export default function CandidatesPage() {
         )}
       </div>
 
-      {/* ── Candidate drawer ── */}
+      {/* ── Candidate drawer/modal ──
+          BUG 013 FIX: was pinned to the right edge on desktop
+          (justify-end + rounded-l only). Now centers on desktop
+          (rounded on all corners) while keeping the full-width
+          bottom-sheet behavior on mobile. */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-end">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div
             className="absolute inset-0 bg-black/20 backdrop-blur-sm"
             onClick={() => setSelected(null)}
           />
-          <div className="relative w-full sm:w-[480px] h-full sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-l-[32px] shadow-2xl flex flex-col overflow-hidden">
+          <div className="relative w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[90vh] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col overflow-hidden">
 
             {/* Drawer header */}
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-50 flex-shrink-0">
