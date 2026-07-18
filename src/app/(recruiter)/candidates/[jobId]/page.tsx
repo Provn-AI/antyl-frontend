@@ -110,7 +110,16 @@ const STATUS: Record<string, { label: string; color: string; bg: string }> = {
   rejected:  { label: "Rejected",  color: "text-red-500",     bg: "bg-red-50"     },
 };
 
-// ── Drawer section ────────────────────────────────────────────────────────────
+// TOP_N_OPTIONS: recruiters see the strongest candidates first by default
+// (top 5 by trust_score); this dropdown lets them widen the view.
+const TOP_N_OPTIONS: { value: number | "all"; label: string }[] = [
+  { value: 5, label: "Top 5" },
+  { value: 10, label: "Top 10" },
+  { value: 20, label: "Top 20" },
+  { value: "all", label: "All" },
+];
+
+// ── Drawer section ───────────────────────────────────────────────────────────
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
@@ -131,6 +140,9 @@ export default function CandidatesPage() {
   const [noteSaving, setNoteSaving] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
   const [minScore, setMinScore] = useState(0);
+  // NEW: top-N-by-trust_score filter, default 5 so recruiters see the
+  // strongest candidates for the job first without extra clicks.
+  const [topN, setTopN] = useState<number | "all">(5);
   const [showFilters, setShowFilters] = useState(false);
 
   // EN-013: resume now opens in a same-page modal (iframe) instead of a new
@@ -167,7 +179,11 @@ export default function CandidatesPage() {
     load();
   }, [jobId]);
 
-  const filtered = candidates.filter((c) => c.trust_score >= minScore);
+  // Apply the minimum-score filter first, then sort by trust_score
+  // descending, then cap to the selected top-N.
+  const scoreFiltered = candidates.filter((c) => c.trust_score >= minScore);
+  const sortedByScore = [...scoreFiltered].sort((a, b) => b.trust_score - a.trust_score);
+  const filtered = topN === "all" ? sortedByScore : sortedByScore.slice(0, topN);
 
   const handleSaveNote = async () => {
     if (!selected) return;
@@ -254,7 +270,7 @@ export default function CandidatesPage() {
         </h1>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">Candidates</h2>
             <p className="text-sm text-gray-400 mt-1">
@@ -262,21 +278,39 @@ export default function CandidatesPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold border transition-colors ${
-              showFilters
-                ? "bg-[#F2754A] text-white border-[#F2754A] shadow-md shadow-orange-100"
-                : "bg-white text-gray-500 border-gray-100 hover:border-gray-300"
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-            Filters
-            {minScore > 0 && (
-              <span className="w-2 h-2 rounded-full bg-white/60" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* NEW: Top N by trust score */}
+            <select
+              value={topN}
+              onChange={(e) =>
+                setTopN(e.target.value === "all" ? "all" : Number(e.target.value))
+              }
+              title="Show top candidates by Antyl Score"
+              className="bg-white border border-gray-100 rounded-full px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm outline-none cursor-pointer"
+            >
+              {TOP_N_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold border transition-colors ${
+                showFilters
+                  ? "bg-[#F2754A] text-white border-[#F2754A] shadow-md shadow-orange-100"
+                  : "bg-white text-gray-500 border-gray-100 hover:border-gray-300"
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filters
+              {minScore > 0 && (
+                <span className="w-2 h-2 rounded-full bg-white/60" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Filter panel */}
@@ -361,11 +395,7 @@ export default function CandidatesPage() {
                         {c.resume_url && (
                           <button
                             type="button"
-                            onClick={(e) => {
-  e.stopPropagation();
-  setResumeUrl(c.resume_url!);
-  trackResumeViewed(c.application_id);
-}}
+                            onClick={(e) => {   e.stopPropagation();   setResumeUrl(c.resume_url!);   trackResumeViewed(c.application_id); }}
                             title="View resume"
                             className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors flex-shrink-0 text-[11px] font-bold"
                           >
@@ -571,10 +601,7 @@ export default function CandidatesPage() {
                     {selected.resume_url && (
                       <button
                         type="button"
-                        onClick={() => {
-  setResumeUrl(selected.resume_url!);
-  trackResumeViewed(selected.application_id);
-}}
+                        onClick={() => {   setResumeUrl(selected.resume_url!);   trackResumeViewed(selected.application_id); }}
                         className="inline-flex items-center gap-2 text-sm font-bold text-[#F2754A] hover:underline"
                       >
                         <FileText className="w-4 h-4" />

@@ -28,6 +28,30 @@ export const developerTourSteps: TourStep[] = [
     content: "Every role you've applied to, and where it stands, lives here.",
   },
   {
+    id: "bookmarks",
+    target: '[data-tour="nav-bookmarks"]',
+    title: "Bookmarks",
+    content: "Save roles you're interested in and come back to apply later.",
+  },
+  {
+    id: "messages",
+    target: '[data-tour="nav-messages"]',
+    title: "Messages",
+    content: "Chat directly with recruiters once a match is made.",
+  },
+  {
+    id: "blog",
+    target: '[data-tour="nav-blog"]',
+    title: "Blog",
+    content: "Career tips and product updates from the Antyl team.",
+  },
+  {
+    id: "profile",
+    target: '[data-tour="nav-profile"]',
+    title: "Your profile",
+    content: "What recruiters see — GitHub verification, tech stack, and experience.",
+  },
+  {
     id: "bell",
     target: '[data-tour="nav-bell"]',
     title: "Notifications",
@@ -45,6 +69,12 @@ export const recruiterTourSteps: TourStep[] = [
     content: "Your hiring activity and pipeline health at a glance.",
   },
   {
+    id: "jobs",
+    target: '[data-tour="nav-jobs"]',
+    title: "Jobs",
+    content: "All your postings in one place — track status and applicants for each.",
+  },
+  {
     id: "create-job",
     target: '[data-tour="nav-jobs-new"]',
     title: "Post a role",
@@ -57,9 +87,33 @@ export const recruiterTourSteps: TourStep[] = [
     content: "Review candidates with GitHub-verified Antyl Scores, not just resumes.",
   },
   {
+    id: "messages",
+    target: '[data-tour="nav-messages"]',
+    title: "Messages",
+    content: "Chat directly with candidates once you've shown interest.",
+  },
+  {
+    id: "billing",
+    target: '[data-tour="nav-billing"]',
+    title: "Billing",
+    content: "Manage your credits and payment details — every job post uses one.",
+  },
+  {
     id: "pipeline",
     target: '[data-tour="nav-pipeline"]',
     title: "Pipeline",
     content: "Drag candidates through your hiring stages on the Kanban board.",
+  },
+  {
+    id: "blog",
+    target: '[data-tour="nav-blog"]',
+    title: "Blog",
+    content: "Hiring tips and product updates from the Antyl team.",
+  },
+  {
+    id: "profile",
+    target: '[data-tour="nav-profile"]',
+    title: "Company profile",
+    content: "Your company details, visible to every developer you match with — keep it current.",
   },
 ];

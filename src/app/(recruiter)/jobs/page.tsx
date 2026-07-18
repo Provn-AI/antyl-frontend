@@ -322,21 +322,40 @@ export default function JobsPage() {
                         </button>
                       </div>
 
-                      <p className="flex items-center gap-1.5 text-sm text-gray-400 mt-1">
+                      {/* Applicant count — click through to this job's
+                          applications/candidates page */}
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/candidates/${job.id}`)}
+                        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-[#F2754A] mt-1 transition-colors"
+                        title="View applications"
+                      >
                         <Users className="w-3.5 h-3.5" />
                         {job.applicant_count}{" "}
                         {job.applicant_count === 1 ? "applicant" : "applicants"}
-                      </p>
-
-                      {/* Read more — opens full job preview modal */}
-                      <button
-                        type="button"
-                        onClick={() => openPreview(job.id)}
-                        className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] mt-2 hover:underline"
-                      >
-                        Read more
-                        <ChevronRight className="w-3 h-3" />
                       </button>
+
+                      <div className="flex items-center gap-4 mt-2">
+                        {/* Read more — opens full job preview modal */}
+                        <button
+                          type="button"
+                          onClick={() => openPreview(job.id)}
+                          className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] hover:underline"
+                        >
+                          Read more
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+
+                        {/* View applications — goes to this job's candidates page */}
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/candidates/${job.id}`)}
+                          className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-[#F2754A] hover:underline"
+                        >
+                          View applications
+                          <ChevronRight className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex gap-2">

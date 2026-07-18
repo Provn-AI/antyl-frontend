@@ -269,7 +269,9 @@ export default function RecruiterProfilePage() {
                 />
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Company Profile
+                {savedProfile.company_name
+                  ? `${savedProfile.company_name} Profile`
+                  : "Company Profile"}
               </h2>
             </div>
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getMatches, updatePipelineStage } from "@/services/match.service";
 import {
   UserCheck, Phone, CalendarDays, BadgeDollarSign,
-  PartyPopper, XCircle, ChevronRight, ChevronLeft,
+  PartyPopper, XCircle, ChevronRight, ChevronLeft, Briefcase,
 } from "lucide-react";
 
 interface Match {
@@ -172,8 +172,6 @@ export default function PipelinePage() {
     );
   }
 
-  const total = matches.length;
-
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-12">
       <div className="w-full max-w-[1200px] mx-auto">
@@ -187,9 +185,35 @@ export default function PipelinePage() {
         </h1>
 
         {/* Header */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Pipeline</h2>
-          <p className="text-sm text-gray-400 mt-1">{total} candidate{total !== 1 ? "s" : ""} across all stages</p>
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Pipeline</h2>
+            <p className="text-sm text-gray-400 mt-1">
+              {visibleMatches.length} candidate{visibleMatches.length !== 1 ? "s" : ""}
+              {selectedJobId === "all"
+                ? " across all jobs"
+                : ` for ${jobs.find((j) => j.id === selectedJobId)?.title ?? "this job"}`}
+            </p>
+          </div>
+
+          {/* Job filter */}
+          {jobs.length > 0 && (
+            <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-full pl-4 pr-1.5 py-1.5 shadow-sm">
+              <Briefcase className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+              <select
+                value={selectedJobId}
+                onChange={(e) => setSelectedJobId(e.target.value)}
+                className="text-sm font-semibold text-gray-700 bg-transparent outline-none pr-2 py-1.5 cursor-pointer"
+              >
+                <option value="all">All jobs</option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Kanban columns */}
