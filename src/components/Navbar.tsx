@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getNotifications, markAllNotificationsRead } from "@/services/notification.service";
 
@@ -32,8 +33,8 @@ export default function Navbar() {
 
   return (
     <nav className="h-16 border-b bg-white flex items-center justify-between px-6">
-      <Link href="/" className="text-xl font-bold text-orange-500">
-        Antyl
+      <Link href="/" className="flex items-center" aria-label="Home">
+        <Image src="/Antyl.png" alt="Antyl logo" width={110} height={30} />
       </Link>
 
       <div className="flex items-center gap-6">

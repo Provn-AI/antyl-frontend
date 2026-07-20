@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -360,12 +361,8 @@ export default function DeveloperNavbar() {
       {/* ── Left sidebar (desktop) ── */}
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-56 bg-white border-r border-gray-100 z-50 px-4 py-6">
         <div className="flex items-center justify-between mb-8 px-3">
-          <Link
-            href="/feed"
-            className="text-xl font-bold"
-            style={{ color: "#F2754A", fontFamily: "var(--font-fraunces, serif)" }}
-          >
-            Antyl
+          <Link href="/feed" className="flex items-center" aria-label="Home">
+            <Image src="/Antyl.png" alt="Antyl logo" width={110} height={30} />
           </Link>
           <div data-tour="nav-bell">
             <BellButton
@@ -439,12 +436,8 @@ export default function DeveloperNavbar() {
       {/* ── Top bar (mobile) ── */}
       <header className="md:hidden bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="px-4 h-14 flex items-center justify-between">
-          <Link
-            href="/feed"
-            className="text-xl font-bold"
-            style={{ color: "#F2754A", fontFamily: "var(--font-fraunces, serif)" }}
-          >
-            Antyl
+          <Link href="/feed" className="flex items-center" aria-label="Home">
+            <Image src="/Antyl.png" alt="Antyl logo" width={90} height={26} />
           </Link>
 
           <div className="flex items-center gap-2">
