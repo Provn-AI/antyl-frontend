@@ -33,6 +33,8 @@ import { getMyStreak, StreakSummary } from "@/services/streak.service";
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import { BadgeIcon } from "../components/BadgeIcon";
+import CitySelect from "@/components/citySelect";
+
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,10 +50,21 @@ interface Profile {
   linkedin_url?: string;
   resume_url?: string;
   avatar_url?: string;
+  job_status?: string;
   resume_parsed_data?: {
     work_history?: { company: string; role: string; duration: string }[];
     education?: { degree: string; institution: string; year: string }[];
   };
+}
+
+const JOB_STATUS_OPTIONS = [
+  { value: "actively_looking", label: "Actively looking" },
+  { value: "open_to_opportunities", label: "Open to opportunities" },
+  { value: "not_looking", label: "Not looking" },
+];
+
+function jobStatusLabel(value: string | undefined) {
+  return JOB_STATUS_OPTIONS.find((o) => o.value === value)?.label || "Not set";
 }
 
 // ── Mini score ring ───────────────────────────────────────────────────────────
@@ -167,6 +180,7 @@ export default function ProfilePage() {
     current_role: "",
     years_experience: 0,
     linkedin_url: "",
+    job_status: "",
   });
 
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -197,6 +211,7 @@ export default function ProfilePage() {
           current_role: profileData.current_role || "",
           years_experience: profileData.years_experience || 0,
           linkedin_url: profileData.linkedin_url || "",
+          job_status: profileData.job_status || "not_looking",
         });
       } catch (error) {
         console.error(error);
@@ -237,6 +252,7 @@ export default function ProfilePage() {
         current_role: profile.current_role || "",
         years_experience: profile.years_experience || 0,
         linkedin_url: profile.linkedin_url || "",
+        job_status: profile.job_status || "not_looking",
       });
     }
     setIsEditing(false);
@@ -433,6 +449,9 @@ export default function ProfilePage() {
                         {streak.current_streak_days}-day streak
                       </span>
                     )}
+                    <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                      {jobStatusLabel(profile.job_status)}
+                    </span>
                   </div>
                 )}
 
@@ -440,11 +459,11 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 mb-1">City</label>
-                      <input
+                      <CitySelect
+                        mode="single"
                         value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        className={inputCls}
-                        placeholder="Bangalore"
+                        onChange={(v) => setFormData({ ...formData, city: v as string })}
+                        placeholder="Select city"
                       />
                     </div>
                     <div>
@@ -457,6 +476,33 @@ export default function ProfilePage() {
                         placeholder="3"
                       />
                     </div>
+                  </div>
+                )}
+
+                {isEditing && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">
+                      Job search status
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {JOB_STATUS_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, job_status: opt.value })}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${
+                            formData.job_status === opt.value
+                              ? "bg-[#F2754A] text-white border-[#F2754A]"
+                              : "bg-white text-gray-500 border-gray-200"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Controls whether jobs show up in your feed and auto-apply.
+                    </p>
                   </div>
                 )}
               </div>
@@ -576,8 +622,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            
-              < a href="/verification"
+            <a href="/verification"
               className="inline-block mt-4 text-xs font-bold text-[#F2754A] hover:underline"
             >
               {profile.trust_score != null ? "Re-verify →" : "Start verification →"}
@@ -782,8 +827,7 @@ export default function ProfilePage() {
                     Disconnect
                   </button>
                 ) : (
-                  
-                   <a href="/onboarding/github"
+                  <a href="/onboarding/github"
                     className="text-xs font-bold text-[#F2754A] hover:underline"
                   >
                     Connect →

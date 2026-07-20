@@ -15,6 +15,8 @@ import {
 import { createJob, autofillJob } from "@/services/recruiter-job.service";
 import { getBalance } from "@/services/billing.service";
 import TrustScoreSlider from "@/components/jobs/TrustScoreSlider";
+import { isValidCity } from "@/lib/cities";
+import CitySelect from "@/components/citySelect";
 
 interface JobForm {
   title: string;
@@ -85,8 +87,6 @@ export default function NewJobPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // FEATURE: credit balance, fetched once on mount so the recruiter sees
-  // whether they can even post before filling out the whole form.
   const [balance, setBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
 
@@ -97,8 +97,6 @@ export default function NewJobPage() {
         setBalance(bal);
       } catch (err) {
         console.error(err);
-        // Don't block the form on a balance-fetch failure — worst case the
-        // recruiter finds out via the 402 on submit instead.
       } finally {
         setBalanceLoading(false);
       }
@@ -125,30 +123,28 @@ export default function NewJobPage() {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (!saved) return EMPTY_FORM;
       const parsed = JSON.parse(saved).form ?? EMPTY_FORM;
-      // FIX: normalize on load too, in case a draft was saved before this
-      // fix with required_tech_stack already corrupted into an array.
+      // FIX: normalize on load, in case a draft was saved before this
+      // fix with required_tech_stack already corrupted into an array,
+      // or with a free-text location that's no longer valid against the
+      // canonical city list.
       return {
         ...EMPTY_FORM,
         ...parsed,
         required_tech_stack: toTechStackString(parsed.required_tech_stack),
+        location: isValidCity(parsed.location) ? parsed.location : "",
       };
     } catch {
       return EMPTY_FORM;
     }
   });
 
-  // Derived — no state needed
   const hasDraft =
     JSON.stringify(form) !== JSON.stringify(EMPTY_FORM) || experienceYears !== 0;
 
-  // Auto-save whenever form changes — no setState inside
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, experienceYears }));
   }, [form, experienceYears]);
 
-  // FIX: guard against required_tech_stack ever being a non-string here —
-  // this is the line that originally crashed with
-  // "form.required_tech_stack.split is not a function".
   const techTags = toTechStackString(form.required_tech_stack)
     .split(",")
     .map((s) => s.trim())
@@ -180,6 +176,18 @@ export default function NewJobPage() {
     return "";
   };
 
+  // FIX: the AI autofill endpoint returns a free-text location string
+  // (e.g. "Bangalore, India") — that's exactly the kind of un-canonical
+  // spelling this whole change is meant to eliminate. Rather than trust
+  // it directly, only keep the AI's location if it happens to match a
+  // canonical city; otherwise leave the field blank so the recruiter
+  // has to pick one explicitly from the dropdown.
+  function normalizeAutofillLocation(raw: string): string {
+    if (!raw) return "";
+    const city = raw.split(",")[0].trim();
+    return isValidCity(city) ? city : "";
+  }
+
   async function handleAutofill() {
     if (!form.title.trim()) {
       setError("Enter a job title first so AI knows what to fill.");
@@ -191,8 +199,6 @@ export default function NewJobPage() {
       const result = await autofillJob(form.title);
       const years = result.experience_years ?? 0;
       setExperienceYears(years);
-      // FIX: normalize the array response from the AI endpoint into the
-      // comma-separated string this form's state expects.
       const techStackStr = toTechStackString(result.required_tech_stack);
       setForm((prev) => ({
         ...prev,
@@ -202,7 +208,7 @@ export default function NewJobPage() {
         salary_min: result.salary_min,
         salary_max: result.salary_max,
         job_type: result.job_type,
-        location: result.location,
+        location: normalizeAutofillLocation(result.location),
         is_remote: result.is_remote,
       }));
     } catch {
@@ -238,10 +244,6 @@ export default function NewJobPage() {
       setTimeout(() => router.push("/jobs"), 1200);
     } catch (err) {
       console.error(err);
-      // FEATURE: a 402 here means the backend's own credit check caught it
-      // even though our balance fetch on load said otherwise — e.g. credits
-      // were spent from another tab in between. Give a real message with a
-      // way out instead of the generic fallback.
       const message = err instanceof Error ? err.message : "";
       if (message.toLowerCase().includes("credit")) {
         setError(message);
@@ -258,7 +260,6 @@ export default function NewJobPage() {
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-10">
       <div className="w-full max-w-2xl mx-auto">
 
-        {/* Header */}
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-gray-900">Create Job</h1>
@@ -286,12 +287,9 @@ export default function NewJobPage() {
             >
               Back to jobs
             </button>
-          
           </div>
         </div>
 
-        {/* FEATURE: credit balance banner — visible before the recruiter
-            invests time filling out the form. */}
         <div
           className={`flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5 mb-6 border ${
             outOfCredits
@@ -346,7 +344,6 @@ export default function NewJobPage() {
 
         <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 space-y-5">
 
-          {/* Title + Auto-fill */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-semibold text-gray-900">
@@ -381,7 +378,6 @@ export default function NewJobPage() {
             )}
           </div>
 
-          {/* Description */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Description
@@ -394,7 +390,6 @@ export default function NewJobPage() {
             />
           </div>
 
-          {/* Tech Stack */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Required Tech Stack
@@ -424,7 +419,6 @@ export default function NewJobPage() {
             )}
           </div>
 
-          {/* Experience + Job Type + Salary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
@@ -506,21 +500,23 @@ export default function NewJobPage() {
             </div>
           </div>
 
-          {/* Location */}
+          {/* Location — was a free-text <input>, now a canonical CitySelect
+              so recruiters can't introduce spelling variants (e.g.
+              "Bangalore" vs "Bengaluru") that break exact-match filtering
+              against developer preferred_locations. */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Location
             </label>
-            <input
-              className={inputClass}
-              placeholder="e.g. Mumbai, India"
+            <CitySelect
+              mode="single"
               value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              onChange={(v) => setForm({ ...form, location: v as string })}
+              placeholder="Select a city"
               disabled={form.is_remote}
             />
           </div>
 
-          {/* Remote toggle */}
           <button
             type="button"
             onClick={() => setForm({ ...form, is_remote: !form.is_remote })}
@@ -542,7 +538,6 @@ export default function NewJobPage() {
             </div>
           </button>
 
-          {/* Antyl Score */}
           <div>
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               Antyl Score Range
@@ -555,7 +550,6 @@ export default function NewJobPage() {
             />
           </div>
 
-          {/* Actions */}
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -580,7 +574,6 @@ export default function NewJobPage() {
         </div>
       </div>
 
-      {/* Preview Modal */}
       {showPreview && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"

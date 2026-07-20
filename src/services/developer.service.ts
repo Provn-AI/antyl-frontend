@@ -44,7 +44,8 @@ export interface UpdateProfilePayload {
   bio?: string;
   years_experience?: number;
   tech_stack?: string[];
-  linkedin_url?: string;  // ← add
+  linkedin_url?: string; 
+  job_status?: string; 
   resume_parsed_data?: {
     work_history?: { company: string; role: string; duration: string; }[];
     education?: { degree: string; institution: string; year: string; }[];

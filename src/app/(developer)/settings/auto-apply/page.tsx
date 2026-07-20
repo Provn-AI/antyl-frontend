@@ -10,6 +10,7 @@ import {
   saveAutoApplyPreferences,
   AutoApplyPreferences,
 } from "@/services/developer.service";
+import CitySelect from "@/components/citySelect";
 
 const JOB_TYPES = ["full_time", "part_time", "contract", "internship"];
 
@@ -25,7 +26,7 @@ export default function AutoApplySettingsPage() {
   const [minScore, setMinScore] = useState(70);
   const [techStack, setTechStack] = useState("");
   const [jobTypes, setJobTypes] = useState<string[]>([]);
-  const [locations, setLocations] = useState("");
+  const [locations, setLocations] = useState<string[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -35,7 +36,7 @@ export default function AutoApplySettingsPage() {
         setMinScore(data.min_similarity_score ?? 70);
         setTechStack((data.preferred_tech_stack || []).join(", "));
         setJobTypes(data.job_type || []);
-        setLocations((data.preferred_locations || []).join(", "));
+        setLocations(data.preferred_locations || []);
       } catch (error) {
         console.error(error);
       } finally {
@@ -62,10 +63,7 @@ export default function AutoApplySettingsPage() {
           .map((s) => s.trim())
           .filter(Boolean),
         job_type: jobTypes,
-        preferred_locations: locations
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean),
+        preferred_locations: locations,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -174,14 +172,14 @@ export default function AutoApplySettingsPage() {
               <label className="block text-xs font-semibold text-gray-400 mb-1">
                 Preferred locations
               </label>
-              <input
+              <CitySelect
+                mode="multi"
                 value={locations}
-                onChange={(e) => setLocations(e.target.value)}
-                className={inputCls}
-                placeholder="Bengaluru, Mumbai"
+                onChange={(v) => setLocations(v as string[])}
+                placeholder="Select cities"
               />
               <p className="text-xs text-gray-400 mt-1">
-                Comma-separated. Remote jobs always match regardless of location.
+                Pick as many as you like. Remote jobs always match regardless of location.
               </p>
             </div>
 

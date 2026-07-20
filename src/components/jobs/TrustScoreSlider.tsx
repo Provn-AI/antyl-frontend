@@ -23,7 +23,6 @@ export default function TrustScoreSlider({
     <div className="space-y-4">
 
       <div className="font-semibold">
-        Antyl Score Range
       </div>
 
       <div>
@@ -33,9 +32,6 @@ export default function TrustScoreSlider({
             Minimum: {minScore}
           </span>
 
-          <span>
-            Maximum: {maxScore}
-          </span>
         </div>
 
         <input
@@ -54,7 +50,7 @@ export default function TrustScoreSlider({
         />
 
         <div className="flex justify-between text-sm mt-3 text-black">
-          <span>Experience Level: {maxScore}</span>
+          <span>Maximum: {maxScore}</span>
         </div>
 
         <input

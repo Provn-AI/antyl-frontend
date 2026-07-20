@@ -7,12 +7,13 @@ import {
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { X, Rocket, CheckCircle2, Clock } from "lucide-react";
+import { X, Rocket, CheckCircle2, Clock, EyeOff } from "lucide-react";
 
 import JobCard from "@/components/jobs/JobCard";
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import { swipeJob, getSwipeStatus } from "@/services/swipe.service";
 import { getJobFeed } from "@/services/job.service";
+import { getMyProfile } from "@/services/developer.service";
 
 interface Job {
   id: string;
@@ -83,6 +84,64 @@ function SwipeCard({
   );
 }
 
+function NotLookingModal({
+  open,
+  onDismiss,
+}: {
+  open: boolean;
+  onDismiss: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+        >
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            onClick={onDismiss}
+          />
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6 text-center"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
+              <EyeOff className="w-6 h-6 text-[#F2754A]" />
+            </div>
+            <h3 className="text-base font-bold text-gray-900 mb-1">
+              You&apos;re set to &quot;Not looking&quot;
+            </h3>
+            <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+              Jobs won&apos;t show up in your feed while your status is set
+              this way. Update it in your profile to start seeing matches.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onDismiss}
+                className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Dismiss
+              </button>
+              <a
+                href="/profile"
+                className="flex-1 py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors flex items-center justify-center"
+              >
+                Update status
+              </a>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function FeedPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,16 +153,23 @@ export default function FeedPage() {
   const [applyRemaining, setApplyRemaining] = useState(10);
   const [statusLoaded, setStatusLoaded] = useState(false);
 
+  const [showNotLookingModal, setShowNotLookingModal] = useState(false);
+
   useEffect(() => {
     async function loadJobs() {
       try {
-        const [jobsData, statusData] = await Promise.all([
+        const [jobsData, statusData, profileData] = await Promise.all([
           getJobFeed(),
           getSwipeStatus(),
+          getMyProfile(),
         ]);
         setJobs(jobsData);
         setApplyLimit(statusData.limit);
         setApplyRemaining(statusData.remaining);
+
+        if (profileData.job_status === "not_looking") {
+          setShowNotLookingModal(true);
+        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -165,6 +231,10 @@ export default function FeedPage() {
   return (
     <>
       <DeveloperNavbar />
+      <NotLookingModal
+        open={showNotLookingModal}
+        onDismiss={() => setShowNotLookingModal(false)}
+      />
 
       <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-10">
         <div className="w-full max-w-2xl mx-auto">
