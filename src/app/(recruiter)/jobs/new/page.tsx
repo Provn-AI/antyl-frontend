@@ -59,6 +59,19 @@ function mapExperienceLevel(years: number): string {
   return "lead";
 }
 
+// FIX: the AI autofill endpoint returns required_tech_stack as an array
+// (to match the string[] shape createJob() sends to the backend), but this
+// form's internal state — and the comma-separated text <input> — treat it
+// as a single string. Anything that reads form.required_tech_stack needs to
+// go through this so a stray array (from a fresh autofill response, or an
+// old corrupted localStorage draft saved before this fix) never reaches
+// .split() directly.
+function toTechStackString(value: unknown): string {
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "string") return value;
+  return "";
+}
+
 const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
   e.currentTarget.blur();
 };
@@ -111,7 +124,14 @@ export default function NewJobPage() {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (!saved) return EMPTY_FORM;
-      return JSON.parse(saved).form ?? EMPTY_FORM;
+      const parsed = JSON.parse(saved).form ?? EMPTY_FORM;
+      // FIX: normalize on load too, in case a draft was saved before this
+      // fix with required_tech_stack already corrupted into an array.
+      return {
+        ...EMPTY_FORM,
+        ...parsed,
+        required_tech_stack: toTechStackString(parsed.required_tech_stack),
+      };
     } catch {
       return EMPTY_FORM;
     }
@@ -126,7 +146,10 @@ export default function NewJobPage() {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, experienceYears }));
   }, [form, experienceYears]);
 
-  const techTags = form.required_tech_stack
+  // FIX: guard against required_tech_stack ever being a non-string here —
+  // this is the line that originally crashed with
+  // "form.required_tech_stack.split is not a function".
+  const techTags = toTechStackString(form.required_tech_stack)
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -145,7 +168,7 @@ export default function NewJobPage() {
     if (form.salary_max && form.salary_min > form.salary_max)
       return "Minimum salary can't be greater than maximum salary.";
 
-    const techStack = form.required_tech_stack.trim();
+    const techStack = toTechStackString(form.required_tech_stack).trim();
     if (techStack) {
       const hasComma = techStack.includes(",");
       const tokenCount = techStack.split(/\s+/).filter(Boolean).length;
@@ -168,10 +191,13 @@ export default function NewJobPage() {
       const result = await autofillJob(form.title);
       const years = result.experience_years ?? 0;
       setExperienceYears(years);
+      // FIX: normalize the array response from the AI endpoint into the
+      // comma-separated string this form's state expects.
+      const techStackStr = toTechStackString(result.required_tech_stack);
       setForm((prev) => ({
         ...prev,
         description: result.description,
-        required_tech_stack: result.required_tech_stack,
+        required_tech_stack: techStackStr,
         experience_level: result.experience_level,
         salary_min: result.salary_min,
         salary_max: result.salary_max,
