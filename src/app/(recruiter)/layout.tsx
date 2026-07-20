@@ -55,7 +55,7 @@ export default function RecruiterLayout({
     { label: "Messages", href: "/recruiter_messages", icon: MessageCircle, tourId: "nav-messages" },
     { label: "Billing", href: "/billing", icon: CreditCard, tourId: "nav-billing" },
     { label: "Kanaban Pipeline", href: "/pipeline", icon: KanbanIcon, tourId: "nav-pipeline" },
-    { label: "Blog", href: "/blog", icon: BookOpen, tourId: "nav-blog" },
+    { label: "Blog", href: "/recruiter_blog", icon: BookOpen, tourId: "nav-blog" },
     { label: "Profile", href: "/recruiter_profile", icon: CircleUser, tourId: "nav-profile" },
     ...(isAdmin
       ? [{ label: "Admin", href: "/admin/weekly-question", icon: ShieldCheck, tourId: "nav-admin" }]
