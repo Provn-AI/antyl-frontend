@@ -362,7 +362,7 @@ export default function DeveloperNavbar() {
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-56 bg-white border-r border-gray-100 z-50 px-4 py-6">
         <div className="flex items-center justify-between mb-8 px-3">
           <Link href="/feed" className="flex items-center" aria-label="Home">
-            <Image src="/Antyl.png" alt="Antyl logo" width={110} height={30} />
+            <Image src="/Antyl.png" alt="Antyl logo" width={70} height={30} />
           </Link>
           <div data-tour="nav-bell">
             <BellButton
