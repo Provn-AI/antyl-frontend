@@ -7,7 +7,7 @@ import {
   useCallback,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Clock, ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight, Send, AlertTriangle, EyeOff } from "lucide-react";
 
 import {
   getVerificationSession,
@@ -36,6 +36,49 @@ const DIFFICULTY_CONFIG: Record<string, { label: string; color: string; bg: stri
   hard:   { label: "Hard",   color: "text-rose-600",    bg: "bg-rose-50"    },
 };
 
+// Number of tab-switches / minimizes allowed before the session auto-submits.
+// 1st switch -> warning shown. 2nd switch -> immediate auto-submit.
+const MAX_TAB_SWITCHES_BEFORE_SUBMIT = 2;
+
+function TabSwitchWarningModal({
+  open,
+  onDismiss,
+}: {
+  open: boolean;
+  onDismiss: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
+      <div className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+          <AlertTriangle className="w-6 h-6 text-red-500" />
+        </div>
+        <h3 className="text-base font-bold text-gray-900 mb-1">
+          You left the verification tab
+        </h3>
+        <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+          This is your one warning. If you switch tabs or minimize the
+          window again, your verification will be{" "}
+          <span className="text-red-500 font-semibold">
+            submitted immediately
+          </span>{" "}
+          with your current answers.
+        </p>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="w-full py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors"
+        >
+          I understand, continue
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function VerificationSessionPage() {
   const params   = useParams();
   const router   = useRouter();
@@ -50,8 +93,12 @@ export default function VerificationSessionPage() {
   const [answerTimes,      setAnswerTimes]       = useState<number[]>([]);
   const [autoSaveFlash,    setAutoSaveFlash]     = useState(false);
 
+  const [showTabWarning,   setShowTabWarning]    = useState(false);
+  const [autoSubmitReason, setAutoSubmitReason]  = useState<"timeout" | "tab_switch" | null>(null);
+
   const questionStartTimeRef  = useRef(0);
   const hasAutoSubmittedRef   = useRef(false);
+  const tabSwitchCountRef     = useRef(0);
   const textareaRef           = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => { questionStartTimeRef.current = Date.now(); }, []);
@@ -115,9 +162,35 @@ export default function VerificationSessionPage() {
   useEffect(() => {
     if (timeRemaining !== 0 || hasAutoSubmittedRef.current) return;
     hasAutoSubmittedRef.current = true;
+    setAutoSubmitReason("timeout");
     const t = setTimeout(() => void handleSubmit(), 0);
     return () => clearTimeout(t);
   }, [timeRemaining, handleSubmit]);
+
+  // Tab-switch / minimize detection.
+  // Uses the Page Visibility API — fires when the tab is backgrounded,
+  // minimized, or the OS switches away from the browser entirely.
+  useEffect(() => {
+    if (loading || !session) return;
+
+    function handleVisibilityChange() {
+      if (!document.hidden) return; // only care about leaving, not returning
+      if (hasAutoSubmittedRef.current) return;
+
+      tabSwitchCountRef.current += 1;
+
+      if (tabSwitchCountRef.current >= MAX_TAB_SWITCHES_BEFORE_SUBMIT) {
+        hasAutoSubmittedRef.current = true;
+        setAutoSubmitReason("tab_switch");
+        void handleSubmit();
+      } else {
+        setShowTabWarning(true);
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [loading, session, handleSubmit]);
 
   // Auto-save every 10s
   useEffect(() => {
@@ -172,6 +245,24 @@ export default function VerificationSessionPage() {
     );
   }
 
+  if (submitting && autoSubmitReason === "tab_switch") {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-3 text-center max-w-xs">
+          <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center">
+            <EyeOff className="w-6 h-6 text-red-500" />
+          </div>
+          <p className="text-sm font-bold text-gray-900">
+            Submitting — you left the tab again
+          </p>
+          <p className="text-xs text-gray-400">
+            Your answers so far are being submitted automatically.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Derived values ────────────────────────────────────────────────────────
 
   const question       = session.questions[currentQuestion];
@@ -187,6 +278,11 @@ export default function VerificationSessionPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-8">
+      <TabSwitchWarningModal
+        open={showTabWarning}
+        onDismiss={() => setShowTabWarning(false)}
+      />
+
       <div className="w-full max-w-3xl mx-auto">
 
         {/* ── Top bar ── */}
@@ -209,6 +305,13 @@ export default function VerificationSessionPage() {
             <Clock className={`w-4 h-4 ${isTimeDanger ? "animate-pulse" : ""}`} />
             {formattedTime}
           </div>
+        </div>
+
+        {/* ── Tab-switch notice ── */}
+        <div className="flex items-center gap-1.5 mb-5 text-xs font-medium text-gray-400">
+          <EyeOff className="w-3.5 h-3.5" />
+          Switching tabs or minimizing this window is monitored — a second
+          switch auto-submits your answers.
         </div>
 
         {/* ── Progress bar + meta ── */}
