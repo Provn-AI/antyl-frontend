@@ -7,7 +7,16 @@ import {
   useMotionValue,
   useTransform,
 } from "framer-motion";
-import { X, Rocket, CheckCircle2, Clock, EyeOff } from "lucide-react";
+import {
+  X,
+  Rocket,
+  CheckCircle2,
+  Clock,
+  EyeOff,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+} from "lucide-react";
 
 import JobCard from "@/components/jobs/JobCard";
 import DeveloperNavbar from "../components/DeveloperNavbar";
@@ -31,11 +40,13 @@ type ToastState = "applied" | "skipped" | "limit_reached" | null;
 
 function SwipeCard({
   job,
-  onSwipe,
+  onSwipeRight,
+  onRequestSkip,
   applyDisabled,
 }: {
   job: Job;
-  onSwipe: (direction: "left" | "right") => void;
+  onSwipeRight: () => void;
+  onRequestSkip: () => void;
   applyDisabled: boolean;
 }) {
   const x = useMotionValue(0);
@@ -50,8 +61,8 @@ function SwipeCard({
       dragConstraints={{ left: 0, right: 0 }}
       whileDrag={{ scale: 1.03 }}
       onDragEnd={(_, info) => {
-        if (info.offset.x > 120 && !applyDisabled) onSwipe("right");
-        else if (info.offset.x < -120) onSwipe("left");
+        if (info.offset.x > 120 && !applyDisabled) onSwipeRight();
+        else if (info.offset.x < -120) onRequestSkip();
       }}
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
@@ -77,7 +88,7 @@ function SwipeCard({
       <JobCard
         job={job}
         onApply={() => {
-          if (!applyDisabled) onSwipe("right");
+          if (!applyDisabled) onSwipeRight();
         }}
       />
     </motion.div>
@@ -117,12 +128,12 @@ function NotLookingModal({
               You&apos;re set to &quot;Not looking&quot;
             </h3>
             <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-  Jobs won&apos;t show up in your feed while your status is set to Not Looking,
-  update your status in profile by clicking on{" "}
-  <span className="text-[#F2754A] font-medium">
-    Edit Profile
-  </span>.
-</p>
+              Jobs won&apos;t show up in your feed while your status is set to Not Looking,
+              update your status in profile by clicking on{" "}
+              <span className="text-[#F2754A] font-medium">
+                Edit Profile
+              </span>.
+            </p>
             <div className="flex gap-3">
               <button
                 type="button"
@@ -145,6 +156,71 @@ function NotLookingModal({
   );
 }
 
+function SkipConfirmModal({
+  open,
+  jobTitle,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  jobTitle?: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+        >
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+            onClick={onCancel}
+          />
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6 text-center"
+          >
+            <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-base font-bold text-gray-900 mb-1">
+              Skip this job?
+            </h3>
+            <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+              {jobTitle ? `"${jobTitle}" ` : "This job "}
+              will be removed from your feed for good — this can&apos;t be
+              undone. If you just want to look at other jobs first, use{" "}
+              <span className="text-gray-600 font-medium">Next</span> instead.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirm}
+                className="flex-1 py-2.5 rounded-full text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors"
+              >
+                Yes, skip
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export default function FeedPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,6 +233,11 @@ export default function FeedPage() {
   const [statusLoaded, setStatusLoaded] = useState(false);
 
   const [showNotLookingModal, setShowNotLookingModal] = useState(false);
+
+  // Jobs the user has permanently decided on (applied or skipped).
+  // Used so Back/Next browsing can't accidentally re-trigger a decision.
+  const [decidedIds, setDecidedIds] = useState<Set<string>>(new Set());
+  const [pendingSkipJob, setPendingSkipJob] = useState<Job | null>(null);
 
   useEffect(() => {
     async function loadJobs() {
@@ -189,35 +270,84 @@ export default function FeedPage() {
     setTimeout(() => setToast(null), 1800);
   };
 
-  const handleSwipe = async (direction: "left" | "right") => {
+  // Moves the view forward without recording any decision on the current job.
+  const handleNext = () => {
+    setCurrentIndex((prev) => Math.min(prev + 1, jobs.length));
+  };
+
+  // Moves the view back to a previously browsed job (only relevant after Next).
+  const handleBack = () => {
+    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleApply = async () => {
     const job = jobs[currentIndex];
     if (!job || swiping) return;
 
-    if (direction === "right" && applyRemaining <= 0) {
+    if (applyRemaining <= 0) {
       showToast("limit_reached");
+      return;
+    }
+
+    if (decidedIds.has(job.id)) {
+      // Already decided on this one while browsing back/forward — just move on.
+      handleNext();
       return;
     }
 
     try {
       setSwiping(true);
-      await swipeJob(job.id, direction);
-
-      if (direction === "right") {
-        setApplyRemaining((prev) => Math.max(prev - 1, 0));
-        showToast("applied");
-      } else {
-        showToast("skipped");
-      }
-
+      await swipeJob(job.id, "right");
+      setApplyRemaining((prev) => Math.max(prev - 1, 0));
+      setDecidedIds((prev) => new Set(prev).add(job.id));
+      showToast("applied");
       setCurrentIndex((prev) => prev + 1);
     } catch (error) {
       const err = error as Error & { status?: number };
-
       if (err.status === 429) {
         setApplyRemaining(0);
         showToast("limit_reached");
       } else if (err.status === 409) {
-        // Already swiped/applied — just move past it, no need to alarm the user
+        setDecidedIds((prev) => new Set(prev).add(job.id));
+        setCurrentIndex((prev) => prev + 1);
+      } else {
+        console.error(error);
+      }
+    } finally {
+      setSwiping(false);
+    }
+  };
+
+  // Opens the confirm modal instead of skipping immediately.
+  const handleRequestSkip = () => {
+    const job = jobs[currentIndex];
+    if (!job || swiping) return;
+
+    if (decidedIds.has(job.id)) {
+      handleNext();
+      return;
+    }
+
+    setPendingSkipJob(job);
+  };
+
+  const cancelSkip = () => setPendingSkipJob(null);
+
+  const confirmSkip = async () => {
+    const job = pendingSkipJob;
+    if (!job) return;
+    setPendingSkipJob(null);
+
+    try {
+      setSwiping(true);
+      await swipeJob(job.id, "left");
+      setDecidedIds((prev) => new Set(prev).add(job.id));
+      showToast("skipped");
+      setCurrentIndex((prev) => prev + 1);
+    } catch (error) {
+      const err = error as Error & { status?: number };
+      if (err.status === 409) {
+        setDecidedIds((prev) => new Set(prev).add(job.id));
         setCurrentIndex((prev) => prev + 1);
       } else {
         console.error(error);
@@ -230,6 +360,7 @@ export default function FeedPage() {
   const currentJob = jobs[currentIndex];
   const hasFinishedFeed = !loading && jobs.length > 0 && !currentJob;
   const applyDisabled = applyRemaining <= 0;
+  const canGoBack = currentIndex > 0;
 
   return (
     <>
@@ -237,6 +368,12 @@ export default function FeedPage() {
       <NotLookingModal
         open={showNotLookingModal}
         onDismiss={() => setShowNotLookingModal(false)}
+      />
+      <SkipConfirmModal
+        open={!!pendingSkipJob}
+        jobTitle={pendingSkipJob?.title}
+        onCancel={cancelSkip}
+        onConfirm={confirmSkip}
       />
 
       <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-10">
@@ -328,6 +465,16 @@ export default function FeedPage() {
                 You have gone through every role we have right now. Check
                 back soon for new matches.
               </p>
+              {canGoBack && (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#F2754A] hover:underline"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Go back to previous roles
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center">
@@ -339,21 +486,53 @@ export default function FeedPage() {
                 </div>
               )}
 
+              {decidedIds.has(currentJob.id) && (
+                <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 mb-5 text-sm text-gray-500 font-medium text-center">
+                  You already decided on this one — use Next to keep browsing.
+                </div>
+              )}
+
               <div className="relative w-full" style={{ minHeight: 420 }}>
                 <AnimatePresence>
                   <SwipeCard
                     key={currentJob.id}
                     job={currentJob}
-                    onSwipe={handleSwipe}
+                    onSwipeRight={handleApply}
+                    onRequestSkip={handleRequestSkip}
                     applyDisabled={applyDisabled}
                   />
                 </AnimatePresence>
               </div>
 
-              <div className="flex items-center gap-5 mt-8">
+              {/* Back / Next browsing row */}
+              <div className="flex items-center gap-3 mt-6">
                 <button
                   type="button"
-                  onClick={() => handleSwipe("left")}
+                  onClick={handleBack}
+                  disabled={!canGoBack || swiping}
+                  aria-label="Back"
+                  className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Back
+                </button>
+                <span className="text-gray-200">•</span>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={swiping}
+                  aria-label="Next"
+                  className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-5 mt-5">
+                <button
+                  type="button"
+                  onClick={handleRequestSkip}
                   disabled={swiping}
                   aria-label="Skip"
                   className="butn butn__new butn--small butn--skip"
@@ -363,7 +542,7 @@ export default function FeedPage() {
 
                 <button
                   type="button"
-                  onClick={() => handleSwipe("right")}
+                  onClick={handleApply}
                   disabled={swiping || applyDisabled}
                   aria-label="Apply"
                   className="butn butn__new butn--small butn--apply"
