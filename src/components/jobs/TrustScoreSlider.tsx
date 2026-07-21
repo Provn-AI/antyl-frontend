@@ -38,6 +38,7 @@ export default function TrustScoreSlider({
           type="range"
           min={0}
           max={100}
+          step={25}
           value={minScore}
           onChange={(e) =>
             onMinChange(
@@ -57,6 +58,7 @@ export default function TrustScoreSlider({
           type="range"
           min={0}
           max={100}
+          step={25}
           value={maxScore}
           onChange={(e) =>
             onMaxChange(
