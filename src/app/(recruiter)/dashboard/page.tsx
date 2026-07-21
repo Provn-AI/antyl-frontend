@@ -165,9 +165,9 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Total Jobs</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
-                  {jobs.length}
-                </div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-[#F2754A] to-[#F8B36B] bg-clip-text text-transparent">
+  {jobs.length}
+</div>
               </div>
 
               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
@@ -177,7 +177,7 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Active Jobs</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+<div className="text-3xl font-bold bg-gradient-to-r from-[#F2754A] to-[#F8B36B] bg-clip-text text-transparent">
                   {activeJobs}
                 </div>
               </div>
@@ -189,7 +189,7 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Applicants</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-3xl font-bold bg-gradient-to-r from-[#F2754A] to-[#F8B36B] bg-clip-text text-transparent">
                   {totalApplicants}
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Hires</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+<div className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-green-400 bg-clip-text text-transparent">
                   {hiredCount}
                 </div>
               </div>
