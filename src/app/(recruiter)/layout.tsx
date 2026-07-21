@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -76,12 +77,9 @@ export default function RecruiterLayout({
     <div className="flex min-h-screen bg-[#FAF6F0]">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col p-6">
-        <div
-          className="text-2xl font-bold mb-10"
-          style={{ color: "#F2754A", fontFamily: "var(--font-fraunces, serif)" }}
-        >
-          Antyl
-        </div>
+        <Link href="/dashboard" className="mb-10 inline-flex items-center" aria-label="Home">
+          <Image src="/Antyl.png" alt="Antyl logo" width={120} height={32} />
+        </Link>
 
         <nav className="flex flex-col gap-1.5 flex-1">
           {menu.map((item) => {
