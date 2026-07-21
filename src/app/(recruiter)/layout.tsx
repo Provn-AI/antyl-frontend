@@ -78,7 +78,7 @@ export default function RecruiterLayout({
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col p-6">
         <Link href="/dashboard" className="mb-10 inline-flex items-center" aria-label="Home">
-          <Image src="/Antyl.png" alt="Antyl logo" width={120} height={32} />
+          <Image src="/Antyl.png" alt="Antyl logo" width={70} height={30} />
         </Link>
 
         <nav className="flex flex-col gap-1.5 flex-1">
