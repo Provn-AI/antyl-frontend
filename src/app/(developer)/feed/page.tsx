@@ -117,9 +117,12 @@ function NotLookingModal({
               You&apos;re set to &quot;Not looking&quot;
             </h3>
             <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-              Jobs won&apos;t show up in your feed while your status is set
-              this way. Update it in your profile to start seeing matches.
-            </p>
+  Jobs won&apos;t show up in your feed while your status is set to Not Looking,
+  update your status in profile by clicking on{" "}
+  <span className="text-[#F2754A] font-medium">
+    Edit Profile
+  </span>.
+</p>
             <div className="flex gap-3">
               <button
                 type="button"

@@ -59,7 +59,7 @@ interface Profile {
 
 const JOB_STATUS_OPTIONS = [
   { value: "actively_looking", label: "Actively looking" },
-  { value: "open_to_opportunities", label: "Open to opportunities" },
+  // { value: "open_to_opportunities", label: "Open to opportunities" },
   { value: "not_looking", label: "Not looking" },
 ];
 

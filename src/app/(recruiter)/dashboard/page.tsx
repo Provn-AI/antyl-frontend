@@ -165,9 +165,9 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Total Jobs</span>
                 </div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-[#F2754A] to-[#F8B36B] bg-clip-text text-transparent">
-  {jobs.length}
-</div>
+                <div className="text-3xl font-bold text-gray-900">
+                  {jobs.length}
+                </div>
               </div>
 
               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
@@ -177,7 +177,7 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Active Jobs</span>
                 </div>
-<div className="text-3xl font-bold bg-gradient-to-r from-[#F2754A] to-[#F8B36B] bg-clip-text text-transparent">
+                <div className="text-3xl font-bold text-gray-900">
                   {activeJobs}
                 </div>
               </div>
@@ -189,7 +189,7 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Applicants</span>
                 </div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-[#F2754A] to-[#F8B36B] bg-clip-text text-transparent">
+                <div className="text-3xl font-bold text-gray-900">
                   {totalApplicants}
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function RecruiterDashboard() {
                   </div>
                   <span className="text-sm text-gray-400">Hires</span>
                 </div>
-<div className="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-green-400 bg-clip-text text-transparent">
+                <div className="text-3xl font-bold text-gray-900">
                   {hiredCount}
                 </div>
               </div>
@@ -294,8 +294,7 @@ export default function RecruiterDashboard() {
                         // page now — confirm this path matches your actual
                         // route structure (assumed /candidates/[jobId]).
                         onClick={() => router.push(`/candidates/${job.id}`)}
-                        className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-4 hover:bg-gray-50 transition-colors text-left"
-                      >
+className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-4 border border-transparent hover:border-[#F2754A] hover:shadow-[0_0_0_3px_rgba(242,117,74,0.12)] transition-all duration-300 text-left">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p className="font-semibold text-gray-900 truncate">
