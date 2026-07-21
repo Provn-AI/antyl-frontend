@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import {
   getJobCandidates,
   saveCandidateNote,
@@ -22,6 +23,7 @@ import {
   CheckCircle,
   SkipForward,
   StickyNote,
+  MessageCircle,
 } from "lucide-react";
 
 interface Candidate {
@@ -159,7 +161,10 @@ export default function CandidatesPage() {
 
   // BUG-FIX: success animation shown when a candidate is marked "Interested"
   // before the drawer closes, so it's visually clear they moved to the pipeline.
+  // Now stays open (no auto-close timer) so the recruiter has time to tap
+  // "Message" and jump straight into the conversation.
   const [matchSuccessName, setMatchSuccessName] = useState<string | null>(null);
+  const [matchedCandidate, setMatchedCandidate] = useState<Candidate | null>(null);
 
   useEffect(() => {
     return () => {
@@ -244,6 +249,15 @@ export default function CandidatesPage() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  // Closes the success overlay + drawer and reflects the "matched" status
+  // in the list (the list was already refetched right after the status
+  // update succeeded, so this is just cleanup of local UI state).
+  const closeMatchSuccess = () => {
+    setMatchSuccessName(null);
+    setMatchedCandidate(null);
+    setSelected(null);
   };
 
   if (loading) {
@@ -669,18 +683,17 @@ export default function CandidatesPage() {
                 type="button"
                 onClick={async () => {
                   if (!selected) return;
-                  const candidateName = selected.name;
+                  const candidate = selected;
                   try {
-                    await updateCandidateStatus(selected.application_id, "matched");
-                    // BUG-FIX: play the success animation over the drawer
-                    // first, then close + refetch once it's done.
-                    setMatchSuccessName(candidateName);
-                    setTimeout(async () => {
-                      setMatchSuccessName(null);
-                      setSelected(null);
-                      const data = await getJobCandidates(jobId);
-                      setCandidates(data);
-                    }, 1300);
+                    await updateCandidateStatus(candidate.application_id, "matched");
+                    // BUG-FIX: play the success animation over the drawer.
+                    // No longer auto-closes — stays open with a Message
+                    // button so the recruiter can jump straight into the
+                    // conversation, or dismiss manually via "Done".
+                    setMatchSuccessName(candidate.name);
+                    setMatchedCandidate(candidate);
+                    const data = await getJobCandidates(jobId);
+                    setCandidates(data);
                   } catch (err) {
                     console.error(err);
                   }
@@ -692,11 +705,12 @@ export default function CandidatesPage() {
               </button>
             </div>
 
-            {/* BUG-FIX: success animation overlay — covers just the drawer
-                (not the whole screen) so it reads as "this candidate moved
-                to your pipeline" rather than a generic full-page state. */}
+            {/* BUG-FIX: success overlay — covers just the drawer (not the
+                whole screen) so it reads as "this candidate moved to your
+                pipeline" rather than a generic full-page state. Now includes
+                a Message button (routes to /recruiter_messages) plus Done. */}
             {matchSuccessName && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/95 backdrop-blur-sm">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-white/95 backdrop-blur-sm px-6">
                 <div className="match-success-ring w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
                   <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
                     <path
@@ -713,6 +727,27 @@ export default function CandidatesPage() {
                   <p className="text-base font-bold text-gray-900">Moved to your pipeline</p>
                   <p className="text-sm text-gray-400 mt-0.5">{matchSuccessName} is now in Matched</p>
                 </div>
+
+                <div className="flex items-center gap-3 mt-1">
+                  <button
+                    type="button"
+                    onClick={closeMatchSuccess}
+                    className="px-5 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    Done
+                  </button>
+                  {matchedCandidate && (
+                    <Link
+                      href={`/recruiter_messages?developer_id=${matchedCandidate.developer_id}`}
+                      onClick={closeMatchSuccess}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-md shadow-orange-100"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Message
+                    </Link>
+                  )}
+                </div>
+
                 <style jsx>{`
                   .match-success-ring {
                     animation: match-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
