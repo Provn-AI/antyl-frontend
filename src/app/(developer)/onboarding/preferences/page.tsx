@@ -322,10 +322,10 @@ export default function PreferencesPage() {
               />
             </div>
 
-            <div className="flex justify-between text-xs text-gray-300 font-semibold mt-2">
-              <span>Open</span>
-              <span>Selective</span>
-            </div>
+            <div className="flex justify-between text-xs text-gray-400 font-semibold mt-2">
+  <span>Open</span>
+  <span>Selective</span>
+</div>
           </div>
 
           {/* ── Section: Auto Apply toggle ── */}

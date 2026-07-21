@@ -285,6 +285,8 @@ export interface AutoApplyPreferences {
   preferred_tech_stack: string[];
   job_type: string[];
   preferred_locations: string[];
+  salary_min: number;
+  salary_max: number;
 }
 
 export async function getAutoApplyPreferences(): Promise<AutoApplyPreferences> {

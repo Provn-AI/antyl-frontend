@@ -42,7 +42,7 @@ interface AntylNotification {
 }
 
 const TABS = [
-  { label: "Feed",         href: "/feed",         icon: Newspaper,       tourId: "nav-feed" },
+  { label: "Jobs for you!",         href: "/feed",         icon: Newspaper,       tourId: "nav-feed" },
   { label: "Dashboard",    href: "/developer_dashboard", icon: LayoutDashboard, tourId: "nav-dashboard" },
   { label: "Leaderboard",  href: "/leaderboard",  icon: Trophy,          tourId: "nav-leaderboard" },
   { label: "Applications", href: "/applications", icon: FileText,        tourId: "nav-applications" },

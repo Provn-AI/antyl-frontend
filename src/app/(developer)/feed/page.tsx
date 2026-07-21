@@ -1,674 +1,941 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
-  motion,
-  AnimatePresence,
-  useMotionValue,
-  useTransform,
-} from "framer-motion";
-import {
-  X,
-  Rocket,
-  CheckCircle2,
-  Clock,
-  EyeOff,
-  ChevronLeft,
-  ChevronRight,
+  MapPin,
+  Briefcase,
+  Trash2,
+  ExternalLink,
+  Shield,
   AlertTriangle,
+  Code2,
+  Pencil,
+  Save,
+  X,
+  FileText,
+  Flame,
+  Zap,
 } from "lucide-react";
 
-import JobCard from "@/components/jobs/JobCard";
+import {
+  getMyProfile,
+  getVerificationHistory,
+  disconnectGithub,
+  deleteAccount,
+  updateProfile,
+  uploadProfilePhoto,
+  getAutoApplyStatus,
+  toggleAutoApply,
+  getAutoApplyPreferences,
+  AutoApplyStatus,
+} from "@/services/developer.service";
+import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service";
+import { getMyStreak, StreakSummary } from "@/services/streak.service";
+import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
-import { swipeJob, getSwipeStatus } from "@/services/swipe.service";
-import { getJobFeed } from "@/services/job.service";
-import { getMyProfile } from "@/services/developer.service";
+import { BadgeIcon } from "../components/BadgeIcon";
+import CitySelect from "@/components/citySelect";
 
-interface Job {
-  id: string;
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface Profile {
+  name?: string;
+  bio?: string;
+  city?: string;
+  current_role?: string;
+  years_experience?: number;
+  tech_stack?: string[];
+  trust_score?: number;
+  github_username?: string;
+  linkedin_url?: string;
+  resume_url?: string;
+  avatar_url?: string;
+  job_status?: string;
+  resume_parsed_data?: {
+    work_history?: { company: string; role: string; duration: string }[];
+    education?: { degree: string; institution: string; year: string }[];
+  };
+}
+
+interface SalaryRange {
+  min: number;
+  max: number;
+}
+
+const JOB_STATUS_OPTIONS = [
+  { value: "actively_looking", label: "Actively looking" },
+  // { value: "open_to_opportunities", label: "Open to opportunities" },
+  { value: "not_looking", label: "Not looking" },
+];
+
+function jobStatusLabel(value: string | undefined) {
+  return JOB_STATUS_OPTIONS.find((o) => o.value === value)?.label || "Not set";
+}
+
+function formatSalary(n: number) {
+  return `₹${n.toLocaleString("en-IN")} LPA`;
+}
+
+// ── Mini score ring ───────────────────────────────────────────────────────────
+
+function MiniScoreRing({ score }: { score: number }) {
+  const radius = 28;
+  const circ = 2 * Math.PI * radius;
+  const offset = circ - (score / 100) * circ;
+
+  return (
+    <div className="relative w-16 h-16 flex-shrink-0">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r={radius} strokeWidth="5" className="fill-none stroke-orange-100" />
+        <circle
+          cx="32" cy="32" r={radius} strokeWidth="5"
+          fill="none" stroke="url(#miniGrad)" strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={offset}
+        />
+        <defs>
+          <linearGradient id="miniGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#F2754A" />
+            <stop offset="100%" stopColor="#FFB347" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-sm font-black text-gray-900">{score}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Confirm modal ─────────────────────────────────────────────────────────────
+
+type ConfirmState = {
+  open: boolean;
   title: string;
-  location: string;
-  job_type: string;
-  is_remote: boolean;
-  salary_min: number;
-  salary_max: number;
-  required_tech_stack: string[];
-  similarity_score: number;
-}
+  description: string;
+  cta: string;
+  danger?: boolean;
+  onConfirm: () => Promise<void>;
+};
 
-type ToastState = "applied" | "skipped" | "limit_reached" | null;
+const CONFIRM_CLOSED: ConfirmState = {
+  open: false, title: "", description: "", cta: "",
+  onConfirm: async () => {},
+};
 
-function SwipeCard({
-  job,
-  onSwipeRight,
-  onRequestSkip,
-  applyDisabled,
-}: {
-  job: Job;
-  onSwipeRight: () => void;
-  onRequestSkip: () => void;
-  applyDisabled: boolean;
-}) {
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 0, 200], [-8, 0, 8]);
-  const applyOpacity = useTransform(x, [0, 120], [0, 1]);
-  const skipOpacity = useTransform(x, [-120, 0], [1, 0]);
+function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  if (!state.open) return null;
 
   return (
-    <motion.div
-      style={{ x, rotate }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      whileDrag={{ scale: 1.03 }}
-      onDragEnd={(_, info) => {
-        if (info.offset.x > 120 && !applyDisabled) onSwipeRight();
-        else if (info.offset.x < -120) onRequestSkip();
-      }}
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="relative w-full cursor-grab active:cursor-grabbing"
-    >
-      {!applyDisabled && (
-        <motion.div
-          style={{ opacity: applyOpacity }}
-          className="absolute top-6 left-6 z-10 rotate-[-12deg] border-3 border-green-500 text-green-500 font-extrabold text-2xl px-4 py-1 rounded-xl pointer-events-none"
-        >
-          APPLY
-        </motion.div>
-      )}
-
-      <motion.div
-        style={{ opacity: skipOpacity }}
-        className="absolute top-6 right-6 z-10 rotate-[12deg] border-3 border-red-500 text-red-500 font-extrabold text-2xl px-4 py-1 rounded-xl pointer-events-none"
-      >
-        SKIP
-      </motion.div>
-
-      <JobCard
-        job={job}
-        onApply={() => {
-          if (!applyDisabled) onSwipeRight();
-        }}
-      />
-    </motion.div>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0">
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6">
+        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${state.danger ? "bg-red-50" : "bg-orange-50"}`}>
+          <AlertTriangle className={`w-5 h-5 ${state.danger ? "text-red-500" : "text-[#F2754A]"}`} />
+        </div>
+        <h3 className="text-base font-bold text-gray-900 mb-1">{state.title}</h3>
+        <p className="text-sm text-gray-400 mb-6">{state.description}</p>
+        <div className="flex gap-3">
+          <button type="button" onClick={onClose}
+            className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">
+            Cancel
+          </button>
+          <button type="button" disabled={busy}
+            onClick={async () => { setBusy(true); try { await state.onConfirm(); } finally { setBusy(false); onClose(); } }}
+            className={`flex-1 py-2.5 rounded-full text-sm font-bold text-white transition-colors disabled:opacity-50 ${state.danger ? "bg-red-500 hover:bg-red-600" : "bg-[#F2754A] hover:bg-[#e0623a]"}`}>
+            {busy ? "…" : state.cta}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function NotLookingModal({
-  open,
-  onDismiss,
-}: {
-  open: boolean;
-  onDismiss: () => void;
-}) {
+// ── LinkedIn link ─────────────────────────────────────────────────────────────
+
+function LinkedInLink({ url }: { url: string | undefined }) {
+  if (!url) return <p className="text-sm font-semibold text-gray-800">Not added</p>;
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-        >
-          <div
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-            onClick={onDismiss}
-          />
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6 text-center"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
-              <EyeOff className="w-6 h-6 text-[#F2754A]" />
-            </div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">
-              You&apos;re set to &quot;Not looking&quot;
-            </h3>
-            <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-              Jobs won&apos;t show up in your feed while your status is set to Not Looking,
-              update your status in profile by clicking on{" "}
-              <span className="text-[#F2754A] font-medium">
-                Edit Profile
-              </span>.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onDismiss}
-                className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
-              >
-                Dismiss
-              </button>
-              <a
-                href="/profile"
-                className="flex-1 py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors flex items-center justify-center"
-              >
-                Update status
-              </a>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <a href={url} target="_blank" rel="noopener noreferrer"
+      className="text-sm font-semibold text-[#F2754A] hover:underline inline-flex items-center gap-1">
+      View profile <ExternalLink className="w-3 h-3" />
+    </a>
   );
 }
 
-function SkipConfirmModal({
-  open,
-  jobTitle,
-  onCancel,
-  onConfirm,
-}: {
-  open: boolean;
-  jobTitle?: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-        >
-          <div
-            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-            onClick={onCancel}
-          />
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6 text-center"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-6 h-6 text-red-500" />
-            </div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">
-              Skip this job?
-            </h3>
-            <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-              {jobTitle ? `"${jobTitle}" ` : "This job "}
-              will be removed from your feed for good — this can&apos;t be
-              undone. If you just want to look at other jobs first, use{" "}
-              <span className="text-gray-600 font-medium">Next</span> instead.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onConfirm}
-                className="flex-1 py-2.5 rounded-full text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors"
-              >
-                Yes, skip
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
+// ── Input style ───────────────────────────────────────────────────────────────
 
-export default function FeedPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
+const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
+
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function ProfilePage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [history, setHistory] = useState<{ score: number; date: string }[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badgeCatalog, setBadgeCatalog] = useState<Record<string, BadgeCatalogEntry>>({});
+  const [streak, setStreak] = useState<StreakSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [toast, setToast] = useState<ToastState>(null);
-  const [swiping, setSwiping] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmState>(CONFIRM_CLOSED);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    bio: "",
+    city: "",
+    current_role: "",
+    years_experience: 0,
+    linkedin_url: "",
+    job_status: "",
+  });
 
-  const [applyLimit, setApplyLimit] = useState(10);
-  const [applyRemaining, setApplyRemaining] = useState(10);
-  const [statusLoaded, setStatusLoaded] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [showNotLookingModal, setShowNotLookingModal] = useState(false);
-
-  // Jobs the user has permanently decided on (applied or skipped).
-  // Used so Back/Next browsing can't accidentally re-trigger a decision.
-  const [decidedIds, setDecidedIds] = useState<Set<string>>(new Set());
-  const [pendingSkipJob, setPendingSkipJob] = useState<Job | null>(null);
+  const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
+  const [autoApplyToggling, setAutoApplyToggling] = useState(false);
+  const [salaryRange, setSalaryRange] = useState<SalaryRange | null>(null);
 
   useEffect(() => {
-    async function loadJobs() {
+    async function loadProfile() {
       try {
-        const [jobsData, statusData, profileData] = await Promise.all([
-          getJobFeed(),
-          getSwipeStatus(),
+        const [profileData, historyData, badgeData, streakData] = await Promise.all([
           getMyProfile(),
+          getVerificationHistory(),
+          getMyBadges(),
+          getMyStreak(),
         ]);
-        setJobs(jobsData);
-        setApplyLimit(statusData.limit);
-        setApplyRemaining(statusData.remaining);
-
-        if (profileData.job_status === "not_looking") {
-          setShowNotLookingModal(true);
-        }
+        setProfile(profileData);
+        setHistory(historyData);
+        setBadges(badgeData.badges);
+        setBadgeCatalog(badgeData.catalog);
+        setStreak(streakData);
+        setFormData({
+          name: profileData.name || "",
+          bio: profileData.bio || "",
+          city: profileData.city || "",
+          current_role: profileData.current_role || "",
+          years_experience: profileData.years_experience || 0,
+          linkedin_url: profileData.linkedin_url || "",
+          job_status: profileData.job_status || "not_looking",
+        });
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
-        setStatusLoaded(true);
+      }
+
+      try {
+        const status = await getAutoApplyStatus();
+        setAutoApply(status);
+      } catch (error) {
+        console.error(error);
+      }
+
+      // Separate try/catch: a brand-new user may not have saved
+      // preferences yet, and that shouldn't break the rest of the page.
+      try {
+        const prefs = await getAutoApplyPreferences();
+        if (prefs.salary_min || prefs.salary_max) {
+          setSalaryRange({ min: prefs.salary_min, max: prefs.salary_max });
+        }
+      } catch (error) {
+        console.error(error);
       }
     }
-
-    loadJobs();
+    loadProfile();
   }, []);
 
-  const showToast = (type: ToastState) => {
-    setToast(type);
-    setTimeout(() => setToast(null), 1800);
-  };
-
-  // Moves the view forward without recording any decision on the current job.
-  const handleNext = () => {
-    setCurrentIndex((prev) => Math.min(prev + 1, jobs.length));
-  };
-
-  // Moves the view back to a previously browsed job (only relevant after Next).
-  const handleBack = () => {
-    setCurrentIndex((prev) => Math.max(prev - 1, 0));
-  };
-
-  const handleApply = async () => {
-    const job = jobs[currentIndex];
-    if (!job || swiping) return;
-
-    if (applyRemaining <= 0) {
-      showToast("limit_reached");
-      return;
-    }
-
-    if (decidedIds.has(job.id)) {
-      // Already decided on this one while browsing back/forward — just move on.
-      handleNext();
-      return;
-    }
-
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaving(true);
     try {
-      setSwiping(true);
-      await swipeJob(job.id, "right");
-      setApplyRemaining((prev) => Math.max(prev - 1, 0));
-      setDecidedIds((prev) => new Set(prev).add(job.id));
-      showToast("applied");
-      setCurrentIndex((prev) => prev + 1);
+      await updateProfile(formData);
+      setProfile({ ...profile, ...formData });
+      setIsEditing(false);
     } catch (error) {
-      const err = error as Error & { status?: number };
-      if (err.status === 429) {
-        setApplyRemaining(0);
-        showToast("limit_reached");
-      } else if (err.status === 409) {
-        setDecidedIds((prev) => new Set(prev).add(job.id));
-        setCurrentIndex((prev) => prev + 1);
-      } else {
-        console.error(error);
-      }
+      console.error(error);
     } finally {
-      setSwiping(false);
+      setSaving(false);
     }
   };
 
-  // Opens the confirm modal instead of skipping immediately.
-  const handleRequestSkip = () => {
-    const job = jobs[currentIndex];
-    if (!job || swiping) return;
+  const handleCancelEdit = () => {
+    if (profile) {
+      setFormData({
+        name: profile.name || "",
+        bio: profile.bio || "",
+        city: profile.city || "",
+        current_role: profile.current_role || "",
+        years_experience: profile.years_experience || 0,
+        linkedin_url: profile.linkedin_url || "",
+        job_status: profile.job_status || "not_looking",
+      });
+    }
+    setIsEditing(false);
+  };
 
-    if (decidedIds.has(job.id)) {
-      handleNext();
+  const handleDisconnectGithub = async () => {
+    await disconnectGithub();
+    setProfile((p) => p ? { ...p, github_username: undefined } : p);
+  };
+
+  const handleDeleteAccount = async () => {
+    await deleteAccount();
+    localStorage.removeItem("access_token");
+    window.location.href = "/";
+  };
+
+  const handlePhotoClick = () => {
+    if (avatarUploading) return;
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    setAvatarError("");
+
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      setAvatarError("Use a JPEG, PNG, or WEBP image");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE) {
+      setAvatarError("Image must be under 5MB");
+      e.target.value = "";
       return;
     }
 
-    setPendingSkipJob(job);
-  };
-
-  const cancelSkip = () => setPendingSkipJob(null);
-
-  const confirmSkip = async () => {
-    const job = pendingSkipJob;
-    if (!job) return;
-    setPendingSkipJob(null);
-
+    setAvatarUploading(true);
     try {
-      setSwiping(true);
-      await swipeJob(job.id, "left");
-      setDecidedIds((prev) => new Set(prev).add(job.id));
-      showToast("skipped");
-      setCurrentIndex((prev) => prev + 1);
+      const uploadedUrl = await uploadProfilePhoto(file);
+      setProfile({ ...profile, avatar_url: uploadedUrl });
     } catch (error) {
-      const err = error as Error & { status?: number };
-      if (err.status === 409) {
-        setDecidedIds((prev) => new Set(prev).add(job.id));
-        setCurrentIndex((prev) => prev + 1);
-      } else {
-        console.error(error);
-      }
+      console.error(error);
+      setAvatarError("Upload failed. Try again.");
     } finally {
-      setSwiping(false);
+      setAvatarUploading(false);
+      e.target.value = "";
     }
   };
 
-  const currentJob = jobs[currentIndex];
-  const hasFinishedFeed = !loading && jobs.length > 0 && !currentJob;
-  const applyDisabled = applyRemaining <= 0;
-  const canGoBack = currentIndex > 0;
+  const handleToggleAutoApply = async () => {
+    if (!autoApply || autoApplyToggling) return;
+    setAutoApplyToggling(true);
+    const next = !autoApply.is_enabled;
+    try {
+      await toggleAutoApply(next);
+      setAutoApply({ ...autoApply, is_enabled: next });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setAutoApplyToggling(false);
+    }
+  };
 
-  return (
-    <>
-      <DeveloperNavbar />
-      <NotLookingModal
-        open={showNotLookingModal}
-        onDismiss={() => setShowNotLookingModal(false)}
-      />
-      <SkipConfirmModal
-        open={!!pendingSkipJob}
-        jobTitle={pendingSkipJob?.title}
-        onCancel={cancelSkip}
-        onConfirm={confirmSkip}
-      />
-
-      <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-10">
-        <div className="w-full max-w-2xl mx-auto">
-          <AnimatePresence>
-            {toast && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-sm ${
-                  toast === "applied"
-                    ? "bg-green-50 text-green-600"
-                    : toast === "skipped"
-                    ? "bg-red-50 text-red-500"
-                    : "bg-orange-50 text-[#F2754A]"
-                }`}
-              >
-                {toast === "applied" && (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    Applied
-                  </>
-                )}
-                {toast === "skipped" && (
-                  <>
-                    <X className="w-4 h-4" />
-                    Skipped
-                  </>
-                )}
-                {toast === "limit_reached" && (
-                  <>
-                    <Clock className="w-4 h-4" />
-                    Daily apply limit reached
-                  </>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
-              Find your next role
-            </h1>
-
-            {statusLoaded && (
-              <span
-                className={`text-sm font-semibold px-3 py-1.5 rounded-full ${
-                  applyDisabled
-                    ? "bg-gray-100 text-gray-400"
-                    : "bg-orange-50 text-[#F2754A]"
-                }`}
-              >
-                {applyRemaining}/{applyLimit} applies left today
-              </span>
-            )}
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0]">
+        <DeveloperNavbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 rounded-full border-2 border-[#F2754A] border-t-transparent animate-spin" />
+            <p className="text-sm text-gray-400 font-medium">Loading profile…</p>
           </div>
-
-          {loading ? (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm py-24 text-center">
-              <div
-                className="w-8 h-8 rounded-full border-[3px] border-gray-200 mx-auto animate-spin"
-                style={{ borderTopColor: "#F2754A" }}
-              />
-              <p className="text-gray-400 text-sm mt-4">Loading jobs...</p>
-            </div>
-          ) : jobs.length === 0 ? (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-5">
-                <Rocket className="w-7 h-7 text-[#F2754A]" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                No jobs available
-              </h2>
-              <p className="text-gray-400 max-w-sm mx-auto leading-relaxed">
-                Improve your Antyl score, update your preferences, or check
-                back tomorrow for new opportunities.
-              </p>
-            </div>
-          ) : hasFinishedFeed ? (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-5">
-                <CheckCircle2 className="w-7 h-7 text-[#F2754A]" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                You are all caught up
-              </h2>
-              <p className="text-gray-400 max-w-sm mx-auto leading-relaxed">
-                You have gone through every role we have right now. Check
-                back soon for new matches.
-              </p>
-              {canGoBack && (
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#F2754A] hover:underline"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Go back to previous roles
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              {applyDisabled && (
-                <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3 mb-5 flex items-center gap-2 text-sm text-[#F2754A] font-medium">
-                  <Clock className="w-4 h-4 flex-shrink-0" />
-                  You have used all {applyLimit} applies today. You can still
-                  skip through roles — applying resumes at midnight IST.
-                </div>
-              )}
-
-              {decidedIds.has(currentJob.id) && (
-                <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 mb-5 text-sm text-gray-500 font-medium text-center">
-                  You already decided on this one — use Next to keep browsing.
-                </div>
-              )}
-
-              <div className="relative w-full" style={{ minHeight: 420 }}>
-                <AnimatePresence>
-                  <SwipeCard
-                    key={currentJob.id}
-                    job={currentJob}
-                    onSwipeRight={handleApply}
-                    onRequestSkip={handleRequestSkip}
-                    applyDisabled={applyDisabled}
-                  />
-                </AnimatePresence>
-              </div>
-
-              {/* Back / Next browsing row */}
-              <div className="flex items-center gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  disabled={!canGoBack || swiping}
-                  aria-label="Back"
-                  className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Back
-                </button>
-                <span className="text-gray-200">•</span>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={swiping}
-                  aria-label="Next"
-                  className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-5 mt-5">
-                <button
-                  type="button"
-                  onClick={handleRequestSkip}
-                  disabled={swiping}
-                  aria-label="Skip"
-                  className="butn butn__new butn--small butn--skip"
-                >
-                  <span>Skip</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleApply}
-                  disabled={swiping || applyDisabled}
-                  aria-label="Apply"
-                  className="butn butn__new butn--small butn--apply"
-                  style={
-                    applyDisabled
-                      ? { opacity: 0.5, cursor: "not-allowed" }
-                      : undefined
-                  }
-                >
-                  <span>Apply</span>
-                </button>
-
-                <style jsx>{`
-                  .butn {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 0.95rem;
-                    text-transform: none;
-                    text-decoration: none;
-                    padding: 0 16px;
-                    height: 48px;
-                    min-width: 84px;
-                    width: auto;
-                    margin-right: 0;
-                    border-radius: 8px;
-                    border: none;
-                    color: #111827;
-                    position: relative;
-                    overflow: hidden;
-                    transition: all 0.25s ease-in-out;
-                    cursor: pointer;
-                  }
-
-                  .butn span {
-                    z-index: 20;
-                    pointer-events: none;
-                    font-weight: 600;
-                  }
-
-                  .butn::before {
-                    background: #fff;
-                    content: "";
-                    height: 120px;
-                    opacity: 0;
-                    position: absolute;
-                    top: -40px;
-                    transform: rotate(35deg);
-                    width: 60px;
-                    transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
-                    z-index: 10;
-                  }
-
-                  .butn::after {
-                    background: #fff;
-                    content: "";
-                    height: 200px;
-                    opacity: 0;
-                    position: absolute;
-                    top: -60px;
-                    transform: rotate(35deg);
-                    transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
-                    width: 100px;
-                    z-index: 9;
-                  }
-
-                  .butn__new::before {
-                    left: -50%;
-                  }
-
-                  .butn__new::after {
-                    left: -100%;
-                  }
-
-                  .butn:hover,
-                  .butn:active {
-                    transform: translateY(-3px);
-                    color: #fff;
-                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-                  }
-
-                  .butn__new:hover::before {
-                    left: 120%;
-                    opacity: 0.6;
-                  }
-
-                  .butn__new:hover::after {
-                    left: 220%;
-                    opacity: 0.65;
-                  }
-
-                  .butn--skip {
-                    background: #ffffff;
-                    border: 1px solid #e5e7eb;
-                    color: #6b7280;
-                  }
-
-                  .butn--skip::before,
-                  .butn--skip::after {
-                    background: rgba(0, 0, 0, 0.06);
-                  }
-
-                  .butn--skip:hover {
-                    color: #fff;
-                    background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
-                  }
-
-                  .butn--apply {
-                    background: linear-gradient(90deg, #F2754A 0%, #F8B36B 100%);
-                    color: #ffffff;
-                  }
-
-                  .butn--apply::before,
-                  .butn--apply::after {
-                    background: rgba(255, 255, 255, 0.22);
-                  }
-                `}</style>
-              </div>
-
-              <p className="text-sm text-gray-400 mt-5">
-                {jobs.length - currentIndex - 1} more roles after this one
-              </p>
-            </div>
-          )}
         </div>
       </div>
-    </>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0]">
+        <DeveloperNavbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+          <p className="text-gray-400 font-medium">Profile not found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const initials = (formData.name || profile.name || "??")
+    .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  const badgeCounts = badges.reduce((acc, b) => {
+    acc[b.badge_key] = (acc[b.badge_key] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return (
+    <div className="min-h-screen w-full bg-[#FAF6F0]">
+      <DeveloperNavbar />
+      <ConfirmModal state={confirm} onClose={() => setConfirm(CONFIRM_CLOSED)} />
+
+      <div className="px-4 py-12">
+        <div className="w-full max-w-2xl mx-auto">
+
+          {/* ── Hero card ── */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+            <div className="flex items-start gap-4">
+              <div
+                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-100 relative overflow-hidden cursor-pointer group"
+                onClick={handlePhotoClick}
+                title="Change profile photo"
+              >
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.name || "Profile photo"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-black text-lg">{initials}</span>
+                )}
+
+                {avatarUploading && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  </div>
+                )}
+
+                {!avatarUploading && (
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <Pencil className="w-4 h-4 text-white" />
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                {isEditing ? (
+                  <div className="mb-2">
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">Name</label>
+                    <input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className={inputCls}
+                      placeholder="Your name"
+                    />
+                  </div>
+                ) : (
+                  <h2 className="text-xl font-bold text-gray-900 truncate">
+                    {profile.name || "Unnamed Developer"}
+                  </h2>
+                )}
+
+                {isEditing ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">Current role</label>
+                    <input
+                      value={formData.current_role}
+                      onChange={(e) => setFormData({ ...formData, current_role: e.target.value })}
+                      className={inputCls}
+                      placeholder="e.g. Senior Frontend Engineer"
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    {profile.current_role || "Developer"}
+                  </p>
+                )}
+
+                {!isEditing && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {profile.city && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        <MapPin className="w-3 h-3" />{profile.city}
+                      </span>
+                    )}
+                    {profile.years_experience != null && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        <Briefcase className="w-3 h-3" />{profile.years_experience}y exp
+                      </span>
+                    )}
+                    {streak && streak.current_streak_days > 0 && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
+                        <Flame className="w-3 h-3" />
+                        {streak.current_streak_days}-day streak
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                      {jobStatusLabel(profile.job_status)}
+                    </span>
+                  </div>
+                )}
+
+                {isEditing && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">City</label>
+                      <CitySelect
+                        mode="single"
+                        value={formData.city}
+                        onChange={(v) => setFormData({ ...formData, city: v as string })}
+                        placeholder="Select city"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">Experience (years)</label>
+                      <input
+                        type="number"
+                        value={formData.years_experience || ""}
+                        onChange={(e) => setFormData({ ...formData, years_experience: Number(e.target.value) })}
+                        className={inputCls}
+                        placeholder="3"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {isEditing && (
+                  <div className="mt-2">
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">
+                      Job search status
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {JOB_STATUS_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, job_status: opt.value })}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${
+                            formData.job_status === opt.value
+                              ? "bg-[#F2754A] text-white border-[#F2754A]"
+                              : "bg-white text-gray-500 border-gray-200"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Controls whether jobs show up in your feed and auto-apply.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {!isEditing && profile.trust_score != null && (
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <MiniScoreRing score={profile.trust_score} />
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Score</span>
+                </div>
+              )}
+            </div>
+
+            {avatarError && (
+              <p className="text-xs font-semibold text-red-500 mt-3">{avatarError}</p>
+            )}
+
+            {isEditing ? (
+              <div className="mt-4">
+                <label className="block text-xs font-semibold text-gray-400 mb-1">Bio</label>
+                <textarea
+                  rows={3}
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  className={inputCls + " resize-none"}
+                  placeholder="Tell recruiters about yourself…"
+                />
+              </div>
+            ) : (
+              profile.bio && (
+                <p className="text-sm text-gray-500 leading-relaxed mt-5 pt-5 border-t border-gray-50">
+                  {profile.bio}
+                </p>
+              )
+            )}
+
+            <div className="flex gap-2 mt-5 pt-5 border-t border-gray-50">
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                  Edit profile
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#F2754A] text-white hover:bg-[#e0623a] disabled:opacity-50 transition-colors shadow-md shadow-orange-100"
+                  >
+                    <Save className="w-4 h-4" />
+                    {saving ? "Saving…" : "Save changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* ── Score history ── */}
+          {history.length > 0 && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-5">
+                Score history
+              </p>
+              <ScoreHistoryChart data={history} />
+            </div>
+          )}
+
+          {/* ── Tech stack ── */}
+          {profile.tech_stack && profile.tech_stack.length > 0 && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                Tech stack
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {profile.tech_stack.map((tech) => (
+                  <span key={tech} className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Verification ── */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              Verification
+            </p>
+
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                <Shield className="w-5 h-5 text-[#F2754A]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-gray-900">
+                  {profile.trust_score != null
+                    ? `Antyl Score: ${profile.trust_score}/100`
+                    : "Not verified yet"}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {profile.trust_score != null
+                    ? "Re-verify every 7 days to keep your score fresh"
+                    : "Verify your skills to unlock matching and the leaderboard"}
+                </p>
+              </div>
+            </div>
+
+            <a href="/verification"
+              className="inline-block mt-4 text-xs font-bold text-[#F2754A] hover:underline"
+            >
+              {profile.trust_score != null ? "Re-verify →" : "Start verification →"}
+            </a>
+          </div>
+
+          {/* ── Auto-apply ── */}
+          {autoApply && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                  Auto-apply
+                </p>
+                <button
+                  type="button"
+                  onClick={handleToggleAutoApply}
+                  disabled={autoApplyToggling}
+                  role="switch"
+                  aria-checked={autoApply.is_enabled}
+                  className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
+                    autoApply.is_enabled ? "bg-[#F2754A]" : "bg-gray-200"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                      autoApply.is_enabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-4 mt-4">
+                <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-5 h-5 text-[#F2754A]" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900">
+                    {autoApply.is_enabled ? "Actively applying for you" : "Turned off"}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {autoApply.used}/{autoApply.limit} auto-applied today · resets midnight IST
+                  </p>
+                </div>
+              </div>
+
+              {salaryRange && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400">Salary range</p>
+                    <p className="text-sm font-bold text-gray-800 mt-0.5">
+                      {formatSalary(salaryRange.min)} – {formatSalary(salaryRange.max)}
+                    </p>
+                  </div>
+                  <a
+                    href="/settings/auto-apply"
+                    aria-label="Edit salary range"
+                    title="Edit salary range"
+                    className="w-8 h-8 rounded-full bg-orange-50 hover:bg-orange-100 flex items-center justify-center text-[#F2754A] transition-colors flex-shrink-0"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )}
+
+              <a
+                href="/settings/auto-apply"
+                className="inline-block mt-4 text-xs font-bold text-[#F2754A] hover:underline"
+              >
+                Edit match preferences →
+              </a>
+            </div>
+          )}
+
+          {/* ── Streak & Badges ── */}
+          {(streak || badges.length > 0) && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                Streak & Badges
+              </p>
+
+              {streak && (
+                <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-50">
+                  <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    <Flame className="w-5 h-5 text-[#F2754A]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">
+                      {streak.current_streak_days} day{streak.current_streak_days === 1 ? "" : "s"} streak
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Longest: {streak.longest_streak_days} days · {streak.days_to_week_bonus} days to next bonus
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {badges.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {Object.entries(badgeCounts).map(([key, count]) => {
+                    const meta = badgeCatalog[key];
+                    if (!meta) return null;
+                    return (
+                      <div key={key} className="flex flex-col items-center text-center gap-2 p-3 rounded-2xl bg-gray-50">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center"
+                          style={{ background: `linear-gradient(135deg, ${meta.color}, #FFB347)` }}
+                        >
+                          <BadgeIcon icon={meta.icon} className="w-5 h-5 text-white" />
+                        </div>
+                        <p className="text-xs font-bold text-gray-800">{meta.label}</p>
+                        {count > 1 && <p className="text-[10px] text-gray-400">×{count}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">No badges yet — keep your streak going!</p>
+              )}
+            </div>
+          )}
+
+          {/* ── Resume ── */}
+          {profile.resume_parsed_data && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                  Resume
+                </p>
+                {profile.resume_url && (
+                  <a
+                    href={profile.resume_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#F2754A] bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    View PDF
+                  </a>
+                )}
+              </div>
+
+              {profile.resume_parsed_data.work_history && profile.resume_parsed_data.work_history.length > 0 && (
+                <div className="mb-6">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                    Experience
+                  </p>
+                  <div className="space-y-3">
+                    {profile.resume_parsed_data.work_history.map((job, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{job.role}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{job.company} · {job.duration}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {profile.resume_parsed_data.education && profile.resume_parsed_data.education.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                    Education
+                  </p>
+                  <div className="space-y-3">
+                    {profile.resume_parsed_data.education.map((edu, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <FileText className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{edu.institution} · {edu.year}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Links ── */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+              Links
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <Code2 className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400">GitHub</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {profile.github_username ? "@" + profile.github_username : "Not connected"}
+                    </p>
+                  </div>
+                </div>
+
+                {profile.github_username ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setConfirm({
+                        open: true,
+                        title: "Disconnect GitHub?",
+                        description:
+                          "Your repositories will no longer be used for verification. Your existing Antyl Score stays as-is until you next re-verify.",
+                        cta: "Disconnect",
+                        danger: true,
+                        onConfirm: handleDisconnectGithub,
+                      })
+                    }
+                    className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <a href="/onboarding/github"
+                    className="text-xs font-bold text-[#F2754A] hover:underline"
+                  >
+                    Connect →
+                  </a>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <ExternalLink className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-gray-400">LinkedIn</p>
+                    {isEditing ? (
+                      <input
+                        value={formData.linkedin_url}
+                        onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                        className={inputCls + " mt-1"}
+                        placeholder="https://linkedin.com/in/yourname"
+                      />
+                    ) : (
+                      <LinkedInLink url={profile.linkedin_url} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Danger zone ── */}
+          <div className="bg-white rounded-[24px] border border-red-100 shadow-sm p-6 sm:p-8">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
+                <Shield className="w-3.5 h-3.5 text-red-500" />
+              </div>
+              <p className="text-xs font-semibold text-red-400 uppercase tracking-widest">
+                Danger zone
+              </p>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Delete account</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Permanently removes your profile and all data.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirm({
+                  open: true,
+                  title: "Delete account?",
+                  description: "This action cannot be undone. Your profile, score, and all data will be permanently erased.",
+                  cta: "Delete account",
+                  danger: true,
+                  onConfirm: handleDeleteAccount,
+                })}
+                className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-full transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
   );
 }

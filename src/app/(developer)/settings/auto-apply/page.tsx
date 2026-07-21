@@ -27,6 +27,8 @@ export default function AutoApplySettingsPage() {
   const [techStack, setTechStack] = useState("");
   const [jobTypes, setJobTypes] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
+  const [salaryMin, setSalaryMin] = useState(0);
+  const [salaryMax, setSalaryMax] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -37,6 +39,8 @@ export default function AutoApplySettingsPage() {
         setTechStack((data.preferred_tech_stack || []).join(", "));
         setJobTypes(data.job_type || []);
         setLocations(data.preferred_locations || []);
+        setSalaryMin(data.salary_min ?? 0);
+        setSalaryMax(data.salary_max ?? 0);
       } catch (error) {
         console.error(error);
       } finally {
@@ -64,6 +68,8 @@ export default function AutoApplySettingsPage() {
           .filter(Boolean),
         job_type: jobTypes,
         preferred_locations: locations,
+        salary_min: salaryMin,
+        salary_max: salaryMax,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -180,6 +186,52 @@ export default function AutoApplySettingsPage() {
               />
               <p className="text-xs text-gray-400 mt-1">
                 Pick as many as you like. Remote jobs always match regardless of location.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 mb-1">
+                Salary range{" "}
+                <span className="text-gray-400 font-normal">Eg: (₹ 15 LPA)</span>
+              </label>
+              <div className="grid grid-cols-2 gap-3 mt-1">
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 block mb-1.5">
+                    Minimum
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      value={salaryMin || ""}
+                      onChange={(e) => setSalaryMin(Number(e.target.value))}
+                      placeholder="0"
+                      className={inputCls + " pl-7"}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 block mb-1.5">
+                    Maximum
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      value={salaryMax || ""}
+                      onChange={(e) => setSalaryMax(Number(e.target.value))}
+                      placeholder="0"
+                      className={inputCls + " pl-7"}
+                    />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Only apply to jobs within this range
               </p>
             </div>
 
