@@ -26,6 +26,7 @@ import {
   uploadProfilePhoto,
   getAutoApplyStatus,
   toggleAutoApply,
+  getAutoApplyPreferences,
   AutoApplyStatus,
 } from "@/services/developer.service";
 import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service";
@@ -57,6 +58,11 @@ interface Profile {
   };
 }
 
+interface SalaryRange {
+  min: number;
+  max: number;
+}
+
 const JOB_STATUS_OPTIONS = [
   { value: "actively_looking", label: "Actively looking" },
   // { value: "open_to_opportunities", label: "Open to opportunities" },
@@ -65,6 +71,10 @@ const JOB_STATUS_OPTIONS = [
 
 function jobStatusLabel(value: string | undefined) {
   return JOB_STATUS_OPTIONS.find((o) => o.value === value)?.label || "Not set";
+}
+
+function formatSalary(n: number) {
+  return `₹${n.toLocaleString("en-IN")} LPA`;
 }
 
 // ── Mini score ring ───────────────────────────────────────────────────────────
@@ -189,6 +199,7 @@ export default function ProfilePage() {
 
   const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
   const [autoApplyToggling, setAutoApplyToggling] = useState(false);
+  const [salaryRange, setSalaryRange] = useState<SalaryRange | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -222,6 +233,17 @@ export default function ProfilePage() {
       try {
         const status = await getAutoApplyStatus();
         setAutoApply(status);
+      } catch (error) {
+        console.error(error);
+      }
+
+      // Separate try/catch: a brand-new user may not have saved
+      // preferences yet, and that shouldn't break the rest of the page.
+      try {
+        const prefs = await getAutoApplyPreferences();
+        if (prefs.salary_min || prefs.salary_max) {
+          setSalaryRange({ min: prefs.salary_min, max: prefs.salary_max });
+        }
       } catch (error) {
         console.error(error);
       }
@@ -667,6 +689,25 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
+
+              {salaryRange && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400">Salary range</p>
+                    <p className="text-sm font-bold text-gray-800 mt-0.5">
+                      {formatSalary(salaryRange.min)} – {formatSalary(salaryRange.max)}
+                    </p>
+                  </div>
+                  <a
+                    href="/settings/auto-apply"
+                    aria-label="Edit salary range"
+                    title="Edit salary range"
+                    className="w-8 h-8 rounded-full bg-orange-50 hover:bg-orange-100 flex items-center justify-center text-[#F2754A] transition-colors flex-shrink-0"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )}
 
               <a
                 href="/settings/auto-apply"
