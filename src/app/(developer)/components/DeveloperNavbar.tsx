@@ -85,6 +85,25 @@ function timeAgo(iso: string) {
   return `${days}d ago`;
 }
 
+// Where a notification should take the user when clicked. Falls back to
+// the feed for any type we don't have a specific destination for.
+function getNotificationHref(n: AntylNotification): string {
+  switch (n.type) {
+    case "match":
+      return "/applications";
+    case "profile_viewed":
+      return "/profile";
+    case "streak_daily":
+    case "streak_week":
+    case "streak_month":
+    case "podium_finish":
+    case "field_leader":
+      return "/leaderboard";
+    default:
+      return "/feed";
+  }
+}
+
 function NotifIcon({ type }: { type: string }) {
   if (type === "match") return <Sparkles className="w-3.5 h-3.5 text-emerald-500" />;
   if (type === "profile_viewed") return <Eye className="w-3.5 h-3.5 text-blue-500" />;
@@ -223,13 +242,13 @@ function BellButton({
 // screen coordinates, so it's never clipped by the sidebar's width/overflow. ──
 function NotificationPanel({
   notifications,
-  onMarkRead,
+  onNotificationClick,
   onMarkAllRead,
   onClose,
   anchorRect,
 }: {
   notifications: AntylNotification[];
-  onMarkRead: (id: string) => void;
+  onNotificationClick: (n: AntylNotification) => void;
   onMarkAllRead: () => void;
   onClose: () => void;
   anchorRect: DOMRect;
@@ -287,9 +306,9 @@ function NotificationPanel({
             <button
               key={n.id}
               type="button"
-              onClick={() => !n.is_read && onMarkRead(n.id)}
+              onClick={() => onNotificationClick(n)}
               className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${
-                n.is_read ? "bg-white" : "bg-orange-50/40 hover:bg-orange-50"
+                n.is_read ? "bg-white hover:bg-gray-50" : "bg-orange-50/40 hover:bg-orange-50"
               }`}
             >
               <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -470,6 +489,14 @@ export default function DeveloperNavbar() {
     setCelebration(null);
   };
 
+  // Clicking a notification: mark it read (if it wasn't already), close
+  // the panel, and route to the relevant tab for that notification type.
+  const handleNotificationClick = (n: AntylNotification) => {
+    if (!n.is_read) handleMarkRead(n.id);
+    setPanelOpen(false);
+    router.push(getNotificationHref(n));
+  };
+
   const handleMessageToastOpen = () => {
     setMessageToast(null);
     router.push("/messages");
@@ -632,7 +659,7 @@ export default function DeveloperNavbar() {
       {panelOpen && anchorRect && (
         <NotificationPanel
           notifications={notifications}
-          onMarkRead={handleMarkRead}
+          onNotificationClick={handleNotificationClick}
           onMarkAllRead={handleMarkAllRead}
           onClose={() => setPanelOpen(false)}
           anchorRect={anchorRect}
