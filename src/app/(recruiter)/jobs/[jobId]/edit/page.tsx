@@ -40,7 +40,7 @@ function mapExperienceLevel(years: number): string {
 
 function experienceLevelToYears(level: string): number {
   switch (level) {
-    case "entry": return 1;
+    case "entry": return 0;
     case "mid": return 3;
     case "senior": return 6;
     case "lead": return 9;
@@ -65,6 +65,9 @@ export default function EditJobPage({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [experienceYears, setExperienceYears] = useState<number>(0);
+  // Raw string backing the experience-years input so the field can be
+  // temporarily empty while typing (e.g. clearing it to type "0").
+  const [experienceYearsInput, setExperienceYearsInput] = useState<string>("0");
 
   const [form, setForm] = useState<JobForm>({
     title: "",
@@ -91,6 +94,7 @@ export default function EditJobPage({
         const job = await getJob(jobId);
         const years = experienceLevelToYears(job.experience_level);
         setExperienceYears(years);
+        setExperienceYearsInput(String(years));
         setForm({
           title: job.title || "",
           description: job.description || "",
@@ -260,15 +264,32 @@ export default function EditJobPage({
                   min={0}
                   className={inputClass}
                   placeholder="e.g. 3"
-                  value={experienceYears || ""}
+                  value={experienceYearsInput}
                   onWheel={preventWheelChange}
                   onChange={(e) => {
-                    const years = Number(e.target.value);
-                    setExperienceYears(years);
-                    setForm({ ...form, experience_level: mapExperienceLevel(years) });
+                    const raw = e.target.value;
+                    setExperienceYearsInput(raw);
+
+                    if (raw === "") {
+                      // Let the field be blank while editing; don't touch
+                      // experienceYears/form until there's a real number.
+                      return;
+                    }
+
+                    const years = Number(raw);
+                    if (!Number.isNaN(years)) {
+                      setExperienceYears(years);
+                      setForm({ ...form, experience_level: mapExperienceLevel(years) });
+                    }
+                  }}
+                  onBlur={() => {
+                    // If left blank, snap back to a valid numeric value.
+                    if (experienceYearsInput === "") {
+                      setExperienceYearsInput(String(experienceYears));
+                    }
                   }}
                 />
-                {experienceYears > 0 && (
+                {experienceYearsInput !== "" && (
                   <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
                     Maps to: {mapExperienceLevel(experienceYears)}
                   </p>

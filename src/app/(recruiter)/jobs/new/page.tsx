@@ -34,6 +34,24 @@ interface JobForm {
 
 const DRAFT_KEY = "antyl_new_job_draft";
 
+// Salary is stored on `form` (and sent to the backend) in raw rupees, but
+// the UI always shows/accepts LPA (lakhs per annum). These two helpers are
+// the single place that conversion happens.
+const RUPEES_PER_LPA = 100000;
+
+function lpaToRupees(lpa: number): number {
+  if (Number.isNaN(lpa)) return 0;
+  return Math.round(lpa * RUPEES_PER_LPA);
+}
+
+function rupeesToLpaString(rupees: number): string {
+  if (!rupees) return "";
+  const lpa = rupees / RUPEES_PER_LPA;
+  // Trim floating point noise (e.g. 14.999999999) without forcing
+  // trailing zeros on whole numbers.
+  return String(Number(lpa.toFixed(2)));
+}
+
 const EMPTY_FORM: JobForm = {
   title: "",
   description: "",
@@ -117,6 +135,14 @@ export default function NewJobPage() {
     }
   });
 
+  // Raw string backing the experience-years input so the field can be
+  // temporarily empty while typing (e.g. clearing it to type "0"). Without
+  // this, `value={experienceYears || ""}` collapses 0 and "" into the same
+  // display, and the field can never show/hold a typed 0.
+  const [experienceYearsInput, setExperienceYearsInput] = useState<string>(
+    () => (experienceYears ? String(experienceYears) : "")
+  );
+
   const [form, setForm] = useState<JobForm>(() => {
     if (typeof window === "undefined") return EMPTY_FORM;
     try {
@@ -138,6 +164,17 @@ export default function NewJobPage() {
     }
   });
 
+  // Raw string backing the two salary inputs, expressed in LPA (lakhs per
+  // annum) — what the recruiter types and sees. `form.salary_min` /
+  // `form.salary_max` stay in rupees underneath, since that's what the
+  // backend expects.
+  const [salaryMinInput, setSalaryMinInput] = useState<string>(() =>
+    rupeesToLpaString(form.salary_min)
+  );
+  const [salaryMaxInput, setSalaryMaxInput] = useState<string>(() =>
+    rupeesToLpaString(form.salary_max)
+  );
+
   const hasDraft =
     JSON.stringify(form) !== JSON.stringify(EMPTY_FORM) || experienceYears !== 0;
 
@@ -154,6 +191,9 @@ export default function NewJobPage() {
     localStorage.removeItem(DRAFT_KEY);
     setForm(EMPTY_FORM);
     setExperienceYears(0);
+    setExperienceYearsInput("");
+    setSalaryMinInput("");
+    setSalaryMaxInput("");
   }
 
   const validate = () => {
@@ -199,7 +239,10 @@ export default function NewJobPage() {
       const result = await autofillJob(form.title);
       const years = result.experience_years ?? 0;
       setExperienceYears(years);
+      setExperienceYearsInput(years ? String(years) : "");
       const techStackStr = toTechStackString(result.required_tech_stack);
+      setSalaryMinInput(rupeesToLpaString(result.salary_min));
+      setSalaryMaxInput(rupeesToLpaString(result.salary_max));
       setForm((prev) => ({
         ...prev,
         description: result.description,
@@ -429,15 +472,34 @@ export default function NewJobPage() {
                 min={0}
                 className={inputClass}
                 placeholder="e.g. 3"
-                value={experienceYears || ""}
+                value={experienceYearsInput}
                 onWheel={preventWheelChange}
                 onChange={(e) => {
-                  const years = Number(e.target.value);
-                  setExperienceYears(years);
-                  setForm({ ...form, experience_level: mapExperienceLevel(years) });
+                  const raw = e.target.value;
+                  setExperienceYearsInput(raw);
+
+                  if (raw === "") {
+                    // Let the field be blank while editing; don't touch
+                    // experienceYears/form until there's a real number.
+                    return;
+                  }
+
+                  const years = Number(raw);
+                  if (!Number.isNaN(years)) {
+                    setExperienceYears(years);
+                    setForm({ ...form, experience_level: mapExperienceLevel(years) });
+                  }
+                }}
+                onBlur={() => {
+                  // If left blank, snap back to a valid numeric value.
+                  if (experienceYearsInput === "") {
+                    setExperienceYearsInput(
+                      experienceYears ? String(experienceYears) : ""
+                    );
+                  }
                 }}
               />
-              {experienceYears > 0 && (
+              {experienceYearsInput !== "" && (
                 <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
                   Maps to: {mapExperienceLevel(experienceYears)}
                 </p>
@@ -462,35 +524,47 @@ export default function NewJobPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Min Salary (₹)
+                Min Salary (LPA)
               </label>
               <input
                 type="number"
                 min={0}
+                step={0.01}
                 className={inputClass}
-                placeholder="e.g. 800000"
-                value={form.salary_min || ""}
-                onChange={(e) =>
-                  setForm({ ...form, salary_min: Number(e.target.value) })
-                }
+                placeholder="e.g. 8"
+                value={salaryMinInput}
                 onWheel={preventWheelChange}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setSalaryMinInput(raw);
+                  setForm({
+                    ...form,
+                    salary_min: raw === "" ? 0 : lpaToRupees(Number(raw)),
+                  });
+                }}
               />
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Max Salary (₹)
+                Max Salary (LPA)
               </label>
               <input
                 type="number"
                 min={0}
+                step={0.01}
                 className={inputClass}
-                placeholder="e.g. 1500000"
-                value={form.salary_max || ""}
-                onChange={(e) =>
-                  setForm({ ...form, salary_max: Number(e.target.value) })
-                }
+                placeholder="e.g. 15"
+                value={salaryMaxInput}
                 onWheel={preventWheelChange}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setSalaryMaxInput(raw);
+                  setForm({
+                    ...form,
+                    salary_max: raw === "" ? 0 : lpaToRupees(Number(raw)),
+                  });
+                }}
               />
               {form.salary_max > 0 && form.salary_min > form.salary_max && (
                 <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">
@@ -622,7 +696,7 @@ export default function NewJobPage() {
             <div className="p-6 space-y-5">
               <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <IndianRupee className="w-4 h-4 text-[#F2754A]" />
-                {form.salary_min.toLocaleString()} – {form.salary_max.toLocaleString()}
+                {rupeesToLpaString(form.salary_min) || "0"} – {rupeesToLpaString(form.salary_max) || "0"} LPA
                 <span className="font-normal text-gray-400">/ year</span>
               </div>
 
