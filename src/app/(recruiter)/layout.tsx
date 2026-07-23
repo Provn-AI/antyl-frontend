@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Briefcase,
@@ -17,12 +17,21 @@ import {
   BookOpen,
   ShieldCheck,
   HelpCircle,
+  X,
 } from "lucide-react";
 
 import { checkIsAdmin } from "@/services/weeklyQuestion.service";
+import { getConversations, Conversation } from "@/services/message.service";
 import WeeklyQuestionPopup from "../(developer)/components/WeeklyQuestionPopup";
 import OnboardingTour from "@/components/OnboardingTour";
 import { recruiterTourSteps, RECRUITER_TOUR_KEY } from "@/lib/tourSteps";
+
+type NewMessageToast = {
+  key: string;
+  match_id: string;
+  name: string;
+  text: string;
+};
 
 export default function RecruiterLayout({
   children,
@@ -30,8 +39,17 @@ export default function RecruiterLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
   const [tourActive, setTourActive] = useState(false);
+  const [unreadTotal, setUnreadTotal] = useState(0);
+  const [toast, setToast] = useState<NewMessageToast | null>(null);
+
+  // match_id -> last seen message id, so polling only fires a popup for
+  // messages that are actually new, not on every refresh.
+  const lastSeenRef = useRef<Record<string, string | null>>({});
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onMessagesPage = pathname.startsWith("/recruiter_messages");
 
   // Admin tab visibility — email whitelist check, backend is the real gate.
   useEffect(() => {
@@ -47,6 +65,61 @@ export default function RecruiterLayout({
       return () => clearTimeout(t);
     }
   }, []);
+
+  // Site-wide unread badge + new-message popup for the Messages nav icon.
+  // Lives here (not just on the messages page) so it works no matter
+  // which recruiter page you're on.
+  useEffect(() => {
+    let active = true;
+
+    async function poll(isFirstLoad: boolean) {
+      try {
+        const data: Conversation[] = await getConversations();
+        if (!active) return;
+
+        setUnreadTotal(data.reduce((sum, c) => sum + (c.unread_count || 0), 0));
+
+        const seenBefore = lastSeenRef.current;
+        const nextSeen: Record<string, string | null> = {};
+
+        for (const conv of data) {
+          const newLastId = conv.last_message?.id ?? null;
+          nextSeen[conv.match_id] = newLastId;
+
+          if (isFirstLoad) continue; // don't pop a toast for pre-existing messages on mount
+
+          const prevLastId = seenBefore[conv.match_id];
+          const isNew = newLastId !== null && newLastId !== prevLastId;
+          const isIncoming = conv.last_message?.sender_role !== "recruiter";
+
+          // Don't pop the toast while already sitting in that thread.
+          if (isNew && isIncoming && !onMessagesPage) {
+            setToast({
+              key: newLastId as string,
+              match_id: conv.match_id,
+              name: conv.other_party.name || "Candidate",
+              text: conv.last_message?.content ?? "",
+            });
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+            toastTimerRef.current = setTimeout(() => setToast(null), 6000);
+          }
+        }
+
+        lastSeenRef.current = nextSeen;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    poll(true);
+    const interval = setInterval(() => poll(false), 20000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, [onMessagesPage]);
 
   const menu = [
     { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, tourId: "nav-dashboard" },
@@ -85,13 +158,14 @@ export default function RecruiterLayout({
           {menu.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
+            const isMessages = item.href === "/recruiter_messages";
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 data-tour={item.tourId}
-                className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                className={`relative flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
                   active
                     ? "text-white"
                     : "text-gray-500 hover:bg-orange-50 hover:text-[#F2754A]"
@@ -105,7 +179,20 @@ export default function RecruiterLayout({
                     : undefined
                 }
               >
-                <Icon className="w-4.5 h-4.5" />
+                <span className="relative inline-flex">
+                  <Icon className="w-4.5 h-4.5" />
+                  {isMessages && unreadTotal > 0 && (
+                    <span
+                      className={`absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold flex items-center justify-center ${
+                        active
+                          ? "bg-white text-[#F2754A]"
+                          : "bg-[#F2754A] text-white"
+                      }`}
+                    >
+                      {unreadTotal > 9 ? "9+" : unreadTotal}
+                    </span>
+                  )}
+                </span>
                 {item.label}
               </Link>
             );
@@ -133,6 +220,46 @@ export default function RecruiterLayout({
           Log out
         </button>
       </aside>
+
+      {/* New-message popup, anchored near the Messages nav icon. Only
+          shows when the recruiter isn't already looking at the thread. */}
+      {toast && (
+        <div className="fixed top-6 left-[17rem] z-50 w-80 animate-in fade-in slide-in-from-left-2">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+              style={{
+                background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
+              }}
+            >
+              <MessageCircle className="w-4 h-4" />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setToast(null);
+                router.push("/recruiter_messages");
+              }}
+              className="flex-1 text-left min-w-0"
+            >
+              <p className="text-sm font-bold text-gray-900 truncate">
+                New message from {toast.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate mt-0.5">
+                {toast.text}
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="text-gray-300 hover:text-gray-500 flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <main className="flex-1 overflow-auto">{children}</main>

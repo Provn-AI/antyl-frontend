@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, X } from "lucide-react";
 import {
   getConversations,
   getMessages,
@@ -21,6 +21,13 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type NewMessageToast = {
+  key: string; // message id, used to dedupe / key the toast
+  match_id: string;
+  name: string;
+  text: string;
+};
+
 export default function RecruiterMessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<Conversation | null>(null);
@@ -28,51 +35,20 @@ export default function RecruiterMessagesPage() {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [toast, setToast] = useState<NewMessageToast | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  async function loadConversations(preserveSelection = true) {
-    try {
-      const data = await getConversations();
-      setConversations(data);
-      if (preserveSelection && selected) {
-        const refreshed = data.find((c) => c.match_id === selected.match_id);
-        if (refreshed) setSelected(refreshed);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingList(false);
-    }
-  }
+  // match_id -> last seen message id. Used to diff each poll and detect
+  // genuinely *new* incoming messages instead of just re-rendering the
+  // list. Populated (not compared against) on the very first load so we
+  // don't fire a toast for every existing conversation on mount.
+  const lastSeenRef = useRef<Record<string, string | null>>({});
+  const selectedMatchIdRef = useRef<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-  let active = true;
-
-  async function load(preserveSelection: boolean) {
-    try {
-      const data = await getConversations();
-      if (!active) return;
-      setConversations(data);
-      if (preserveSelection) {
-        setSelected((prev) =>
-          prev ? data.find((c) => c.match_id === prev.match_id) ?? prev : prev
-        );
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      if (active) setLoadingList(false);
-    }
-  }
-
-  load(false);
-  const poll = setInterval(() => load(true), 20000);
-
-  return () => {
-    active = false;
-    clearInterval(poll);
-  };
-}, []);
+    selectedMatchIdRef.current = selected?.match_id ?? null;
+  }, [selected]);
 
   async function openConversation(conv: Conversation) {
     setSelected(conv);
@@ -83,6 +59,75 @@ export default function RecruiterMessagesPage() {
       console.error(err);
     }
   }
+
+  function showToast(next: NewMessageToast) {
+    setToast(next);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 6000);
+  }
+
+  useEffect(() => {
+    let active = true;
+
+    async function load(isFirstLoad: boolean) {
+      try {
+        const data = await getConversations();
+        if (!active) return;
+
+        // Diff against what we saw last poll to find new incoming messages.
+        const seenBefore = lastSeenRef.current;
+        const nextSeen: Record<string, string | null> = {};
+
+        for (const conv of data) {
+          const newLastId = conv.last_message?.id ?? null;
+          nextSeen[conv.match_id] = newLastId;
+
+          if (isFirstLoad) continue; // don't toast on initial mount
+
+          const prevLastId = seenBefore[conv.match_id];
+          const isNew = newLastId !== undefined && newLastId !== null && newLastId !== prevLastId;
+          const isIncoming = conv.last_message?.sender_role !== "recruiter";
+
+          if (isNew && isIncoming) {
+            showToast({
+              key: newLastId as string,
+              match_id: conv.match_id,
+              name: conv.other_party.name || "Candidate",
+              text: conv.last_message?.content ?? "",
+            });
+
+            // If that conversation is the one currently open, refresh its
+            // thread live instead of making the recruiter re-click it.
+            if (selectedMatchIdRef.current === conv.match_id) {
+              getMessages(conv.match_id)
+                .then((msgs) => active && setMessages(msgs))
+                .catch((err) => console.error(err));
+            }
+          }
+        }
+
+        lastSeenRef.current = nextSeen;
+
+        setConversations(data);
+        setSelected((prev) =>
+          prev ? data.find((c) => c.match_id === prev.match_id) ?? prev : prev
+        );
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (active) setLoadingList(false);
+      }
+    }
+
+    load(true);
+    const poll = setInterval(() => load(false), 20000);
+
+    return () => {
+      active = false;
+      clearInterval(poll);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -95,7 +140,15 @@ export default function RecruiterMessagesPage() {
       const msg = await sendMessage(selected.match_id, text.trim());
       setMessages((prev) => [...prev, msg]);
       setDraft("");
-      loadConversations(true);
+      // Reflect our own outgoing message immediately, and keep our
+      // "last seen" pointer in sync so it isn't mistaken for a new
+      // incoming message on the next poll.
+      lastSeenRef.current[selected.match_id] = msg.id;
+      const data = await getConversations();
+      setConversations(data);
+      setSelected((prev) =>
+        prev ? data.find((c) => c.match_id === prev.match_id) ?? prev : prev
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -103,8 +156,51 @@ export default function RecruiterMessagesPage() {
     }
   }
 
+  function handleToastClick() {
+    if (!toast) return;
+    const conv = conversations.find((c) => c.match_id === toast.match_id);
+    if (conv) openConversation(conv);
+    setToast(null);
+  }
+
   return (
-    <div className="h-screen flex">
+    <div className="h-screen flex relative">
+      {/* New-message popup */}
+      {toast && (
+        <div className="fixed top-5 right-5 z-50 w-80 animate-in fade-in slide-in-from-top-2">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+              style={{
+                background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
+              }}
+            >
+              <MessageCircle className="w-4 h-4" />
+            </div>
+            <button
+              type="button"
+              onClick={handleToastClick}
+              className="flex-1 text-left min-w-0"
+            >
+              <p className="text-sm font-bold text-gray-900 truncate">
+                New message from {toast.name}
+              </p>
+              <p className="text-xs text-gray-500 truncate mt-0.5">
+                {toast.text}
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="text-gray-300 hover:text-gray-500 flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Conversation list */}
       <div
         className={`w-full md:w-80 flex-shrink-0 border-r border-gray-100 bg-white flex flex-col ${

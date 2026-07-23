@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   Newspaper,
@@ -25,6 +25,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/services/notification.service";
+import { getConversations, Conversation } from "@/services/message.service";
 import { pingStreak } from "@/services/streak.service";
 import { checkIsAdmin } from "@/services/weeklyQuestion.service";
 import WeeklyQuestionPopup from "./WeeklyQuestionPopup";
@@ -41,6 +42,13 @@ interface AntylNotification {
   created_at: string;
 }
 
+type NewMessageToast = {
+  key: string;
+  match_id: string;
+  name: string;
+  text: string;
+};
+
 const TABS = [
   { label: "Jobs for you!",         href: "/feed",         icon: Newspaper,       tourId: "nav-feed" },
   { label: "Dashboard",    href: "/developer_dashboard", icon: LayoutDashboard, tourId: "nav-dashboard" },
@@ -53,6 +61,7 @@ const TABS = [
 ];
 
 const POLL_INTERVAL_MS = 25000;
+const MESSAGE_POLL_INTERVAL_MS = 20000;
 const PANEL_WIDTH = 320;
 
 const MILESTONE_TYPES = ["streak_daily", "streak_week", "streak_month", "podium_finish", "field_leader"];
@@ -125,6 +134,51 @@ function MilestoneCelebration({
           className="mt-6 w-full py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors"
         >
           Nice!
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── New-message popup, anchored near the Messages nav icon ──
+
+function NewMessagePopup({
+  toast,
+  onOpen,
+  onClose,
+  mobile = false,
+}: {
+  toast: NewMessageToast;
+  onOpen: () => void;
+  onClose: () => void;
+  mobile?: boolean;
+}) {
+  return (
+    <div
+      className={`fixed z-[90] w-80 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-left-2 ${
+        mobile ? "top-16 left-4 right-4 w-auto" : "left-60 top-6"
+      }`}
+    >
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+          style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+        >
+          <MessageCircle className="w-4 h-4" />
+        </div>
+        <button type="button" onClick={onOpen} className="flex-1 text-left min-w-0">
+          <p className="text-sm font-bold text-gray-900 truncate">
+            New message from {toast.name}
+          </p>
+          <p className="text-xs text-gray-500 truncate mt-0.5">{toast.text}</p>
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-gray-300 hover:text-gray-500 flex-shrink-0"
+          aria-label="Dismiss"
+        >
+          <X className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -260,6 +314,7 @@ function NotificationPanel({
 
 export default function DeveloperNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<AntylNotification[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
@@ -270,6 +325,15 @@ export default function DeveloperNavbar() {
   const shownCelebrationIds = useRef<Set<string>>(new Set());
   const [isAdmin, setIsAdmin] = useState(false);
   const [tourActive, setTourActive] = useState(false);
+
+  // ── Messages: unread badge on the nav icon + a popup for new incoming
+  // messages, same idea as the notifications bell above but sourced from
+  // getConversations() instead of the notifications endpoint.
+  const [unreadMessagesTotal, setUnreadMessagesTotal] = useState(0);
+  const [messageToast, setMessageToast] = useState<NewMessageToast | null>(null);
+  const lastSeenRef = useRef<Record<string, string | null>>({});
+  const messageToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onMessagesPage = pathname === "/messages";
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -320,6 +384,61 @@ export default function DeveloperNavbar() {
     };
   }, []);
 
+  // Site-wide unread badge + new-message popup for the Messages nav icon.
+  // Lives in the navbar (not just the messages page) so it works no
+  // matter which developer page is open.
+  useEffect(() => {
+    let active = true;
+
+    async function poll(isFirstLoad: boolean) {
+      try {
+        const data: Conversation[] = await getConversations();
+        if (!active) return;
+
+        setUnreadMessagesTotal(data.reduce((sum, c) => sum + (c.unread_count || 0), 0));
+
+        const seenBefore = lastSeenRef.current;
+        const nextSeen: Record<string, string | null> = {};
+
+        for (const conv of data) {
+          const newLastId = conv.last_message?.id ?? null;
+          nextSeen[conv.match_id] = newLastId;
+
+          if (isFirstLoad) continue; // don't pop a toast for pre-existing messages on mount
+
+          const prevLastId = seenBefore[conv.match_id];
+          const isNew = newLastId !== null && newLastId !== prevLastId;
+          const isIncoming = conv.last_message?.sender_role !== "developer";
+
+          // Don't pop the toast while already sitting in that thread.
+          if (isNew && isIncoming && !onMessagesPage) {
+            setMessageToast({
+              key: newLastId as string,
+              match_id: conv.match_id,
+              name: conv.other_party.name || "Recruiter",
+              text: conv.last_message?.content ?? "",
+            });
+            if (messageToastTimerRef.current) clearTimeout(messageToastTimerRef.current);
+            messageToastTimerRef.current = setTimeout(() => setMessageToast(null), 6000);
+          }
+        }
+
+        lastSeenRef.current = nextSeen;
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    poll(true);
+    const interval = setInterval(() => poll(false), MESSAGE_POLL_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      if (messageToastTimerRef.current) clearTimeout(messageToastTimerRef.current);
+    };
+  }, [onMessagesPage]);
+
   const openPanel = (ref: React.RefObject<HTMLButtonElement | null>) => {
     const rect = ref.current?.getBoundingClientRect();
     if (rect) setAnchorRect(rect);
@@ -351,6 +470,11 @@ export default function DeveloperNavbar() {
     setCelebration(null);
   };
 
+  const handleMessageToastOpen = () => {
+    setMessageToast(null);
+    router.push("/messages");
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     window.location.href = "/";
@@ -377,6 +501,7 @@ export default function DeveloperNavbar() {
         <nav className="flex flex-col gap-1 flex-1">
           {TABS.map(({ label, href, icon: Icon, tourId }) => {
             const active = pathname === href;
+            const isMessages = href === "/messages";
             return (
               <Link
                 key={href}
@@ -388,7 +513,14 @@ export default function DeveloperNavbar() {
                     : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                 }`}
               >
-                <Icon className={`w-4 h-4 flex-shrink-0 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
+                <span className="relative inline-flex">
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
+                  {isMessages && unreadMessagesTotal > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#F2754A] text-white text-[9px] font-bold flex items-center justify-center">
+                      {unreadMessagesTotal > 9 ? "9+" : unreadMessagesTotal}
+                    </span>
+                  )}
+                </span>
                 {label}
               </Link>
             );
@@ -470,15 +602,23 @@ export default function DeveloperNavbar() {
         <div className="flex border-t border-gray-100">
           {TABS.map(({ label, href, icon: Icon }) => {
             const active = pathname === href;
+            const isMessages = href === "/messages";
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition-colors ${
+                className={`relative flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition-colors ${
                   active ? "text-[#F2754A]" : "text-gray-400"
                 }`}
               >
-                <Icon className={`w-4 h-4 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
+                <span className="relative inline-flex">
+                  <Icon className={`w-4 h-4 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
+                  {isMessages && unreadMessagesTotal > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-[#F2754A] text-white text-[8px] font-bold flex items-center justify-center">
+                      {unreadMessagesTotal > 9 ? "9+" : unreadMessagesTotal}
+                    </span>
+                  )}
+                </span>
                 {label}
               </Link>
             );
@@ -496,6 +636,16 @@ export default function DeveloperNavbar() {
           onMarkAllRead={handleMarkAllRead}
           onClose={() => setPanelOpen(false)}
           anchorRect={anchorRect}
+        />
+      )}
+
+      {/* ── New-message popup for the Messages nav icon ── */}
+      {messageToast && (
+        <NewMessagePopup
+          toast={messageToast}
+          onOpen={handleMessageToastOpen}
+          onClose={() => setMessageToast(null)}
+          mobile={typeof window !== "undefined" && window.innerWidth < 768}
         />
       )}
 
