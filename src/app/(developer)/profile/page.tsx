@@ -191,7 +191,11 @@ export default function ProfilePage() {
     years_experience: 0,
     linkedin_url: "",
     job_status: "",
+    tech_stack: [] as string[],
   });
+
+  // Text box for adding a new skill to the tech stack while editing.
+  const [skillInput, setSkillInput] = useState("");
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
@@ -223,6 +227,7 @@ export default function ProfilePage() {
           years_experience: profileData.years_experience || 0,
           linkedin_url: profileData.linkedin_url || "",
           job_status: profileData.job_status || "not_looking",
+          tech_stack: profileData.tech_stack || [],
         });
       } catch (error) {
         console.error(error);
@@ -275,8 +280,10 @@ export default function ProfilePage() {
         years_experience: profile.years_experience || 0,
         linkedin_url: profile.linkedin_url || "",
         job_status: profile.job_status || "not_looking",
+        tech_stack: profile.tech_stack || [],
       });
     }
+    setSkillInput("");
     setIsEditing(false);
   };
 
@@ -338,6 +345,25 @@ export default function ProfilePage() {
     } finally {
       setAutoApplyToggling(false);
     }
+  };
+
+  // Adds the current skillInput to formData.tech_stack (case-insensitive dedupe).
+  const addSkill = () => {
+    const skill = skillInput.trim();
+    if (!skill) return;
+    if (formData.tech_stack.some((t) => t.toLowerCase() === skill.toLowerCase())) {
+      setSkillInput("");
+      return;
+    }
+    setFormData({ ...formData, tech_stack: [...formData.tech_stack, skill] });
+    setSkillInput("");
+  };
+
+  const removeSkill = (skill: string) => {
+    setFormData({
+      ...formData,
+      tech_stack: formData.tech_stack.filter((t) => t !== skill),
+    });
   };
 
   if (loading) {
@@ -605,18 +631,59 @@ export default function ProfilePage() {
           )}
 
           {/* ── Tech stack ── */}
-          {profile.tech_stack && profile.tech_stack.length > 0 && (
+          {(isEditing || (profile.tech_stack && profile.tech_stack.length > 0)) && (
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
                 Tech stack
               </p>
+
               <div className="flex flex-wrap gap-2">
-                {profile.tech_stack.map((tech) => (
-                  <span key={tech} className="text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
+                {(isEditing ? formData.tech_stack : profile.tech_stack || []).map((tech) => (
+                  <span
+                    key={tech}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5"
+                  >
                     {tech}
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(tech)}
+                        className="text-gray-400 hover:text-red-500"
+                        aria-label={`Remove ${tech}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </span>
                 ))}
+                {isEditing && formData.tech_stack.length === 0 && (
+                  <p className="text-xs text-gray-400">No skills added yet.</p>
+                )}
               </div>
+
+              {isEditing && (
+                <div className="flex gap-2 mt-4">
+                  <input
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSkill();
+                      }
+                    }}
+                    className={inputCls}
+                    placeholder="e.g. Rust, Kubernetes, GraphQL"
+                  />
+                  <button
+                    type="button"
+                    onClick={addSkill}
+                    className="px-4 py-2.5 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors flex-shrink-0"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
