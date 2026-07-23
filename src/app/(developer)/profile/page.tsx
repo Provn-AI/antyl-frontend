@@ -52,6 +52,7 @@ interface Profile {
   resume_url?: string;
   avatar_url?: string;
   job_status?: string;
+  remote_ok?: boolean;
   resume_parsed_data?: {
     work_history?: { company: string; role: string; duration: string }[];
     education?: { degree: string; institution: string; year: string }[];
@@ -192,6 +193,7 @@ export default function ProfilePage() {
     linkedin_url: "",
     job_status: "",
     tech_stack: [] as string[],
+    remote_ok: false,
   });
 
   // Text box for adding a new skill to the tech stack while editing.
@@ -228,6 +230,7 @@ export default function ProfilePage() {
           linkedin_url: profileData.linkedin_url || "",
           job_status: profileData.job_status || "not_looking",
           tech_stack: profileData.tech_stack || [],
+          remote_ok: profileData.remote_ok || false,
         });
       } catch (error) {
         console.error(error);
@@ -281,6 +284,7 @@ export default function ProfilePage() {
         linkedin_url: profile.linkedin_url || "",
         job_status: profile.job_status || "not_looking",
         tech_stack: profile.tech_stack || [],
+        remote_ok: profile.remote_ok || false,
       });
     }
     setSkillInput("");
@@ -500,6 +504,11 @@ export default function ProfilePage() {
                     <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
                       {jobStatusLabel(profile.job_status)}
                     </span>
+                    {profile.remote_ok && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
+                        Remote OK
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -551,6 +560,31 @@ export default function ProfilePage() {
                     <p className="text-xs text-gray-400 mt-1.5">
                       Controls whether jobs show up in your feed and auto-apply.
                     </p>
+
+                    <div className="flex items-center justify-between mt-4">
+                      <div>
+                        <p className="text-xs font-semibold text-gray-700">Open to remote roles</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Include remote jobs in your feed and auto-apply matches.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, remote_ok: !formData.remote_ok })}
+                        role="switch"
+                        aria-checked={formData.remote_ok}
+                        aria-label="Toggle remote roles"
+                        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                          formData.remote_ok ? "bg-[#F2754A]" : "bg-gray-200"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                            formData.remote_ok ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
