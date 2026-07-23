@@ -37,17 +37,20 @@ interface Job {
 }
 
 type ToastState = "applied" | "skipped" | "limit_reached" | null;
+type ExitDirection = "left" | "right";
 
 function SwipeCard({
   job,
   onSwipeRight,
   onRequestSkip,
   applyDisabled,
+  exitDirection,
 }: {
   job: Job;
   onSwipeRight: () => void;
   onRequestSkip: () => void;
   applyDisabled: boolean;
+  exitDirection: ExitDirection;
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 0, 200], [-8, 0, 8]);
@@ -65,9 +68,14 @@ function SwipeCard({
         else if (info.offset.x < -120) onRequestSkip();
       }}
       initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="relative w-full cursor-grab active:cursor-grabbing"
+      animate={{ scale: 1, opacity: 1, x: 0 }}
+      exit={{
+        x: exitDirection === "right" ? 400 : -400,
+        opacity: 0,
+        rotate: exitDirection === "right" ? 15 : -15,
+        transition: { duration: 0.25, ease: "easeOut" },
+      }}
+      className="absolute top-0 left-0 right-0 cursor-grab active:cursor-grabbing"
     >
       {!applyDisabled && (
         <motion.div
@@ -239,6 +247,10 @@ export default function FeedPage() {
   const [decidedIds, setDecidedIds] = useState<Set<string>>(new Set());
   const [pendingSkipJob, setPendingSkipJob] = useState<Job | null>(null);
 
+  // Which way the current card should fly out on its next exit.
+  // Defaults to "right" (Apply); Skip/Back explicitly set "left".
+  const [exitDirection, setExitDirection] = useState<ExitDirection>("right");
+
   useEffect(() => {
     async function loadJobs() {
       try {
@@ -272,11 +284,13 @@ export default function FeedPage() {
 
   // Moves the view forward without recording any decision on the current job.
   const handleNext = () => {
+    setExitDirection("left");
     setCurrentIndex((prev) => Math.min(prev + 1, jobs.length));
   };
 
   // Moves the view back to a previously browsed job (only relevant after Next).
   const handleBack = () => {
+    setExitDirection("right");
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   };
 
@@ -297,6 +311,7 @@ export default function FeedPage() {
 
     try {
       setSwiping(true);
+      setExitDirection("right");
       await swipeJob(job.id, "right");
       setApplyRemaining((prev) => Math.max(prev - 1, 0));
       setDecidedIds((prev) => new Set(prev).add(job.id));
@@ -340,6 +355,7 @@ export default function FeedPage() {
 
     try {
       setSwiping(true);
+      setExitDirection("left");
       await swipeJob(job.id, "left");
       setDecidedIds((prev) => new Set(prev).add(job.id));
       showToast("skipped");
@@ -493,13 +509,14 @@ export default function FeedPage() {
               )}
 
               <div className="relative w-full" style={{ minHeight: 420 }}>
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout">
                   <SwipeCard
                     key={currentJob.id}
                     job={currentJob}
                     onSwipeRight={handleApply}
                     onRequestSkip={handleRequestSkip}
                     applyDisabled={applyDisabled}
+                    exitDirection={exitDirection}
                   />
                 </AnimatePresence>
               </div>
