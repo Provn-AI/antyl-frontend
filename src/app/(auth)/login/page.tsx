@@ -121,6 +121,26 @@ export default function LoginPage() {
           box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
 
+        .btn-google-disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          filter: grayscale(0.4);
+        }
+
+        .btn-google-disabled:hover {
+          border-color: #E8E4DF;
+          box-shadow: none;
+        }
+
+        .google-note {
+          text-align: center;
+          font-size: 12px;
+          color: #B0A89E;
+          font-weight: 500;
+          margin-top: 0.5rem;
+          margin-bottom: 0.25rem;
+        }
+
         /* ── Divider ── */
         .divider {
           display: flex;
@@ -258,8 +278,13 @@ export default function LoginPage() {
             Log in to your verified dev account
           </p>
 
-          {/* ── Google OAuth ── */}
-          <a href="/api/auth/google" className="btn-google">
+          {/* ── Google OAuth (disabled — coming soon) ── */}
+          <button
+            type="button"
+            className="btn-google btn-google-disabled"
+            disabled
+            aria-disabled="true"
+          >
             <svg
               width="18"
               height="18"
@@ -285,7 +310,8 @@ export default function LoginPage() {
             </svg>
 
             Continue with Google
-          </a>
+          </button>
+          <p className="google-note">Google authentication incoming</p>
 
           <div className="divider">
             <div className="divider-line" />
