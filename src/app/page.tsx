@@ -73,8 +73,8 @@ export default function LandingPage() {
     },
     {
       num: "04",
-      title: "Jobs come to you",
-      desc: "Auto-apply runs every 6 hours. Wake up to real interview requests.",
+      title: "Auto-apply runs for you",
+      desc: "Every 6 hours, Antyl applies you to matching jobs automatically. Wake up to real interview requests.",
       color: "#FF7A8A",
       bg: "#FFF0F2",
     },
@@ -368,12 +368,28 @@ export default function LandingPage() {
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        html {
+          scroll-behavior: smooth;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          html { scroll-behavior: auto; }
+          * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+        }
+
         body {
           font-family: var(--font);
           background: var(--white);
           color: var(--ink);
           -webkit-font-smoothing: antialiased;
           overflow-x: hidden;
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+          outline: 2px solid var(--coral);
+          outline-offset: 3px;
+          border-radius: 4px;
         }
 
         /* ---- NAVBAR ---- */
@@ -407,10 +423,20 @@ export default function LandingPage() {
         }
         .nav-links { display: flex; gap: 2rem; align-items: center; }
         .nav-link {
+          position: relative;
           font-size: 14px; font-weight: 500; color: var(--gray4);
           text-decoration: none; letter-spacing: -.01em; transition: color .15s;
+          padding-bottom: 2px;
+        }
+        .nav-link::after {
+          content: '';
+          position: absolute; left: 0; bottom: -3px;
+          width: 0; height: 2px; border-radius: 2px;
+          background: var(--grad-90);
+          transition: width .2s ease;
         }
         .nav-link:hover { color: var(--ink); }
+        .nav-link:hover::after { width: 100%; }
         .nav-actions { display: flex; gap: .625rem; align-items: center; }
         .btn-ghost-nav {
           background: transparent; color: var(--ink);
@@ -461,14 +487,15 @@ export default function LandingPage() {
         .hero-title {
           font-family: var(--serif); font-size: clamp(38px, 5.5vw, 60px);
           font-weight: 600; line-height: 1.1; color: var(--ink);
-          max-width: 760px; letter-spacing: -.03em; margin-bottom: 1.25rem;
+          max-width: 780px; letter-spacing: -.03em; margin-bottom: 1.25rem;
           animation: fadeUp .7s .1s ease both;
         }
         .hero-title em { font-style: italic; color: var(--coral); }
         .hero-sub {
-          font-size: 17px; color: var(--gray4); max-width: 500px; line-height: 1.65;
+          font-size: 17px; color: var(--gray4); max-width: 540px; line-height: 1.65;
           margin-bottom: 2.5rem; animation: fadeUp .7s .2s ease both; font-weight: 400;
         }
+        .hero-sub strong { color: var(--ink); font-weight: 700; }
         .hero-ctas {
           display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
           margin-bottom: 2.5rem; animation: fadeUp .7s .3s ease both;
@@ -996,8 +1023,11 @@ export default function LandingPage() {
           letter-spacing: .1em; color: rgba(255,255,255,.35); margin-bottom: 1rem;
         }
         .footer-links { display: flex; flex-direction: column; gap: .625rem; }
-        .footer-link { font-size: 13.5px; color: rgba(255,255,255,.6); text-decoration: none; transition: color .15s; }
-        .footer-link:hover { color: white; }
+        .footer-link {
+          font-size: 13.5px; color: rgba(255,255,255,.6); text-decoration: none;
+          transition: color .15s, padding-left .15s; width: fit-content;
+        }
+        .footer-link:hover { color: white; padding-left: 3px; }
         .footer-bottom {
           display: flex; justify-content: space-between; align-items: center;
           padding-top: 2rem; font-size: 12px; color: rgba(255,255,255,.3);
@@ -1052,7 +1082,7 @@ export default function LandingPage() {
 
         <div className="hero-eyebrow">
           <span className="eyebrow-dot" />
-          AI-powered developer verification
+          AI verification · Auto-apply built in
         </div>
 
         <h1 className="hero-title">
@@ -1062,8 +1092,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="hero-sub">
-          Antyl verifies developers with AI, then auto-applies you to matching
-          roles. No ghosting, no guessing - just your next job.
+          Antyl verifies developers with AI, then <strong>automatically applies you to matching jobs every 6 hours</strong> - no ghosting, no guessing, just your next interview.
         </p>
 
         <div className="hero-ctas">
@@ -1107,7 +1136,7 @@ export default function LandingPage() {
           </span>
           <span className="hero-badge">
             <span className="hero-badge-dot" style={{ background: "#FF6B4D" }} />
-            Auto-apply engine
+            Auto-apply every 6 hours
           </span>
           <span className="hero-badge">
             <span className="hero-badge-dot" style={{ background: "#FFB347" }} />
@@ -1129,7 +1158,7 @@ export default function LandingPage() {
             </h2>
             <p className="section-sub">
               No tedious forms. No weeks of waiting. Connect GitHub, get
-              verified, set preferences, and let the engine run.
+              verified, set preferences, and let auto-apply run in the background.
             </p>
           </div>
 
@@ -1445,26 +1474,26 @@ export default function LandingPage() {
                 <a href="#how-it-works" className="footer-link">How it works</a>
                 <a href="#antyl-score" className="footer-link">Antyl Score</a>
                 <a href="#features" className="footer-link">Features</a>
-                <a href="/pricing" className="footer-link">Pricing</a>
+                <a href="#for-recruiters" className="footer-link">Pricing</a>
               </div>
             </div>
             <div>
               <div className="footer-col-title">Developers</div>
               <div className="footer-links">
                 <a href="/signup" className="footer-link">Get verified</a>
-                <a href="/feed" className="footer-link">Job feed</a>
-                <a href="/score" className="footer-link">Improve score</a>
+                <a href="/signup" className="footer-link">Job feed</a>
+                <a href="/signup" className="footer-link">Improve score</a>
               </div>
             </div>
             <div>
               <div className="footer-col-title">Recruiters</div>
               <div className="footer-links">
                 <a href="/signup?role=recruiter" className="footer-link">Post a job</a>
-                <Link href="/candidates" className="footer-link">Browse talent</Link>
-                <a href="/billing" className="footer-link">Plans</a>
+                <Link href="/signup?role=recruiter" className="footer-link">Browse talent</Link>
+                <a href="#for-recruiters" className="footer-link">Plans</a>
               </div>
             </div>
-            <div>
+            <div id="contact">
               <div className="footer-col-title">Contact</div>
               <div className="footer-links">
                 <a href="mailto:info@antyl.org" className="footer-link">info@antyl.org</a>
@@ -1478,7 +1507,7 @@ export default function LandingPage() {
             <div className="footer-bottom-links">
               <a href="/privacy" className="footer-bottom-link">Privacy</a>
               <a href="/terms" className="footer-bottom-link">Terms</a>
-              <a href="/contact" className="footer-bottom-link">Contact</a>
+              <a href="#contact" className="footer-bottom-link">Contact</a>
             </div>
           </div>
         </div>
