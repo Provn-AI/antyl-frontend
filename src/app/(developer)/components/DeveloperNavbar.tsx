@@ -22,7 +22,9 @@ import {
   BookOpen,
   ShieldCheck,
   LayoutDashboard,
-  HelpCircle
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/services/notification.service";
 import { getConversations, Conversation } from "@/services/message.service";
@@ -63,6 +65,7 @@ const TABS = [
 const POLL_INTERVAL_MS = 25000;
 const MESSAGE_POLL_INTERVAL_MS = 20000;
 const PANEL_WIDTH = 320;
+const SIDEBAR_COLLAPSE_KEY = "antyl_developer_nav_collapsed";
 
 const MILESTONE_TYPES = ["streak_daily", "streak_week", "streak_month", "podium_finish", "field_leader"];
 
@@ -166,16 +169,18 @@ function NewMessagePopup({
   onOpen,
   onClose,
   mobile = false,
+  leftOffsetClass,
 }: {
   toast: NewMessageToast;
   onOpen: () => void;
   onClose: () => void;
   mobile?: boolean;
+  leftOffsetClass: string;
 }) {
   return (
     <div
       className={`fixed z-[90] w-80 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-left-2 ${
-        mobile ? "top-16 left-4 right-4 w-auto" : "left-60 top-6"
+        mobile ? "top-16 left-4 right-4 w-auto" : `${leftOffsetClass} top-6`
       }`}
     >
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
@@ -345,6 +350,27 @@ export default function DeveloperNavbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [tourActive, setTourActive] = useState(false);
 
+  // ── Sidebar collapse — persisted so it survives navigation/reloads ──
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+    // Reading localStorage requires an effect (unavailable during SSR, and
+    // reading it directly in the render body would cause a hydration
+    // mismatch). The resulting setState-in-effect warning is a false
+    // positive for this "sync from external system on mount" pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (stored === "1") setCollapsed(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, next ? "1" : "0");
+      return next;
+    });
+  };
+
   // ── Messages: unread badge on the nav icon + a popup for new incoming
   // messages, same idea as the notifications bell above but sourced from
   // getConversations() instead of the notifications endpoint.
@@ -510,10 +536,20 @@ export default function DeveloperNavbar() {
   return (
     <>
       {/* ── Left sidebar (desktop) ── */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-56 bg-white border-r border-gray-100 z-50 px-4 py-6">
-        <div className="flex items-center justify-between mb-8 px-3">
+      <aside
+        className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white border-r border-gray-100 z-50 px-3 py-6 transition-all duration-200 ease-in-out ${
+          collapsed ? "w-20" : "w-56"
+        }`}
+      >
+        <div className={`flex items-center mb-2 ${collapsed ? "flex-col gap-3" : "justify-between px-1"}`}>
           <Link href="/feed" className="flex items-center" aria-label="Home">
-            <Image src="/Antyl.png" alt="Antyl logo" width={70} height={30} />
+            <Image
+              src="/Antyl.png"
+              alt="Antyl logo"
+              width={collapsed ? 30 : 70}
+              height={collapsed ? 30 : 30}
+              className="object-contain"
+            />
           </Link>
           <div data-tour="nav-bell">
             <BellButton
@@ -525,6 +561,16 @@ export default function DeveloperNavbar() {
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="flex items-center justify-center w-full py-1.5 mb-4 rounded-xl text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+
         <nav className="flex flex-col gap-1 flex-1">
           {TABS.map(({ label, href, icon: Icon, tourId }) => {
             const active = pathname === href;
@@ -534,7 +580,10 @@ export default function DeveloperNavbar() {
                 key={href}
                 href={href}
                 data-tour={tourId}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
+                title={collapsed ? label : undefined}
+                className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
+                  collapsed ? "justify-center px-0" : "gap-3 px-3"
+                } ${
                   active
                     ? "bg-orange-50 text-[#F2754A]"
                     : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
@@ -548,7 +597,7 @@ export default function DeveloperNavbar() {
                     </span>
                   )}
                 </span>
-                {label}
+                {!collapsed && label}
               </Link>
             );
           })}
@@ -557,7 +606,10 @@ export default function DeveloperNavbar() {
             <Link
               href="/admin/weekly-question"
               data-tour="nav-admin"
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
+              title={collapsed ? "Admin" : undefined}
+              className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
+                collapsed ? "justify-center px-0" : "gap-3 px-3"
+              } ${
                 pathname === "/admin/weekly-question"
                   ? "bg-orange-50 text-[#F2754A]"
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
@@ -568,7 +620,7 @@ export default function DeveloperNavbar() {
                   pathname === "/admin/weekly-question" ? "text-[#F2754A]" : "text-gray-400"
                 }`}
               />
-              Admin
+              {!collapsed && "Admin"}
             </Link>
           )}
         </nav>
@@ -576,19 +628,25 @@ export default function DeveloperNavbar() {
         <button
           type="button"
           onClick={() => setTourActive(true)}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left"
+          title={collapsed ? "Take a tour" : undefined}
+          className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left ${
+            collapsed ? "justify-center px-0" : "gap-3 px-3"
+          }`}
         >
           <HelpCircle className="w-4 h-4 flex-shrink-0" />
-          Take a tour
+          {!collapsed && "Take a tour"}
         </button>
 
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-full text-left"
+          title={collapsed ? "Logout" : undefined}
+          className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-full text-left ${
+            collapsed ? "justify-center px-0" : "gap-3 px-3"
+          }`}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          Logout
+          {!collapsed && "Logout"}
         </button>
       </aside>
 
@@ -653,7 +711,11 @@ export default function DeveloperNavbar() {
         </div>
       </header>
 
-      <div className="hidden md:block w-56 flex-shrink-0" />
+      <div
+        className={`hidden md:block flex-shrink-0 transition-all duration-200 ease-in-out ${
+          collapsed ? "w-20" : "w-56"
+        }`}
+      />
 
       {/* ── Panel rendered once, fixed-positioned relative to whichever bell was clicked ── */}
       {panelOpen && anchorRect && (
@@ -673,6 +735,7 @@ export default function DeveloperNavbar() {
           onOpen={handleMessageToastOpen}
           onClose={() => setMessageToast(null)}
           mobile={typeof window !== "undefined" && window.innerWidth < 768}
+          leftOffsetClass={collapsed ? "left-24" : "left-60"}
         />
       )}
 

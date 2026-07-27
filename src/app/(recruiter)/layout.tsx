@@ -17,6 +17,8 @@ import {
   BookOpen,
   ShieldCheck,
   HelpCircle,
+  ChevronLeft,
+  ChevronRight,
   X,
 } from "lucide-react";
 
@@ -33,6 +35,8 @@ type NewMessageToast = {
   text: string;
 };
 
+const SIDEBAR_COLLAPSE_KEY = "antyl_recruiter_nav_collapsed";
+
 export default function RecruiterLayout({
   children,
 }: {
@@ -44,6 +48,27 @@ export default function RecruiterLayout({
   const [tourActive, setTourActive] = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [toast, setToast] = useState<NewMessageToast | null>(null);
+
+  // ── Sidebar collapse — persisted so it survives navigation/reloads ──
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+    // Reading localStorage requires an effect (unavailable during SSR, and
+    // reading it directly in the render body would cause a hydration
+    // mismatch). The resulting setState-in-effect warning is a false
+    // positive for this "sync from external system on mount" pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (stored === "1") setCollapsed(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, next ? "1" : "0");
+      return next;
+    });
+  };
 
   // match_id -> last seen message id, so polling only fires a popup for
   // messages that are actually new, not on every refresh.
@@ -149,10 +174,32 @@ export default function RecruiterLayout({
   return (
     <div className="flex min-h-screen bg-[#FAF6F0]">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-100 flex flex-col p-6">
-        <Link href="/dashboard" className="mb-10 inline-flex items-center" aria-label="Home">
-          <Image src="/Antyl.png" alt="Antyl logo" width={70} height={30} />
-        </Link>
+      <aside
+        className={`bg-white border-r border-gray-100 flex flex-col p-6 flex-shrink-0 transition-all duration-200 ease-in-out ${
+          collapsed ? "w-24" : "w-64"
+        }`}
+      >
+        <div className={`mb-2 flex items-center ${collapsed ? "flex-col gap-3" : "justify-between"}`}>
+          <Link href="/dashboard" className="inline-flex items-center" aria-label="Home">
+            <Image
+              src="/Antyl.png"
+              alt="Antyl logo"
+              width={collapsed ? 30 : 70}
+              height={collapsed ? 30 : 30}
+              className="object-contain"
+            />
+          </Link>
+        </div>
+
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="flex items-center justify-center w-full py-1.5 mb-6 rounded-xl text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
 
         <nav className="flex flex-col gap-1.5 flex-1">
           {menu.map((item) => {
@@ -165,7 +212,10 @@ export default function RecruiterLayout({
                 key={item.href}
                 href={item.href}
                 data-tour={item.tourId}
-                className={`relative flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                title={collapsed ? item.label : undefined}
+                className={`relative flex items-center py-3 rounded-2xl text-sm font-semibold transition-colors ${
+                  collapsed ? "justify-center px-0" : "gap-3 px-4"
+                } ${
                   active
                     ? "text-white"
                     : "text-gray-500 hover:bg-orange-50 hover:text-[#F2754A]"
@@ -193,7 +243,7 @@ export default function RecruiterLayout({
                     </span>
                   )}
                 </span>
-                {item.label}
+                {!collapsed && item.label}
               </Link>
             );
           })}
@@ -202,10 +252,13 @@ export default function RecruiterLayout({
         <button
           type="button"
           onClick={() => setTourActive(true)}
-          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors mt-2"
+          title={collapsed ? "Take a tour" : undefined}
+          className={`flex items-center py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors mt-2 ${
+            collapsed ? "justify-center px-0" : "gap-3 px-4"
+          }`}
         >
           <HelpCircle className="w-4.5 h-4.5" />
-          Take a tour
+          {!collapsed && "Take a tour"}
         </button>
 
         <button
@@ -214,17 +267,24 @@ export default function RecruiterLayout({
             localStorage.removeItem("access_token");
             window.location.href = "/";
           }}
-          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+          title={collapsed ? "Log out" : undefined}
+          className={`flex items-center py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors ${
+            collapsed ? "justify-center px-0" : "gap-3 px-4"
+          }`}
         >
           <LogOut className="w-4.5 h-4.5" />
-          Log out
+          {!collapsed && "Log out"}
         </button>
       </aside>
 
       {/* New-message popup, anchored near the Messages nav icon. Only
           shows when the recruiter isn't already looking at the thread. */}
       {toast && (
-        <div className="fixed top-6 left-[17rem] z-50 w-80 animate-in fade-in slide-in-from-left-2">
+        <div
+          className={`fixed top-6 z-50 w-80 animate-in fade-in slide-in-from-left-2 ${
+            collapsed ? "left-28" : "left-[17rem]"
+          }`}
+        >
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
