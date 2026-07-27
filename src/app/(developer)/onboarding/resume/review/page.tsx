@@ -156,7 +156,7 @@ export default function ResumeReviewPage() {
             Review your resume data
           </h2>
           <p className="text-gray-400 mb-8">
-            We have pulled this from your resume — check it over and fix
+            We have pulled this from your resume - check it over and fix
             anything that is off before continuing.
           </p>
 

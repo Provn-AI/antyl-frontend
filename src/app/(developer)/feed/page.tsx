@@ -202,7 +202,7 @@ function SkipConfirmModal({
             </h3>
             <p className="text-sm text-gray-400 mb-6 leading-relaxed">
               {jobTitle ? `"${jobTitle}" ` : "This job "}
-              will be removed from your feed for good — this can&apos;t be
+              will be removed from your feed for good - this can&apos;t be
               undone. If you just want to look at other jobs first, use{" "}
               <span className="text-gray-600 font-medium">Next</span> instead.
             </p>
@@ -498,13 +498,13 @@ export default function FeedPage() {
                 <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3 mb-5 flex items-center gap-2 text-sm text-[#F2754A] font-medium">
                   <Clock className="w-4 h-4 flex-shrink-0" />
                   You have used all {applyLimit} applies today. You can still
-                  skip through roles — applying resumes at midnight IST.
+                  skip through roles - applying resumes at midnight IST.
                 </div>
               )}
 
               {decidedIds.has(currentJob.id) && (
                 <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 mb-5 text-sm text-gray-500 font-medium text-center">
-                  You already decided on this one — use Next to keep browsing.
+                  You already decided on this one - use Next to keep browsing.
                 </div>
               )}
 

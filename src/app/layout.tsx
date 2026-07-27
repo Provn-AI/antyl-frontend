@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 // Notion, LinkedIn, etc.) sometimes fail to fetch the image/icon at all.
 export const metadata: Metadata = {
   metadataBase: new URL("https://antyl.org"),
-  title: "Antyl — Turn Time into Opportunities",
+  title: "Antyl - Turn Time into Opportunities",
   description: "AI-powered developer verification and smart job matching.",
 
   // NOTE: app/favicon.ico is already picked up automatically by Next.js
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "Antyl — Turn Time into Opportunities",
+    title: "Antyl - Turn Time into Opportunities",
     description:
-      "Antyl verifies developers with AI, then auto-applies you to matching roles. No ghosting, no guessing — just your next job.",
+      "Antyl verifies developers with AI, then auto-applies you to matching roles. No ghosting, no guessing - just your next job.",
     url: "https://antyl.org",
     siteName: "Antyl",
     // Reusing the existing logo as the OG image. It'll work for
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "Antyl — Turn Time into Opportunities",
+    title: "Antyl - Turn Time into Opportunities",
     description:
       "Antyl verifies developers with AI, then auto-applies you to matching roles.",
     images: ["/Antyl.png"],

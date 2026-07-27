@@ -149,7 +149,7 @@ export default function GithubPage() {
             Verify your GitHub
           </h2>
           <p className="text-gray-400 mb-8">
-            Connecting GitHub lets us verify real shipped code — it is what
+            Connecting GitHub lets us verify real shipped code - it is what
             powers your Antyl Score.
           </p>
 

@@ -7,7 +7,7 @@ interface ResumeUploadProps {
   onFileSelect: (file: File | null) => void;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 0.2 * 1024 * 1024; // 200kb
 const VALID_TYPES = [
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -26,7 +26,7 @@ export default function ResumeUpload({ onFileSelect }: ResumeUploadProps) {
       return false;
     }
     if (selectedFile.size > MAX_FILE_SIZE) {
-      setError("File size must be under 5MB.");
+      setError("File size must be under 200kb.");
       return false;
     }
     setError("");

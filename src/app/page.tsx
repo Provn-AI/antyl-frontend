@@ -53,7 +53,7 @@ export default function LandingPage() {
     {
       num: "01",
       title: "Connect GitHub",
-      desc: "Link your repos. Antyl's AI reads your actual code — not your resume.",
+      desc: "Link your repos. Antyl's AI reads your actual code - not your resume.",
       color: "#FF6B4D",
       bg: "#FFF0ED",
     },
@@ -84,7 +84,7 @@ export default function LandingPage() {
     {
       quote:
         "I got 3 interview calls in the first week without applying to a single job manually.",
-      name: "Aditya Singh",
+      name: " Singh",
       role: "Frontend Engineer · Hired at Razorpay",
       initials: "AS",
       score: 88,
@@ -118,7 +118,7 @@ export default function LandingPage() {
         </svg>
       ),
       title: "GitHub verified",
-      desc: "AI asks you about your own code — no faking it. Your commits, your architecture decisions, your trade-offs.",
+      desc: "AI asks you about your own code - no faking it. Your commits, your architecture decisions, your trade-offs.",
       color: "#FF6B4D",
       bg: "#FFF0ED",
     },
@@ -129,7 +129,7 @@ export default function LandingPage() {
         </svg>
       ),
       title: "Auto-apply engine",
-      desc: "Set your preferences once. Antyl applies to matching jobs every 6 hours — only above your match threshold.",
+      desc: "Set your preferences once. Antyl applies to matching jobs every 6 hours - only above your match threshold.",
       color: "#FFB347",
       bg: "#FFF8ED",
     },
@@ -275,7 +275,7 @@ export default function LandingPage() {
 
   const carouselTestimonials = [
     {
-      quote: "Got 3 interview calls in the first week — without applying to a single job manually.",
+      quote: "Got 3 interview calls in the first week - without applying to a single job manually.",
       name: "Aditya Singh",
       role: "Frontend Engineer",
       company: "Razorpay",
@@ -1063,7 +1063,7 @@ export default function LandingPage() {
 
         <p className="hero-sub">
           Antyl verifies developers with AI, then auto-applies you to matching
-          roles. No ghosting, no guessing — just your next job.
+          roles. No ghosting, no guessing - just your next job.
         </p>
 
         <div className="hero-ctas">
@@ -1341,7 +1341,7 @@ export default function LandingPage() {
               Built for how <em>real hiring</em> works
             </h2>
             <p className="section-sub">
-              Every feature is designed to remove friction — for developers who
+              Every feature is designed to remove friction - for developers who
               are tired of the process and recruiters who need signal, not noise.
             </p>
           </div>

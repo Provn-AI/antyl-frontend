@@ -42,7 +42,7 @@ export default function WeeklyBlogView() {
           Nothing here yet
         </h2>
         <p className="text-gray-400 max-w-sm mx-auto leading-relaxed">
-          Check back Monday — this week community roundup will land here,
+          Check back Monday - this week community roundup will land here,
           fresh for 24 hours.
         </p>
       </div>

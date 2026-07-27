@@ -253,7 +253,7 @@ export default function VerificationSessionPage() {
             <EyeOff className="w-6 h-6 text-red-500" />
           </div>
           <p className="text-sm font-bold text-gray-900">
-            Submitting — you left the tab again
+            Submitting - you left the tab again
           </p>
           <p className="text-xs text-gray-400">
             Your answers so far are being submitted automatically.
@@ -310,7 +310,7 @@ export default function VerificationSessionPage() {
         {/* ── Tab-switch notice ── */}
         <div className="flex items-center gap-1.5 mb-5 text-xs font-medium text-gray-400">
           <EyeOff className="w-3.5 h-3.5" />
-          Switching tabs or minimizing this window is monitored — a second
+          Switching tabs or minimizing this window is monitored - a second
           switch auto-submits your answers.
         </div>
 
@@ -448,7 +448,7 @@ export default function VerificationSessionPage() {
 
         {isTimeDanger && (
   <p className="text-center text-xs font-semibold text-red-500 mt-5 animate-pulse">
-    ⚠ Less than 1 minute remaining — your answers will auto-submit when time runs out.
+    ⚠ Less than 1 minute remaining - your answers will auto-submit when time runs out.
   </p>
 )}
       </div>

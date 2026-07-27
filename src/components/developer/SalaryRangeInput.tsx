@@ -204,7 +204,7 @@ export default function SalaryRangeInput({
             />
           </div>
 
-          <span className="salary-dash">—</span>
+          <span className="salary-dash">-</span>
 
           <div className={`salary-field${focused === "max" ? " focused" : ""}`}>
             <span className="salary-symbol">{cfg.symbol}</span>

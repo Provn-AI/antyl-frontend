@@ -258,7 +258,7 @@ export default function BillingPage() {
             {loading ? (
               <p className="text-sm text-gray-400">Loading…</p>
             ) : transactions.length === 0 ? (
-              <p className="text-sm text-gray-400">No purchases yet — your free 5 credits are ready to use.</p>
+              <p className="text-sm text-gray-400">No purchases yet - your free 5 credits are ready to use.</p>
             ) : (
               <div className="space-y-2">
                 {transactions.map((tx) => (

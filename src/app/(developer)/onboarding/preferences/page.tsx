@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Zap } from "lucide-react";
 
@@ -22,7 +22,33 @@ const JOB_TYPE_OPTIONS = [
   "On-site",
 ];
 
-
+// Curated list of common tech stack skills for autosuggest.
+// Feel free to extend/trim this — it's just a static array, no backend involved.
+const TECH_STACK_SUGGESTIONS = [
+  // Languages
+  "JavaScript", "TypeScript", "Python", "Java", "Go", "Rust", "C++", "C#",
+  "C", "Ruby", "PHP", "Swift", "Kotlin", "Dart", "Scala", "Elixir", "R",
+  // Frontend
+  "React", "Next.js", "Vue.js", "Nuxt.js", "Angular", "Svelte", "SvelteKit",
+  "Redux", "Tailwind CSS", "HTML", "CSS", "SASS", "Remix", "Astro",
+  // Backend
+  "Node.js", "Express.js", "FastAPI", "Django", "Flask", "Spring Boot",
+  "NestJS", "Ruby on Rails", "Laravel", "GraphQL", "REST APIs", ".NET",
+  // Mobile
+  "React Native", "Flutter", "SwiftUI", "Android SDK",
+  // Databases
+  "PostgreSQL", "MySQL", "MongoDB", "Redis", "Supabase", "Firebase",
+  "SQLite", "DynamoDB", "Elasticsearch", "SQL",
+  // DevOps / Cloud
+  "AWS", "GCP", "Azure", "Docker", "Kubernetes", "Terraform", "CI/CD",
+  "GitHub Actions", "Nginx", "Linux", "Render", "Vercel",
+  // Data / AI
+  "Machine Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy",
+  "LLMs", "LangChain", "Data Engineering",
+  // Other
+  "Git", "GraphQL", "WebSockets", "Microservices", "System Design",
+  "Testing", "Jest", "Cypress", "Solidity", "Web3",
+];
 
 // ─── Tag input ────────────────────────────────────────────────────────────────
 
@@ -32,10 +58,41 @@ interface TagInputProps {
   placeholder: string;
   tags: string[];
   onChange: (tags: string[]) => void;
+  suggestions?: string[];
 }
 
-function TagInput({ label, hint, placeholder, tags, onChange }: TagInputProps) {
+function TagInput({
+  label,
+  hint,
+  placeholder,
+  tags,
+  onChange,
+  suggestions,
+}: TagInputProps) {
   const [draft, setDraft] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const filteredSuggestions = (suggestions ?? []).filter(
+    (s) =>
+      s.toLowerCase().includes(draft.trim().toLowerCase()) &&
+      !tags.includes(s) &&
+      draft.trim().length > 0
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const addTag = (raw: string) => {
     const parts = raw
@@ -48,13 +105,14 @@ function TagInput({ label, hint, placeholder, tags, onChange }: TagInputProps) {
     }
     onChange(next);
     setDraft("");
+    setShowSuggestions(false);
   };
 
   const removeTag = (tag: string) =>
     onChange(tags.filter((t) => t !== tag));
 
   return (
-    <div>
+    <div ref={wrapperRef} className="relative">
       <label className="block text-sm font-semibold text-gray-700 mb-1">
         {label}
       </label>
@@ -80,23 +138,86 @@ function TagInput({ label, hint, placeholder, tags, onChange }: TagInputProps) {
 
         <input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setShowSuggestions(true);
+            setHighlightedIndex(0);
+          }}
+          onFocus={() => {
+            if (draft.trim()) setShowSuggestions(true);
+          }}
           onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              if (showSuggestions && filteredSuggestions.length) {
+                setHighlightedIndex((i) =>
+                  Math.min(i + 1, filteredSuggestions.length - 1)
+                );
+              }
+              return;
+            }
+            if (e.key === "ArrowUp") {
+              e.preventDefault();
+              if (showSuggestions && filteredSuggestions.length) {
+                setHighlightedIndex((i) => Math.max(i - 1, 0));
+              }
+              return;
+            }
             if (e.key === "Enter" || e.key === ",") {
               e.preventDefault();
-              if (draft.trim()) addTag(draft);
+              if (
+                showSuggestions &&
+                filteredSuggestions.length > 0 &&
+                filteredSuggestions[highlightedIndex]
+              ) {
+                addTag(filteredSuggestions[highlightedIndex]);
+              } else if (draft.trim()) {
+                addTag(draft);
+              }
+              return;
+            }
+            if (e.key === "Escape") {
+              setShowSuggestions(false);
+              return;
             }
             if (e.key === "Backspace" && !draft && tags.length) {
               onChange(tags.slice(0, -1));
             }
           }}
           onBlur={() => {
-            if (draft.trim()) addTag(draft);
+            // Slight delay so a click on a suggestion registers before we close/add.
+            setTimeout(() => {
+              if (draft.trim()) addTag(draft);
+            }, 100);
           }}
           placeholder={tags.length === 0 ? placeholder : ""}
           className="flex-1 min-w-[120px] text-sm text-gray-800 placeholder:text-gray-300 outline-none bg-transparent"
         />
       </div>
+
+      {showSuggestions && filteredSuggestions.length > 0 && (
+        <div className="absolute z-10 mt-1.5 w-full max-h-56 overflow-y-auto bg-white border border-gray-100 rounded-2xl shadow-lg py-1.5">
+          {filteredSuggestions.slice(0, 8).map((s, i) => (
+            <button
+              key={s}
+              type="button"
+              onMouseDown={(e) => {
+                // onMouseDown fires before input's onBlur, so the click registers.
+                e.preventDefault();
+                addTag(s);
+              }}
+              onMouseEnter={() => setHighlightedIndex(i)}
+              className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                i === highlightedIndex
+                  ? "bg-orange-50 text-[#F2754A] font-semibold"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -177,7 +298,7 @@ export default function PreferencesPage() {
         </h1>
 
         <OnboardingStepper currentStep={4} />
-        
+
         <button
           type="button"
           onClick={() => router.push("/onboarding/github")}
@@ -185,13 +306,13 @@ export default function PreferencesPage() {
         >
           ← Back
         </button>
-        
+
         <div className="mt-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Set your preferences
           </h2>
           <p className="text-gray-400 mb-8">
-            Tell us what you are looking for — we will use this to match and
+            Tell us what you are looking for - we will use this to match and
             optionally auto-apply on your behalf.
           </p>
 
@@ -199,59 +320,49 @@ export default function PreferencesPage() {
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 space-y-6">
             <TagInput
               label="Tech stack"
-              hint="Press Enter or comma to add each item."
+              hint="Start typing to see suggestions, or press Enter/comma to add your own."
               placeholder="React, Node.js, Python…"
               tags={techStack}
               onChange={setTechStack}
+              suggestions={TECH_STACK_SUGGESTIONS}
             />
 
-            
-
             <div>
-  <label className="block text-sm font-semibold text-gray-700 mb-1">
-    Job types
-  </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Job types
+              </label>
 
-  <p className="text-xs text-gray-400 mb-2">
-    Select from available options.
-  </p>
+              <p className="text-xs text-gray-400 mb-2">
+                Select from available options.
+              </p>
 
-  <div className="flex flex-wrap gap-2">
-    {[
-      "Full-time",
-      "Part-time",
-      "Contract",
-      "Internship",
-      "Freelance",
-      "Remote",
-      "Hybrid",
-      "On-site",
-    ].map((type) => {
-      const selected = jobTypes.includes(type);
+              <div className="flex flex-wrap gap-2">
+                {JOB_TYPE_OPTIONS.map((type) => {
+                  const selected = jobTypes.includes(type);
 
-      return (
-        <button
-          key={type}
-          type="button"
-          onClick={() => {
-            if (selected) {
-              setJobTypes(jobTypes.filter((t) => t !== type));
-            } else {
-              setJobTypes([...jobTypes, type]);
-            }
-          }}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-            selected
-              ? "bg-orange-50 text-[#F2754A] border border-[#F2754A]"
-              : "bg-white text-gray-600 border border-gray-200 hover:border-[#F2754A]"
-          }`}
-        >
-          {type}
-        </button>
-      );
-    })}
-  </div>
-</div>
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        if (selected) {
+                          setJobTypes(jobTypes.filter((t) => t !== type));
+                        } else {
+                          setJobTypes([...jobTypes, type]);
+                        }
+                      }}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                        selected
+                          ? "bg-orange-50 text-[#F2754A] border border-[#F2754A]"
+                          : "bg-white text-gray-600 border border-gray-200 hover:border-[#F2754A]"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* ── Section: Salary ── */}
@@ -323,9 +434,9 @@ export default function PreferencesPage() {
             </div>
 
             <div className="flex justify-between text-xs text-gray-400 font-semibold mt-2">
-  <span>Open</span>
-  <span>Selective</span>
-</div>
+              <span>Open</span>
+              <span>Selective</span>
+            </div>
           </div>
 
           {/* ── Section: Auto Apply toggle ── */}

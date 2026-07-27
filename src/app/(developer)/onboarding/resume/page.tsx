@@ -53,7 +53,7 @@ export default function ResumePage() {
             Upload your resume
           </h2>
           <p className="text-gray-400 mb-8">
-            We will pull your experience and skills automatically — you can
+            We will pull your experience and skills automatically - you can
             review and edit everything before your profile goes live.
           </p>
 

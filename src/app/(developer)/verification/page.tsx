@@ -135,7 +135,7 @@ export default function VerificationIntroPage() {
               Skill verification
             </h2>
             <p className="text-gray-400 mb-8">
-              We will ask you questions drawn directly from your repositories —
+              We will ask you questions drawn directly from your repositories -
               no generic leetcode, just your real work.
             </p>
 

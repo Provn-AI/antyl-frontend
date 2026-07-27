@@ -126,7 +126,7 @@ function AudiencePanel({ audience }: { audience: Audience }) {
         </div>
         <p className="text-[11px] text-gray-400 mt-4 flex items-center gap-1">
           <Lock className="w-3 h-3" />
-          Posted by {q.users?.email ?? q.users?.name ?? "another admin"} — locked for this week
+          Posted by {q.users?.email ?? q.users?.name ?? "another admin"} - locked for this week
         </p>
       </div>
     );
@@ -200,7 +200,7 @@ export default function AdminWeeklyQuestionPage() {
           Weekly Question Admin
         </h1>
         <p className="text-sm text-gray-400 mb-6">
-          First admin to post for the week locks it in — no take-backs.
+          First admin to post for the week locks it in - no take-backs.
         </p>
 
         <div className="flex flex-col gap-5">

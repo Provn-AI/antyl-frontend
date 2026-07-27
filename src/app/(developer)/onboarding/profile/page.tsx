@@ -46,7 +46,7 @@ const CITIES = [
 ];
 
 const BIO_LIMIT = 150;
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_PHOTO_SIZE = 0.2 * 1024 * 1024; // 200kb
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 // ─────────────────────────────────────────────

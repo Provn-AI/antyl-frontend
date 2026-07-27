@@ -328,7 +328,7 @@ export default function RecruiterDashboard() {
                 </h3>
                 <p className="text-gray-400 text-sm mb-6">
                   Create your first job listing to start receiving
-                  applicants — your stats will show up here.
+                  applicants - your stats will show up here.
                 </p>
                 <button
                   type="button"

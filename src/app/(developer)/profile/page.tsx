@@ -15,6 +15,7 @@ import {
   FileText,
   Flame,
   Zap,
+  ChevronDown,
 } from "lucide-react";
 
 import {
@@ -169,7 +170,7 @@ function LinkedInLink({ url }: { url: string | undefined }) {
 
 const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
 
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_PHOTO_SIZE = 0.2 * 1024 * 1024; // 200kb
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -206,6 +207,9 @@ export default function ProfilePage() {
   const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
   const [autoApplyToggling, setAutoApplyToggling] = useState(false);
   const [salaryRange, setSalaryRange] = useState<SalaryRange | null>(null);
+
+  // Danger zone starts collapsed so destructive actions aren't front-and-center.
+  const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -319,7 +323,7 @@ export default function ProfilePage() {
       return;
     }
     if (file.size > MAX_PHOTO_SIZE) {
-      setAvatarError("Image must be under 5MB");
+      setAvatarError("Image must be under 200kb");
       e.target.value = "";
       return;
     }
@@ -862,7 +866,7 @@ export default function ProfilePage() {
                   })}
                 </div>
               ) : (
-                <p className="text-xs text-gray-400">No badges yet — keep your streak going!</p>
+                <p className="text-xs text-gray-400">No badges yet - keep your streak going!</p>
               )}
             </div>
           )}
@@ -1000,38 +1004,61 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ── Danger zone ── */}
-          <div className="bg-white rounded-[24px] border border-red-100 shadow-sm p-6 sm:p-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
-                <Shield className="w-3.5 h-3.5 text-red-500" />
-              </div>
-              <p className="text-xs font-semibold text-red-400 uppercase tracking-widest">
-                Danger zone
-              </p>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-gray-800">Delete account</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Permanently removes your profile and all data.
+          {/* ── Danger zone (collapsible) ── */}
+          <div className="bg-white rounded-[24px] border border-red-100 shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDangerZoneOpen((v) => !v)}
+              aria-expanded={dangerZoneOpen}
+              className="w-full flex items-center justify-between gap-2 p-6 sm:p-8 text-left"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
+                  <Shield className="w-3.5 h-3.5 text-red-500" />
+                </div>
+                <p className="text-xs font-semibold text-red-400 uppercase tracking-widest">
+                  Danger zone
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setConfirm({
-                  open: true,
-                  title: "Delete account?",
-                  description: "This action cannot be undone. Your profile, score, and all data will be permanently erased.",
-                  cta: "Delete account",
-                  danger: true,
-                  onConfirm: handleDeleteAccount,
-                })}
-                className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-full transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </button>
+              <ChevronDown
+                className={`w-4 h-4 text-red-300 transition-transform duration-200 flex-shrink-0 ${
+                  dangerZoneOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            <div
+              className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${
+                dangerZoneOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-red-50">
+                  <div className="flex items-center justify-between mt-4">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Delete account</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Permanently removes your profile and all data.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setConfirm({
+                        open: true,
+                        title: "Delete account?",
+                        description: "This action cannot be undone. Your profile, score, and all data will be permanently erased.",
+                        cta: "Delete account",
+                        danger: true,
+                        onConfirm: handleDeleteAccount,
+                      })}
+                      className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-full transition-colors flex-shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

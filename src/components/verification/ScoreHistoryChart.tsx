@@ -162,7 +162,7 @@ export default function ScoreHistoryChart({ data }: Props) {
       </div>
 
      <p className="text-[11px] font-semibold text-center mt-3 text-orange-400">
-  Dashed line at 70 — Target Threshold
+  Dashed line at 70 - Target Threshold
 </p>
     </div>
   );

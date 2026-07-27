@@ -288,7 +288,7 @@ export default function RecruiterMessagesPage() {
             <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-3">
               {messages.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center mt-10">
-                  Start the conversation — the candidate cannot reply until
+                  Start the conversation - the candidate cannot reply until
                   you send the first message.
                 </p>
               ) : (

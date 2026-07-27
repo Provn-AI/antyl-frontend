@@ -41,7 +41,7 @@ const inputClass =
 const textareaClass =
   "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[120px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
 
-const MAX_LOGO_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_LOGO_SIZE = 0.2 * 1024 * 1024; // 200kb
 const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -144,7 +144,7 @@ export default function RecruiterProfilePage() {
       return;
     }
     if (file.size > MAX_LOGO_SIZE) {
-      setLogoError("Image must be under 5MB");
+      setLogoError("Image must be under 200kb");
       e.target.value = "";
       return;
     }
