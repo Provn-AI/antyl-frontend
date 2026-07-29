@@ -16,6 +16,7 @@ import {
   Flame,
   Zap,
   ChevronDown,
+  Upload,
 } from "lucide-react";
 
 import {
@@ -25,6 +26,7 @@ import {
   deleteAccount,
   updateProfile,
   uploadProfilePhoto,
+  uploadResume,
   getAutoApplyStatus,
   toggleAutoApply,
   getAutoApplyPreferences,
@@ -173,6 +175,12 @@ const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm 
 const MAX_PHOTO_SIZE = 0.2 * 1024 * 1024; // 200kb
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
+const MAX_RESUME_SIZE = 0.1 * 1024 * 1024; // 100kb, matches backend limit
+const ALLOWED_RESUME_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
@@ -203,6 +211,10 @@ export default function ProfilePage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeError, setResumeError] = useState("");
+  const resumeInputRef = useRef<HTMLInputElement>(null);
 
   const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
   const [autoApplyToggling, setAutoApplyToggling] = useState(false);
@@ -337,6 +349,44 @@ export default function ProfilePage() {
       setAvatarError("Upload failed. Try again.");
     } finally {
       setAvatarUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleResumeClick = () => {
+    if (resumeUploading) return;
+    resumeInputRef.current?.click();
+  };
+
+  const handleResumeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    setResumeError("");
+
+    if (!ALLOWED_RESUME_TYPES.includes(file.type)) {
+      setResumeError("Use a PDF or DOCX file");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > MAX_RESUME_SIZE) {
+      setResumeError("Resume must be under 100kb");
+      e.target.value = "";
+      return;
+    }
+
+    setResumeUploading(true);
+    try {
+      await uploadResume(file);
+      // upload_resume awaits parsing before returning, so the profile's
+      // resume_parsed_data / resume_url should already be up to date
+      const refreshed = await getMyProfile();
+      setProfile(refreshed);
+    } catch (error) {
+      console.error(error);
+      setResumeError("Upload failed. Try again.");
+    } finally {
+      setResumeUploading(false);
       e.target.value = "";
     }
   };
@@ -872,12 +922,12 @@ export default function ProfilePage() {
           )}
 
           {/* ── Resume ── */}
-          {profile.resume_parsed_data && (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-              <div className="flex items-center justify-between mb-5">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                  Resume
-                </p>
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                Resume
+              </p>
+              <div className="flex items-center gap-2">
                 {profile.resume_url && (
                   <a
                     href={profile.resume_url}
@@ -889,51 +939,77 @@ export default function ProfilePage() {
                     View PDF
                   </a>
                 )}
+                <button
+                  type="button"
+                  onClick={handleResumeClick}
+                  disabled={resumeUploading}
+                  className="flex items-center gap-1.5 text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  {resumeUploading ? "Uploading…" : profile.resume_url ? "Reupload" : "Upload resume"}
+                </button>
+                <input
+                  ref={resumeInputRef}
+                  type="file"
+                  accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleResumeChange}
+                  className="hidden"
+                />
               </div>
-
-              {profile.resume_parsed_data.work_history && profile.resume_parsed_data.work_history.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                    Experience
-                  </p>
-                  <div className="space-y-3">
-                    {profile.resume_parsed_data.work_history.map((job, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <Briefcase className="w-3.5 h-3.5 text-gray-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{job.role}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{job.company} · {job.duration}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {profile.resume_parsed_data.education && profile.resume_parsed_data.education.length > 0 && (
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                    Education
-                  </p>
-                  <div className="space-y-3">
-                    {profile.resume_parsed_data.education.map((edu, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <FileText className="w-3.5 h-3.5 text-gray-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{edu.institution} · {edu.year}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
-          )}
+
+            {resumeError && (
+              <p className="text-xs font-semibold text-red-500 mb-4">{resumeError}</p>
+            )}
+
+            {profile.resume_parsed_data ? (
+              <>
+                {profile.resume_parsed_data.work_history && profile.resume_parsed_data.work_history.length > 0 && (
+                  <div className="mb-6">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                      Experience
+                    </p>
+                    <div className="space-y-3">
+                      {profile.resume_parsed_data.work_history.map((job, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{job.role}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{job.company} · {job.duration}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {profile.resume_parsed_data.education && profile.resume_parsed_data.education.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                      Education
+                    </p>
+                    <div className="space-y-3">
+                      {profile.resume_parsed_data.education.map((edu, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <FileText className="w-3.5 h-3.5 text-gray-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">{edu.institution} · {edu.year}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-gray-400">No resume uploaded yet.</p>
+            )}
+          </div>
 
           {/* ── Links ── */}
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">

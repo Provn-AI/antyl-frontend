@@ -329,3 +329,51 @@ export async function saveAutoApplyPreferences(
 
   return data.preferences;
 }
+
+export interface ResumeJob {
+  id: string;
+  user_id: string;
+  status: "processing" | "completed" | "failed";
+  resume_url: string;
+  error_message?: string;
+}
+
+export async function uploadResume(file: File) {
+  const token = localStorage.getItem("access_token");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_URL}/developer/resume/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to upload resume");
+  }
+
+  return data as { job_id: string; status: string; file_url: string };
+}
+
+export async function getResumeStatus() {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/resume/status`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to load resume status");
+  }
+
+  return data as ResumeJob;
+}
