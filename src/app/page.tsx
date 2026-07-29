@@ -276,7 +276,7 @@ export default function LandingPage() {
   const carouselTestimonials = [
     {
       quote: "Got 3 interview calls in the first week - without applying to a single job manually.",
-      name: "Aditya Singh",
+      name: "Vanshika Katal",
       role: "Frontend Engineer",
       company: "Razorpay",
       initials: "AK",
