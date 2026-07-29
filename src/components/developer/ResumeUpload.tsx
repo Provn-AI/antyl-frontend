@@ -91,7 +91,7 @@ export default function ResumeUpload({ onFileSelect }: ResumeUploadProps) {
             Drag and drop your resume here
           </p>
           <p className="text-sm text-gray-400 mt-1 mb-5">
-            PDF or DOCX • Max 5MB
+            PDF or DOCX • Max 200kb
           </p>
 
           <button

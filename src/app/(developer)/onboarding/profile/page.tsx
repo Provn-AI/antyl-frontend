@@ -115,7 +115,7 @@ export default function OnboardingProfilePage() {
       return;
     }
     if (file.size > MAX_PHOTO_SIZE) {
-      setAvatarError("Image must be under 5MB");
+      setAvatarError("Image must be under 200kb");
       return;
     }
 
@@ -452,7 +452,7 @@ export default function OnboardingProfilePage() {
             <div className="avatar-meta">
               <span className="avatar-label">Profile photo</span>
               <span className={`avatar-hint${avatarError ? " error" : ""}`}>
-                {avatarError || "JPEG, PNG, or WEBP · up to 5MB"}
+                {avatarError || "JPEG, PNG, or WEBP · up to 200kb"}
               </span>
             </div>
             <input
