@@ -541,7 +541,20 @@ export default function DeveloperNavbar() {
           collapsed ? "w-20" : "w-56"
         }`}
       >
-        <div className={`flex items-center mb-2 ${collapsed ? "flex-col gap-3" : "justify-between px-1"}`}>
+        {/* Toggle handle — pinned to the sidebar's right edge, vertically
+            centered against the logo row, so it stays visible and in the
+            same spot whether the sidebar is expanded or collapsed. */}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute -right-3 top-8 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-[#F2754A] hover:border-[#F2754A] transition-colors z-10"
+        >
+          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+        </button>
+
+        <div className={`flex items-center mb-6 ${collapsed ? "flex-col gap-3" : "justify-between px-1"}`}>
           <Link href="/feed" className="flex items-center" aria-label="Home">
             <Image
               src="/Antyl.png"
@@ -560,16 +573,6 @@ export default function DeveloperNavbar() {
             />
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="flex items-center justify-center w-full py-1.5 mb-4 rounded-xl text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors"
-        >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
 
         <nav className="flex flex-col gap-1 flex-1">
           {TABS.map(({ label, href, icon: Icon, tourId }) => {
