@@ -13,6 +13,7 @@ export interface BadgeCatalogEntry {
   description: string;
   icon: string;
   color: string;
+  image: string;
 }
 
 export async function getMyBadges() {

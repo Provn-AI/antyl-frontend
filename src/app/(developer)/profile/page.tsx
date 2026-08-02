@@ -903,11 +903,12 @@ export default function ProfilePage() {
                     if (!meta) return null;
                     return (
                       <div key={key} className="flex flex-col items-center text-center gap-2 p-3 rounded-2xl bg-gray-50">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center"
-                          style={{ background: `linear-gradient(135deg, ${meta.color}, #FFB347)` }}
-                        >
-                          <BadgeIcon icon={meta.icon} className="w-5 h-5 text-white" />
+                        <div className="w-14 h-14 flex items-center justify-center">
+                          <img
+                            src={meta.image}
+                            alt={meta.label}
+                            className="w-full h-full object-contain"
+                          />
                         </div>
                         <p className="text-xs font-bold text-gray-800">{meta.label}</p>
                         {count > 1 && <p className="text-[10px] text-gray-400">×{count}</p>}

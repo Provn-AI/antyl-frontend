@@ -321,10 +321,13 @@ export default function LeaderboardPage() {
                     <div
                       key={i}
                       title={meta.label}
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ background: `linear-gradient(135deg, ${meta.color}, #FFB347)` }}
+                      className="w-8 h-8 flex items-center justify-center"
                     >
-                      <BadgeIcon icon={meta.icon} className="w-4 h-4 text-white" />
+                      <img
+                        src={meta.image}
+                        alt={meta.label}
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                   );
                 })}
