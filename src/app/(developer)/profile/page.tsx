@@ -165,10 +165,9 @@ function LinkedInLink({ url }: { url: string | undefined }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-3 text-sm font-semibold text-gray-800 hover:text-[#F2754A]"
+      className="text-sm font-semibold text-gray-800 hover:text-[#F2754A]"
     >
-      <LinkedInIcon className="w-4 h-4 text-gray-500" />
-      <span>View profile</span>
+      View profile
     </a>
   );
 }
@@ -180,10 +179,9 @@ function GitHubLink({ username }: { username?: string }) {
       href={`https://github.com/${username}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-3 text-sm font-semibold text-gray-800 hover:text-[#F2754A]"
+      className="text-sm font-semibold text-gray-800 hover:text-[#F2754A]"
     >
-      <GitHubIcon className="w-4 h-4 text-gray-500" />
-      <span>@{username}</span>
+      @{username}
     </a>
   );
 }
@@ -1057,7 +1055,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
-                    <GitHubIcon className="w-4 h-4 text-gray-500" />
+                    <GitHubIcon className="w-4 h-4 text-black" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-gray-400">GitHub</p>
@@ -1095,7 +1093,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
-                    <LinkedInIcon className="w-4 h-4 text-gray-500" />
+                    <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs font-semibold text-gray-400">LinkedIn</p>
