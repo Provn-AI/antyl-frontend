@@ -117,3 +117,44 @@ export const recruiterTourSteps: TourStep[] = [
     content: "Your company details, visible to every developer you match with — keep it current.",
   },
 ];
+
+export const JOB_FORM_TOUR_KEY = "antyl_tour_seen_job_form";
+
+export const jobFormTourSteps: TourStep[] = [
+  {
+    id: "title",
+    target: '[data-tour="job-title"]',
+    title: "Start with a title",
+    content: "Give the role a clear title — you'll be able to auto-fill the rest with AI once you do.",
+  },
+  {
+    id: "autofill",
+    target: '[data-tour="job-autofill"]',
+    title: "Auto-fill with AI",
+    content: "Let AI draft the description, tech stack, salary range, and experience level from just the title.",
+  },
+  {
+    id: "tech-stack",
+    target: '[data-tour="job-tech-stack"]',
+    title: "Tech stack",
+    content: "List the required skills, comma-separated — this feeds straight into candidate matching.",
+  },
+  {
+    id: "score",
+    target: '[data-tour="job-score-slider"]',
+    title: "Antyl Score range",
+    content: "The Antyl Score is a 0–100 GitHub-verified trust score for every developer. Set a range here and you'll only match candidates who clear your bar — no more sifting resumes to check.",
+  },
+  {
+    id: "location",
+    target: '[data-tour="job-location"]',
+    title: "Location",
+    content: "Pick from the city list so your job matches candidates' preferred locations exactly.",
+  },
+  {
+    id: "submit",
+    target: '[data-tour="job-submit"]',
+    title: "You're set",
+    content: "Preview how candidates will see this role, then post it — Antyl starts matching right away.",
+  },
+];

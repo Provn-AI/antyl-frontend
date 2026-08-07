@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Sparkles, X } from "lucide-react";
 
 export interface TourStep {
@@ -28,12 +28,26 @@ const PADDING = 8;
 const CARD_WIDTH = 300;
 const CARD_HEIGHT_ESTIMATE = 190;
 const GAP = 16;
+// How much clearance a target needs from the viewport edges to count as
+// "already visible" — leaves room for the tooltip card itself, so we don't
+// scroll a target that's technically on-screen but has no room to show its
+// card without immediately needing to scroll again.
+const VIEWPORT_MARGIN = 100;
+// Smooth-scroll settle time before we trust getBoundingClientRect() again.
+const SCROLL_SETTLE_MS = 450;
 
 // Spotlight tour only runs on desktop widths — the sidebar (where all
 // data-tour targets live) is hidden below md, and the mobile tab bar
 // duplicates the same items without unique anchors.
 function isDesktopViewport() {
   return typeof window !== "undefined" && window.innerWidth >= 768;
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  );
 }
 
 function measureTarget(selector: string): Rect | null {
@@ -46,6 +60,13 @@ function measureTarget(selector: string): Rect | null {
     width: r.width + PADDING * 2,
     height: r.height + PADDING * 2,
   };
+}
+
+function isInViewport(el: HTMLElement): boolean {
+  const r = el.getBoundingClientRect();
+  return (
+    r.top >= VIEWPORT_MARGIN && r.bottom <= window.innerHeight - VIEWPORT_MARGIN
+  );
 }
 
 export default function OnboardingTour({ steps, storageKey, active, onFinish }: OnboardingTourProps) {
@@ -75,13 +96,18 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
   }, [storageKey, onFinish]);
 
   // Measure target position after mount / step change (small delay lets
-  // the page settle first). Every setState call here happens inside the
-  // setTimeout callback — an async boundary — never synchronously in the
-  // effect body itself.
+  // the page settle first). If the target isn't currently in view, scroll
+  // it into view first and wait for that scroll to settle before trusting
+  // getBoundingClientRect() — measuring mid-scroll (or pre-scroll) produces
+  // an off-screen rect, which renders as a full black backdrop with no
+  // visible cutout. Every setState call here happens inside an async
+  // callback (the initial setTimeout, or the scroll-settle setTimeout
+  // nested inside it) — never synchronously in the effect body itself.
   useEffect(() => {
     if (!active) return;
 
     let cancelled = false;
+    let scrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const t = setTimeout(() => {
       if (cancelled) return;
@@ -93,9 +119,9 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
         return;
       }
 
-      const measured = measureTarget(step.target);
+      const el = document.querySelector(step.target) as HTMLElement | null;
 
-      if (!measured) {
+      if (!el) {
         // Target isn't on the page for this user (e.g. admin-only tab) —
         // skip to the next step instead of showing an empty spotlight.
         if (stepIndex >= steps.length - 1) {
@@ -106,13 +132,32 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
         return;
       }
 
-      setRect(measured);
-      setReadyIndex(stepIndex);
+      const finalize = () => {
+        if (cancelled) return;
+        const measured = measureTarget(step.target);
+        if (!measured) {
+          finish();
+          return;
+        }
+        setRect(measured);
+        setReadyIndex(stepIndex);
+      };
+
+      if (isInViewport(el)) {
+        finalize();
+      } else {
+        el.scrollIntoView({
+          behavior: prefersReducedMotion() ? "auto" : "smooth",
+          block: "center",
+        });
+        scrollTimeoutId = setTimeout(finalize, SCROLL_SETTLE_MS);
+      }
     }, 50);
 
     return () => {
       cancelled = true;
       clearTimeout(t);
+      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
     };
   }, [active, stepIndex, step, steps.length, finish]);
 

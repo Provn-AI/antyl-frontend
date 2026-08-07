@@ -17,6 +17,8 @@ import { getBalance } from "@/services/billing.service";
 import TrustScoreSlider from "@/components/jobs/TrustScoreSlider";
 import { isValidCity } from "@/lib/cities";
 import CitySelect from "@/components/citySelect";
+import OnboardingTour from "@/components/OnboardingTour";
+import { jobFormTourSteps, JOB_FORM_TOUR_KEY } from "@/lib/tourSteps";
 
 interface JobForm {
   title: string;
@@ -107,6 +109,14 @@ export default function NewJobPage() {
 
   const [balance, setBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
+
+  // One-time "how this form works" tour. We check localStorage ourselves
+  // (rather than always passing active=true) because OnboardingTour only
+  // *writes* the storageKey on finish — it doesn't gate its own activation.
+  const [tourActive, setTourActive] = useState<boolean>(() => {
+  if (typeof window === "undefined") return false;
+  return !localStorage.getItem(JOB_FORM_TOUR_KEY);
+});
 
   useEffect(() => {
     async function loadBalance() {
@@ -387,13 +397,14 @@ export default function NewJobPage() {
 
         <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 space-y-5">
 
-          <div>
+          <div data-tour="job-title">
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-semibold text-gray-900">
                 Job Title<span className="ml-1 text-red-500">*</span>
               </label>
               <button
                 type="button"
+                data-tour="job-autofill"
                 onClick={handleAutofill}
                 disabled={autofilling || !form.title.trim()}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[#F2754A] text-[#F2754A] hover:bg-orange-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
@@ -433,7 +444,7 @@ export default function NewJobPage() {
             />
           </div>
 
-          <div>
+          <div data-tour="job-tech-stack">
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Required Tech Stack
             </label>
@@ -578,7 +589,7 @@ export default function NewJobPage() {
               so recruiters can't introduce spelling variants (e.g.
               "Bangalore" vs "Bengaluru") that break exact-match filtering
               against developer preferred_locations. */}
-          <div>
+          <div data-tour="job-location">
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Location
             </label>
@@ -612,7 +623,7 @@ export default function NewJobPage() {
             </div>
           </button>
 
-          <div>
+          <div data-tour="job-score-slider">
             <label className="block text-sm font-semibold text-gray-900 mb-3">
               Antyl Score Range
             </label>
@@ -636,6 +647,7 @@ export default function NewJobPage() {
 
             <button
               type="button"
+              data-tour="job-submit"
               onClick={handleSubmit}
               disabled={saving || outOfCredits}
               title={outOfCredits ? "Buy more credits to post a job" : undefined}
@@ -760,6 +772,13 @@ export default function NewJobPage() {
           </div>
         </div>
       )}
+
+      <OnboardingTour
+        steps={jobFormTourSteps}
+        storageKey={JOB_FORM_TOUR_KEY}
+        active={tourActive}
+        onFinish={() => setTourActive(false)}
+      />
     </div>
   );
 }

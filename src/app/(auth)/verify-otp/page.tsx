@@ -57,6 +57,39 @@ function VerifyOtpForm() {
   const [error, setError] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // ── Animation-only state: tracks which box index should play the
+  // "settle" motion right now. Purely visual, doesn't touch any
+  // existing logic below. ──────────────────────────────────────
+  const [poppingIndex, setPoppingIndex] = useState<Set<number>>(new Set());
+  const popTimeouts = useRef<(ReturnType<typeof setTimeout> | null)[]>([]);
+
+  const triggerPop = (index: number, delay = 0) => {
+    const run = () => {
+      setPoppingIndex((prev) => {
+        const next = new Set(prev);
+        next.add(index);
+        return next;
+      });
+      // Clear any existing timeout for this index, then schedule removal
+      if (popTimeouts.current[index]) clearTimeout(popTimeouts.current[index]!);
+      popTimeouts.current[index] = setTimeout(() => {
+        setPoppingIndex((prev) => {
+          const next = new Set(prev);
+          next.delete(index);
+          return next;
+        });
+      }, 350);
+    };
+    if (delay > 0) setTimeout(run, delay);
+    else run();
+  };
+
+  useEffect(() => {
+    return () => {
+      popTimeouts.current.forEach((t) => t && clearTimeout(t));
+    };
+  }, []);
+
   useEffect(() => {
     if (timer <= 0) return;
     const id = setInterval(() => setTimer((t) => t - 1), 1000);
@@ -68,6 +101,9 @@ function VerifyOtpForm() {
     const next = [...otp];
     next[index] = value.slice(-1);
     setOtp(next);
+    if (value) {
+      triggerPop(index);
+    }
     if (value && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -86,7 +122,10 @@ function VerifyOtpForm() {
       .replace(/\D/g, "")
       .slice(0, OTP_LENGTH);
     const next = [...otp];
-    pasted.split("").forEach((char, i) => { next[i] = char; });
+    pasted.split("").forEach((char, i) => {
+      next[i] = char;
+      triggerPop(i, i * 45); // slight stagger so it "fills in" left to right
+    });
     setOtp(next);
     inputRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
@@ -178,7 +217,7 @@ function VerifyOtpForm() {
           <input
             key={i}
             ref={(el) => { inputRefs.current[i] = el; }}
-            className={`otp-box${digit ? " filled" : ""}${error ? " error" : ""}`}
+            className={`otp-box${digit ? " filled" : ""}${error ? " error" : ""}${poppingIndex.has(i) ? " pop" : ""}`}
             type="tel"
             inputMode="numeric"
             maxLength={1}
@@ -323,6 +362,16 @@ export default function VerifyOtpPage() {
         }
         .otp-box::-webkit-outer-spin-button,
         .otp-box::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        /* ── Fill "settle" motion — transform only, no color change ── */
+        @keyframes otpSettle {
+          0%   { transform: translateY(-7px) rotate(-4deg) scale(1.06); }
+          55%  { transform: translateY(2px) rotate(2.5deg) scale(1); }
+          100% { transform: translateY(0) rotate(0deg) scale(1); }
+        }
+        .otp-box.pop {
+          animation: otpSettle 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
 
         .error-msg {
           font-size: 13px;

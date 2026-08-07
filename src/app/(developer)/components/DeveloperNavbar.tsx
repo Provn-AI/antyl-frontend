@@ -96,6 +96,8 @@ function getNotificationHref(n: AntylNotification): string {
       return "/applications";
     case "profile_viewed":
       return "/profile";
+    case "message":              
+      return "/messages";
     case "streak_daily":
     case "streak_week":
     case "streak_month":
@@ -110,6 +112,7 @@ function getNotificationHref(n: AntylNotification): string {
 function NotifIcon({ type }: { type: string }) {
   if (type === "match") return <Sparkles className="w-3.5 h-3.5 text-emerald-500" />;
   if (type === "profile_viewed") return <Eye className="w-3.5 h-3.5 text-blue-500" />;
+  if (type === "message") return <MessageCircle className="w-3.5 h-3.5 text-[#F2754A]" />; 
   if (type === "streak_daily") return <Flame className="w-3.5 h-3.5 text-[#F2754A]" />;
   if (type === "streak_week") return <Flame className="w-3.5 h-3.5 text-[#F2754A]" />;
   if (type === "streak_month") return <Trophy className="w-3.5 h-3.5 text-[#FFB347]" />;
