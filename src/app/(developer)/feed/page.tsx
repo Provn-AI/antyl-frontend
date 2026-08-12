@@ -9,7 +9,6 @@ import {
 } from "framer-motion";
 import {
   X,
-  Rocket,
   CheckCircle2,
   Clock,
   EyeOff,
@@ -229,6 +228,62 @@ function SkipConfirmModal({
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Mascot-driven empty state — used when there are no jobs in the feed */
+/* at all. Fills the card with the mascot instead of a bare icon, and  */
+/* gives the person two concrete next actions instead of a dead end.   */
+/* ------------------------------------------------------------------ */
+function NoJobsState() {
+  return (
+    <div className="relative bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden min-h-[62vh] flex items-center justify-center px-8 py-14">
+      {/* glows on both sides so a wide card reads as designed, not decorated in one corner */}
+      <div
+        className="pointer-events-none absolute -left-20 top-1/3 w-80 h-80 rounded-full bg-orange-50 blur-3xl opacity-60"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -right-20 bottom-1/4 w-80 h-80 rounded-full bg-orange-50 blur-3xl opacity-60"
+        aria-hidden="true"
+      />
+
+      <div className="relative flex flex-col md:flex-row items-center gap-10 md:gap-16 max-w-2xl mx-auto">
+        <img
+          src="/no_jobs_pose.png"
+          alt=""
+          className="w-60 h-60 md:w-72 md:h-72 object-contain shrink-0 select-none"
+          draggable={false}
+        />
+
+        <div className="text-center md:text-left">
+          <h2 className="font-sans text-2xl md:text-[28px] font-bold text-gray-900 mb-2">
+            No jobs available right now
+          </h2>
+          <p className="font-sans text-gray-400 leading-relaxed mb-7 max-w-md">
+            Your feed is empty for the moment. Improve your Antyl score,
+            widen your preferences, or check back tomorrow, new roles get
+            added every day.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center md:items-start justify-center md:justify-start gap-3">
+            <a
+              href="/profile"
+              className="font-sans w-full sm:w-auto text-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors"
+            >
+              Update preferences
+            </a>
+            <a
+              href="/profile#antyl-score"
+              className="font-sans w-full sm:w-auto text-center px-6 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              Improve my score
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FeedPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -378,6 +433,10 @@ export default function FeedPage() {
   const applyDisabled = applyRemaining <= 0;
   const canGoBack = currentIndex > 0;
 
+  // Only the "no jobs" state gets extra width — the swipe deck and the
+  // "all caught up" card stay at the page's normal max-w-2xl.
+  const isEmptyState = !loading && jobs.length === 0;
+
   return (
     <>
       <DeveloperNavbar />
@@ -393,7 +452,11 @@ export default function FeedPage() {
       />
 
       <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-10">
-        <div className="w-full max-w-2xl mx-auto">
+        <div
+          className={`w-full mx-auto transition-[max-width] duration-200 ${
+            isEmptyState ? "max-w-4xl" : "max-w-2xl"
+          }`}
+        >
           <AnimatePresence>
             {toast && (
               <motion.div
@@ -431,13 +494,13 @@ export default function FeedPage() {
           </AnimatePresence>
 
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="font-sans text-3xl font-bold text-gray-900">
               Find your next role
             </h1>
 
             {statusLoaded && (
               <span
-                className={`text-sm font-semibold px-3 py-1.5 rounded-full ${
+                className={`font-sans text-sm font-semibold px-3 py-1.5 rounded-full ${
                   applyDisabled
                     ? "bg-gray-100 text-gray-400"
                     : "bg-orange-50 text-[#F2754A]"
@@ -457,27 +520,16 @@ export default function FeedPage() {
               <p className="text-gray-400 text-sm mt-4">Loading jobs...</p>
             </div>
           ) : jobs.length === 0 ? (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-16 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-5">
-                <Rocket className="w-7 h-7 text-[#F2754A]" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                No jobs available
-              </h2>
-              <p className="text-gray-400 max-w-sm mx-auto leading-relaxed">
-                Improve your Antyl score, update your preferences, or check
-                back tomorrow for new opportunities.
-              </p>
-            </div>
+            <NoJobsState />
           ) : hasFinishedFeed ? (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-16 text-center">
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-20 text-center">
               <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-5">
                 <CheckCircle2 className="w-7 h-7 text-[#F2754A]" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              <h2 className="font-sans text-2xl font-bold text-gray-900 mb-2">
                 You are all caught up
               </h2>
-              <p className="text-gray-400 max-w-sm mx-auto leading-relaxed">
+              <p className="font-sans text-gray-400 max-w-sm mx-auto leading-relaxed">
                 You have gone through every role we have right now. Check
                 back soon for new matches.
               </p>
@@ -485,7 +537,7 @@ export default function FeedPage() {
                 <button
                   type="button"
                   onClick={handleBack}
-                  className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#F2754A] hover:underline"
+                  className="font-sans mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#F2754A] hover:underline"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Go back to previous roles
