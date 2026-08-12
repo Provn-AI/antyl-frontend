@@ -17,6 +17,7 @@ import {
   Zap,
   ChevronDown,
   Upload,
+  Share2,
 } from "lucide-react";
 
 import {
@@ -37,6 +38,7 @@ import { getMyStreak, StreakSummary } from "@/services/streak.service";
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import { BadgeIcon } from "../components/BadgeIcon";
+import { ShareBadgeModal, ShareBadgeData } from "@/components/ShareBadgeModal";
 import CitySelect from "@/components/citySelect";
 
 
@@ -79,6 +81,18 @@ function jobStatusLabel(value: string | undefined) {
 
 function formatSalary(n: number) {
   return `₹${n.toLocaleString("en-IN")} LPA`;
+}
+
+function resolveBadgeRank(metadata?: Record<string, unknown>) {
+  if (!metadata) return null;
+  const rankValue = metadata.rank ?? metadata.position;
+  return typeof rankValue === "number" ? rankValue : null;
+}
+
+function resolveBadgeFieldLabel(metadata?: Record<string, unknown>) {
+  if (!metadata) return undefined;
+  const fieldValue = metadata.field_label ?? metadata.field_of_work ?? metadata.field;
+  return typeof fieldValue === "string" ? fieldValue : undefined;
 }
 
 // ── Mini score ring ───────────────────────────────────────────────────────────
@@ -253,6 +267,7 @@ export default function ProfilePage() {
   const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
   const [autoApplyToggling, setAutoApplyToggling] = useState(false);
   const [salaryRange, setSalaryRange] = useState<SalaryRange | null>(null);
+  const [sharedBadge, setSharedBadge] = useState<ShareBadgeData | null>(null);
 
   // Danger zone starts collapsed so destructive actions aren't front-and-center.
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
@@ -495,6 +510,7 @@ export default function ProfilePage() {
     <div className="min-h-screen w-full bg-[#FAF6F0]">
       <DeveloperNavbar />
       <ConfirmModal state={confirm} onClose={() => setConfirm(CONFIRM_CLOSED)} />
+      <ShareBadgeModal badge={sharedBadge} isOpen={Boolean(sharedBadge)} onClose={() => setSharedBadge(null)} />
 
       <div className="px-4 py-12">
         <div className="w-full max-w-2xl mx-auto">
@@ -935,18 +951,43 @@ export default function ProfilePage() {
                   {Object.entries(badgeCounts).map(([key, count]) => {
                     const meta = badgeCatalog[key];
                     if (!meta) return null;
+
+                    const badgeRecord = badges.find((b) => b.badge_key === key);
+                    const rank = resolveBadgeRank(badgeRecord?.metadata as Record<string, unknown> | undefined);
+                    const fieldLabel = resolveBadgeFieldLabel(badgeRecord?.metadata as Record<string, unknown> | undefined);
+
                     return (
-                      <div key={key} className="flex flex-col items-center text-center gap-2 p-3 rounded-2xl bg-gray-50">
-                        <div className="w-14 h-14 flex items-center justify-center">
-                          <img
-                            src={meta.image}
-                            alt={meta.label}
-                            className="w-full h-full object-contain"
-                          />
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() =>
+                          setSharedBadge({
+                            badgeKey: key,
+                            label: meta.label,
+                            description: meta.description,
+                            image: meta.image,
+                            color: meta.color,
+                            rank,
+                            fieldLabel,
+                          })
+                        }
+                        className="group relative flex flex-col items-center text-center gap-2 rounded-2xl border border-gray-100 bg-white p-3 text-left transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                        style={{ backgroundColor: `${meta.color}14` }}
+                      >
+                        <div className="absolute right-2 top-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100 scale-90">
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[#F2754A] shadow-sm">
+                            <Share2 className="h-3 w-3" />
+                          </span>
                         </div>
-                        <p className="text-xs font-bold text-gray-800">{meta.label}</p>
-                        {count > 1 && <p className="text-[10px] text-gray-400">×{count}</p>}
-                      </div>
+
+                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/60 bg-white/60">
+                          <BadgeIcon icon={meta.icon || "trophy"} className="h-7 w-7 text-[#F2754A]" />
+                        </div>
+                        <div className="w-full">
+                          <p className="text-xs font-bold text-gray-800">{meta.label}</p>
+                          {count > 1 && <p className="text-[10px] text-gray-400">×{count}</p>}
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
