@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Search,
   Filter,
+  Share2,
 } from "lucide-react";
 import {
   getLeaderboard,
@@ -22,6 +23,7 @@ import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service"
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import WeekTimer from "../components/WeekTimer";
 import { BadgeIcon } from "../components/BadgeIcon";
+import { ShareBadgeModal, ShareBadgeData } from "@/components/ShareBadgeModal";
 
 // ─────────────────────────────────────────────
 // Rank movement badge
@@ -95,6 +97,18 @@ function RankBadge({ rank }: { rank: number }) {
       <span className="text-xs font-bold text-gray-400">{rank}</span>
     </div>
   );
+}
+
+function resolveBadgeRank(metadata?: Record<string, unknown>) {
+  if (!metadata) return null;
+  const rankValue = metadata.rank ?? metadata.position;
+  return typeof rankValue === "number" ? rankValue : null;
+}
+
+function resolveBadgeFieldLabel(metadata?: Record<string, unknown>) {
+  if (!metadata) return undefined;
+  const fieldValue = metadata.field_label ?? metadata.field_of_work ?? metadata.field;
+  return typeof fieldValue === "string" ? fieldValue : undefined;
 }
 
 // ─────────────────────────────────────────────
@@ -213,6 +227,7 @@ export default function LeaderboardPage() {
   const [myRank, setMyRank] = useState<MyRank | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [badgeCatalog, setBadgeCatalog] = useState<Record<string, BadgeCatalogEntry>>({});
+  const [sharedBadge, setSharedBadge] = useState<ShareBadgeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -266,6 +281,7 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-[#FAF6F0] flex">
       <DeveloperNavbar />
+      <ShareBadgeModal badge={sharedBadge} isOpen={Boolean(sharedBadge)} onClose={() => setSharedBadge(null)} />
 
       <main className="flex-1 px-4 md:px-8 py-6 md:py-10 max-w-3xl mx-auto w-full">
         {/* Header */}
@@ -314,21 +330,39 @@ export default function LeaderboardPage() {
 
             {badges.length > 0 && (
               <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
-                {badges.slice(0, 6).map((b, i) => {
+                {badges.slice(0, 6).map((b, index) => {
                   const meta = badgeCatalog[b.badge_key];
                   if (!meta) return null;
+
+                  const rank = resolveBadgeRank(b.metadata as Record<string, unknown> | undefined);
+                  const fieldLabel = resolveBadgeFieldLabel(b.metadata as Record<string, unknown> | undefined);
+
                   return (
-                    <div
-                      key={i}
-                      title={meta.label}
-                      className="w-8 h-8 flex items-center justify-center"
+                    <button
+                      key={`${b.badge_key}-${index}`}
+                      type="button"
+                      aria-label={`Share ${meta.label} badge`}
+                      title={`Share ${meta.label}`}
+                      onClick={() =>
+                        setSharedBadge({
+                          badgeKey: b.badge_key,
+                          label: meta.label,
+                          description: meta.description,
+                          image: meta.image,
+                          color: meta.color,
+                          rank,
+                          fieldLabel,
+                        })
+                      }
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-100 bg-white transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                      style={{ backgroundColor: `${meta.color}14` }}
                     >
                       <img
                         src={meta.image}
                         alt={meta.label}
-                        className="w-full h-full object-contain"
+                        className="h-full w-full object-contain"
                       />
-                    </div>
+                    </button>
                   );
                 })}
               </div>
