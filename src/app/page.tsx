@@ -284,6 +284,7 @@ export default function LandingPage() {
       tier: "Expert",
       bg: "#FFE8E3",
       color: "#FF6B4D",
+      photo: "/Girl.png",
     },
     {
       quote: "The Antyl Score is a game changer. I finally know who can actually do the job before I even call them.",
@@ -295,6 +296,7 @@ export default function LandingPage() {
       tier: "Recruiter",
       bg: "#F3EFFE",
       color: "#8B5CF6",
+      photo: "/Girl.png",
     },
     {
       quote: "Antyl proved my skills without a whiteboard test. My score opened doors I couldn't before.",
@@ -306,6 +308,7 @@ export default function LandingPage() {
       tier: "Advanced",
       bg: "#FFF4E3",
       color: "#FFB347",
+      photo: "/Girl.png",
     },
     {
       quote: "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
@@ -317,6 +320,7 @@ export default function LandingPage() {
       tier: "Expert",
       bg: "#EAFAF0",
       color: "#22C55E",
+      photo: "/Boy.png",
     },
     {
       quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
@@ -328,6 +332,7 @@ export default function LandingPage() {
       tier: "Recruiter",
       bg: "#FFF0F2",
       color: "#FF7A8A",
+      photo: "/Girl.png",
     },
     {
       quote: "I was skeptical, but the AI verification session actually asked smart questions about my own code.",
@@ -339,6 +344,7 @@ export default function LandingPage() {
       tier: "Advanced",
       bg: "#E6F4FF",
       color: "#3B82F6",
+      photo: "/Boy.png",
     },
   ];
 
@@ -548,28 +554,52 @@ export default function LandingPage() {
         /* ---- STATS ---- */
         .stats-strip {
           border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
-          background: var(--white); padding: 2.5rem 2rem;
+          background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4rem 2rem;
         }
         .stats-inner {
-          max-width: 800px; margin: 0 auto;
-          display: flex; justify-content: center;
+          max-width: 1200px; margin: 0 auto;
+          display: flex; gap: 4rem; align-items: center;
+        }
+        .stats-image-container {
+          flex: 0 0 360px; height: 380px; border-radius: 20px; overflow: hidden;
+          background: linear-gradient(135deg, #FFD6E8 0%, #FFE8D6 100%);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+          position: relative;
+        }
+        .stats-image-container::before {
+          content: ''; position: absolute; inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+          pointer-events: none; border-radius: 20px;
+        }
+        .stats-image-container img {
+          width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1;
+        }
+        .stats-grid-container {
+          flex: 1;
+          display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem 3rem;
         }
         .stat-item {
-          flex: 1; text-align: center; padding: 0 2rem; position: relative;
+          display: flex; flex-direction: column; text-align: left; padding: 1.25rem;
+          background: var(--white); border-radius: 12px; border: 1px solid var(--gray2);
+          transition: all 0.3s ease; gap: 0.5rem;
         }
-        .stat-item:not(:last-child)::after {
-          content: ''; position: absolute; right: 0; top: 50%;
-          transform: translateY(-50%); height: 40px; width: 1px; background: var(--gray2);
+        .stat-item:hover {
+          border-color: var(--grad-90); box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        }
+        .stat-item::after {
+          display: none;
         }
         .stat-number {
-          font-family: var(--serif); font-size: 40px; font-weight: 600;
-          color: var(--ink); line-height: 1; letter-spacing: -.03em;
+          font-family: var(--serif); font-size: 48px; font-weight: 800;
+          color: var(--ink); line-height: 1; letter-spacing: -.03em; margin-bottom: 0.25rem;
         }
         .stat-suffix {
           background: var(--grad-90); -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent; background-clip: text;
+          -webkit-text-fill-color: transparent; background-clip: text; font-size: 32px;
         }
-        .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-top: .375rem; }
+        .stat-label { font-size: 15px; color: var(--ink); font-weight: 700; line-height: 1.2; }
+        .stat-desc { font-size: 13px; color: var(--gray3); font-weight: 400; line-height: 1.4; margin-top: 0.25rem; }
 
         /* ---- TECH CAROUSEL ---- */
         .tech-carousel-section {
@@ -725,24 +755,44 @@ export default function LandingPage() {
           to   { transform: translateX(-50%); }
         }
         .proof-card {
-          width: 300px;
+          width: 520px;
           flex-shrink: 0;
           background: var(--white);
           border: 1px solid var(--gray2);
           border-radius: 20px;
-          padding: 1.5rem;
+          padding: 0;
           transition: transform .2s, box-shadow .2s;
           cursor: default;
+          display: flex;
+          overflow: hidden;
         }
         .proof-card:hover {
           transform: translateY(-4px);
           box-shadow: 0 12px 36px rgba(0,0,0,.07);
         }
-        .proof-card-top {
+        .proof-card-media {
+          width: 200px;
+          height: 220px;
+          flex-shrink: 0;
+          background: var(--gray1);
           display: flex;
           align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .proof-card-media img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .proof-card-top {
+          display: flex;
+          align-items: flex-start;
           justify-content: space-between;
           margin-bottom: 1rem;
+          flex: 1;
         }
         .proof-avatar-wrap {
           display: flex;
@@ -798,12 +848,19 @@ export default function LandingPage() {
           font-style: italic;
           margin-bottom: 1rem;
         }
+        .proof-card-content {
+          flex: 1;
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+        }
         .proof-card-footer {
           display: flex;
           align-items: center;
           gap: 6px;
           padding-top: .875rem;
           border-top: 1px solid var(--gray2);
+          margin-top: auto;
         }
         .proof-company-dot {
           width: 6px; height: 6px;
@@ -969,6 +1026,10 @@ export default function LandingPage() {
           margin-left: auto; flex-shrink: 0;
           background: linear-gradient(90deg,#FF6B4D,#FFB347); color: white;
           font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px;
+        }
+
+        @media (max-width: 900px) {
+          .testimonials-grid { grid-template-columns: 1fr; }
         }
 
         /* ---- DUAL CTA ---- */
@@ -1207,26 +1268,34 @@ export default function LandingPage() {
       {/* ─── STATS ─── */}
       <div className="stats-strip" ref={statsRef}>
         <div className="stats-inner">
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.devs >= 1000
-                ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
-                : counts.devs}
-              <span className="stat-suffix">+</span>
-            </div>
-            <div className="stat-label">Verified developers</div>
+          <div className="stats-image-container">
+            <img src="/Girl.png" alt="Verified Developer on Antyl" />
           </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.companies}<span className="stat-suffix">+</span>
+          <div className="stats-grid-container">
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.devs >= 1000
+                  ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
+                  : counts.devs}
+                <span className="stat-suffix">+</span>
+              </div>
+              <div className="stat-label">Verified developers</div>
+              <div className="stat-desc">Handpicked talent, verified through skills</div>
             </div>
-            <div className="stat-label">Companies hiring</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.match}<span className="stat-suffix">%</span>
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.companies}<span className="stat-suffix">+</span>
+              </div>
+              <div className="stat-label">Companies hiring</div>
+              <div className="stat-desc">Active hiring across all industries</div>
             </div>
-            <div className="stat-label">Match accuracy</div>
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.match}<span className="stat-suffix">%</span>
+              </div>
+              <div className="stat-label">Match accuracy</div>
+              <div className="stat-desc">Industry-leading job-skill alignment</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1260,28 +1329,34 @@ export default function LandingPage() {
           <div className="proof-marquee-track">
             {[...carouselTestimonials, ...carouselTestimonials].map((t, i) => (
               <div className="proof-card" key={i}>
-                <div className="proof-card-top">
-                  <div className="proof-avatar-wrap">
-                    <div className="proof-avatar" style={{ background: t.bg, color: t.color }}>
-                      {t.initials}
-                    </div>
+                <div className="proof-card-media" style={{ background: t.bg }}>
+                  {t.photo && (
+                    <img
+                      src={t.photo}
+                      alt={`${t.name} photo`}
+                      loading="lazy"
+                    />
+                  )}
+                </div>
+                <div className="proof-card-content">
+                  <div className="proof-card-top">
                     <div>
                       <div className="proof-name">{t.name}</div>
                       <div className="proof-role">{t.role}</div>
                     </div>
+                    {t.score ? (
+                      <div className="proof-score-badge">{t.tier} · {t.score}</div>
+                    ) : (
+                      <div className="proof-recruiter-badge">Recruiter</div>
+                    )}
                   </div>
-                  {t.score ? (
-                    <div className="proof-score-badge">{t.tier} · {t.score}</div>
-                  ) : (
-                    <div className="proof-recruiter-badge">Recruiter</div>
-                  )}
-                </div>
-                <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
-                <div className="proof-card-footer">
-                  <span className="proof-company-dot" />
-                  <span className="proof-company">{t.company}</span>
-                  <div className="proof-stars">
-                    {[...Array(5)].map((_, si) => <div className="proof-star" key={si} />)}
+                  <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="proof-card-footer">
+                    <span className="proof-company-dot" />
+                    <span className="proof-company">{t.company}</span>
+                    <div className="proof-stars">
+                      {[...Array(5)].map((_, si) => <div className="proof-star" key={si} />)}
+                    </div>
                   </div>
                 </div>
               </div>
