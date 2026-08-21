@@ -605,28 +605,41 @@ export default function LandingPage() {
         /* ---- STATS ---- */
         .stats-strip {
           border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
-          background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4rem 2rem;
+          background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4.5rem 2rem;
         }
         .stats-inner {
-          max-width: 800px; margin: 0 auto;
-          display: flex; justify-content: center;
+          max-width: 1080px; margin: 0 auto;
+          display: flex; gap: 4rem; align-items: center;
+        }
+        .stats-image-container {
+          flex: 0 0 360px; height: 320px; border-radius: 16px; overflow: hidden;
+          background: #f1e7f8; position: relative;
+        }
+        .stats-image-container::after {
+          content: ''; position: absolute; inset: 0;
+          box-shadow: inset 0 0 0 1px rgba(29, 25, 35, .04);
+          pointer-events: none;
+        }
+        .stats-image-container img {
+          width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .stats-grid-container {
+          flex: 1; display: grid; grid-template-columns: repeat(2, 1fr);
+          column-gap: 3.5rem; row-gap: 1.5rem;
         }
         .stat-item {
-          flex: 1; text-align: center; padding: 0 2rem; position: relative;
-        }
-        .stat-item:not(:last-child)::after {
-          content: ''; position: absolute; right: 0; top: 50%;
-          transform: translateY(-50%); height: 40px; width: 1px; background: var(--gray2);
+          text-align: left; padding: 0; position: relative;
         }
         .stat-number {
           font-family: var(--serif); font-size: 48px; font-weight: 800;
-          color: var(--ink); line-height: 1; letter-spacing: -.03em; margin-bottom: 0.25rem;
+          color: var(--ink); line-height: 1; letter-spacing: -.03em; margin-bottom: .45rem;
         }
         .stat-suffix {
           background: var(--grad-90); -webkit-background-clip: text;
           -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-top: .375rem; }
+        .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-bottom: .45rem; }
+        .stat-desc { font-size: 16px; color: var(--ink); line-height: 1.4; }
 
         /* ---- TECH CAROUSEL ---- */
         .tech-carousel-section {
@@ -701,18 +714,45 @@ export default function LandingPage() {
           to   { transform: translateX(-50%); }
         }
         .proof-card {
-          width: 300px;
+          width: 520px;
+          height: 220px;
           flex-shrink: 0;
           background: var(--white);
           border: 1px solid var(--gray2);
           border-radius: 20px;
-          padding: 1.5rem;
+          padding: 0;
           transition: transform .2s, box-shadow .2s;
           cursor: default;
+          display: flex;
+          overflow: hidden;
         }
         .proof-card:hover {
           transform: translateY(-4px);
           box-shadow: 0 12px 36px rgba(0,0,0,.07);
+        }
+        .proof-card-media {
+          width: 200px;
+          height: 220px;
+          flex-shrink: 0;
+          background: var(--gray1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .proof-card-media img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .proof-card-content {
+          flex: 1;
+          min-width: 0;
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
         }
         .proof-card-top {
           display: flex;
@@ -900,8 +940,13 @@ export default function LandingPage() {
           .hero { padding: 6rem 1.25rem 3rem; }
           .steps-grid { grid-template-columns: 1fr; }
           .features-grid { grid-template-columns: 1fr; }
-          .stats-inner { flex-direction: column; gap: 2rem; }
-          .stat-item::after { display: none; }
+          .stats-inner { flex-direction: column; gap: 2rem; align-items: stretch; }
+          .stats-image-container { width: 100%; height: min(82vw, 320px); }
+          .stats-grid-container { width: 100%; flex-basis: auto; gap: 1.5rem; }
+          .stat-number { font-size: 34px; }
+          .stat-desc { font-size: 13px; }
+          .proof-card { width: min(520px, calc(100vw - 2rem)); }
+          .proof-card-media { width: 38%; }
         }
       `}</style>
 
