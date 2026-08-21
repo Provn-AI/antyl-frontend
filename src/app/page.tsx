@@ -5,11 +5,47 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 
+function useLazySection<T extends HTMLElement = HTMLElement>() {
+  const [element, setElement] = useState<T | null>(null);
+  const attach = (node: T | null) => setElement(node);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = element;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -60px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [element]);
+
+  return [visible, attach] as const;
+}
+
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [counted, setCounted] = useState(false);
   const [counts, setCounts] = useState({ devs: 0, companies: 0, match: 0 });
   const statsRef = useRef<HTMLDivElement>(null);
+
+  const [heroVisible, attachHero] = useLazySection();
+  const [howItWorksVisible, attachHowItWorks] = useLazySection();
+  const [statsVisible, attachStats] = useLazySection<HTMLDivElement>();
+  const [techVisible, attachTech] = useLazySection();
+  const [proofVisible, attachProof] = useLazySection();
+  const [scoreVisible, attachScore] = useLazySection();
+  const [scoreCount, setScoreCount] = useState(0);
+  const scoreAnimated = useRef(false);
+  const [featuresVisible, attachFeatures] = useLazySection();
+  const [testimonialsVisible, attachTestimonials] = useLazySection();
+  const [dualCtaVisible, attachDualCta] = useLazySection();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -348,6 +384,31 @@ export default function LandingPage() {
     },
   ];
 
+  // Animate score number when section becomes visible
+  useEffect(() => {
+    if (scoreVisible && !scoreAnimated.current) {
+      scoreAnimated.current = true;
+      const target = 78;
+      const duration = 1800;
+      const start = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3);
+        setScoreCount(Math.floor(target * ease));
+        if (progress < 1) requestAnimationFrame(tick);
+        else setScoreCount(target);
+      };
+      requestAnimationFrame(tick);
+    }
+  }, [scoreVisible]);
+
+  const scoreDimensions = [
+    { label: "Technical depth", value: 82 },
+    { label: "Code quality", value: 74 },
+    { label: "Project complexity", value: 80 },
+    { label: "Communication", value: 68 },
+  ];
+
   return (
     <>
       <style>{`
@@ -374,9 +435,7 @@ export default function LandingPage() {
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        html {
-          scroll-behavior: smooth;
-        }
+        html { scroll-behavior: smooth; }
 
         @media (prefers-reduced-motion: reduce) {
           html { scroll-behavior: auto; }
@@ -391,55 +450,50 @@ export default function LandingPage() {
           overflow-x: hidden;
         }
 
-        a:focus-visible,
-        button:focus-visible {
+        a:focus-visible, button:focus-visible {
           outline: 2px solid var(--coral);
           outline-offset: 3px;
           border-radius: 4px;
         }
 
+        /* ---- LAZY LOADING ---- */
+        .lazy-section {
+          opacity: 0;
+          transform: translateY(40px);
+          transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .lazy-section.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
         /* ---- NAVBAR ---- */
         .navbar {
-          position: fixed;
-          top: 0; left: 0; right: 0;
-          z-index: 100;
-          height: 64px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 2.5rem;
+          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+          height: 64px; display: flex; align-items: center;
+          justify-content: space-between; padding: 0 2.5rem;
           transition: background .25s, box-shadow .25s;
         }
         .navbar.scrolled {
           background: rgba(255,255,255,0.88);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
+          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
           box-shadow: 0 1px 0 var(--gray2);
         }
         .nav-logo {
-          font-family: var(--serif);
-          font-size: 24px;
-          font-weight: 600;
-          background: var(--grad-90);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          letter-spacing: -.02em;
-          text-decoration: none;
+          font-family: var(--serif); font-size: 24px; font-weight: 600;
+          background: var(--grad-90); -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent; background-clip: text;
+          letter-spacing: -.02em; text-decoration: none;
         }
         .nav-links { display: flex; gap: 2rem; align-items: center; }
         .nav-link {
-          position: relative;
-          font-size: 14px; font-weight: 500; color: var(--gray4);
-          text-decoration: none; letter-spacing: -.01em; transition: color .15s;
-          padding-bottom: 2px;
+          position: relative; font-size: 14px; font-weight: 500; color: var(--gray4);
+          text-decoration: none; letter-spacing: -.01em; transition: color .15s; padding-bottom: 2px;
         }
         .nav-link::after {
-          content: '';
-          position: absolute; left: 0; bottom: -3px;
+          content: ''; position: absolute; left: 0; bottom: -3px;
           width: 0; height: 2px; border-radius: 2px;
-          background: var(--grad-90);
-          transition: width .2s ease;
+          background: var(--grad-90); transition: width .2s ease;
         }
         .nav-link:hover { color: var(--ink); }
         .nav-link:hover::after { width: 100%; }
@@ -474,7 +528,6 @@ export default function LandingPage() {
         .blob-1 { width: 600px; height: 600px; background: var(--coral); top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: var(--lemon); bottom: -100px; right: -150px; }
         .blob-3 { width: 300px; height: 300px; background: var(--amber); top: 40%; left: 50%; transform: translate(-50%,-50%); }
-
         .hero-eyebrow {
           display: inline-flex; align-items: center; gap: 7px;
           background: var(--cream); border: 1px solid var(--beige);
@@ -523,7 +576,6 @@ export default function LandingPage() {
           text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
         }
         .btn-hero-secondary:hover { border-color: var(--ink); transform: translateY(-2px); }
-
         .hero-social-proof {
           display: flex; align-items: center; gap: .625rem; font-size: 13px;
           color: var(--gray3); animation: fadeUp .7s .45s ease both; margin-bottom: .75rem;
@@ -545,7 +597,6 @@ export default function LandingPage() {
           padding: 5px 12px; border-radius: 50px; border: 1px solid var(--gray2);
         }
         .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; }
-
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
@@ -557,38 +608,15 @@ export default function LandingPage() {
           background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4rem 2rem;
         }
         .stats-inner {
-          max-width: 1200px; margin: 0 auto;
-          display: flex; gap: 4rem; align-items: center;
-        }
-        .stats-image-container {
-          flex: 0 0 360px; height: 380px; border-radius: 20px; overflow: hidden;
-          background: linear-gradient(135deg, #FFD6E8 0%, #FFE8D6 100%);
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.08);
-          position: relative;
-        }
-        .stats-image-container::before {
-          content: ''; position: absolute; inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
-          pointer-events: none; border-radius: 20px;
-        }
-        .stats-image-container img {
-          width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 1;
-        }
-        .stats-grid-container {
-          flex: 1;
-          display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem 3rem;
+          max-width: 800px; margin: 0 auto;
+          display: flex; justify-content: center;
         }
         .stat-item {
-          display: flex; flex-direction: column; text-align: left; padding: 1.25rem;
-          background: var(--white); border-radius: 12px; border: 1px solid var(--gray2);
-          transition: all 0.3s ease; gap: 0.5rem;
+          flex: 1; text-align: center; padding: 0 2rem; position: relative;
         }
-        .stat-item:hover {
-          border-color: var(--grad-90); box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-        }
-        .stat-item::after {
-          display: none;
+        .stat-item:not(:last-child)::after {
+          content: ''; position: absolute; right: 0; top: 50%;
+          transform: translateY(-50%); height: 40px; width: 1px; background: var(--gray2);
         }
         .stat-number {
           font-family: var(--serif); font-size: 48px; font-weight: 800;
@@ -596,128 +624,46 @@ export default function LandingPage() {
         }
         .stat-suffix {
           background: var(--grad-90); -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent; background-clip: text; font-size: 32px;
+          -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .stat-label { font-size: 15px; color: var(--ink); font-weight: 700; line-height: 1.2; }
-        .stat-desc { font-size: 13px; color: var(--gray3); font-weight: 400; line-height: 1.4; margin-top: 0.25rem; }
+        .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-top: .375rem; }
 
         /* ---- TECH CAROUSEL ---- */
         .tech-carousel-section {
-          padding: 3.5rem 0;
-          overflow: hidden;
-          background: var(--white);
-          border-bottom: 1px solid var(--gray2);
-          margin-top: 2.5rem;
+          padding: 3.5rem 0; overflow: hidden; background: var(--white);
+          border-bottom: 1px solid var(--gray2); margin-top: 2.5rem;
         }
         .tech-carousel-label {
-          text-align: center;
-          font-size: 11.5px;
-          font-weight: 700;
-          letter-spacing: .12em;
-          text-transform: uppercase;
-          color: var(--gray3);
-          margin-bottom: 1.75rem;
+          text-align: center; font-size: 11.5px; font-weight: 700;
+          letter-spacing: .12em; text-transform: uppercase; color: var(--gray3); margin-bottom: 1.75rem;
         }
-        .tech-marquee-wrap {
-          position: relative;
-          overflow: hidden;
+        .tech-marquee-wrap { position: relative; overflow: hidden; }
+        .tech-marquee-wrap::before, .tech-marquee-wrap::after {
+          content: ''; position: absolute; top: 0; bottom: 0; width: 120px; z-index: 2; pointer-events: none;
         }
-        .tech-marquee-wrap::before,
-        .tech-marquee-wrap::after {
-          content: '';
-          position: absolute;
-          top: 0; bottom: 0;
-          width: 120px;
-          z-index: 2;
-          pointer-events: none;
-        }
-        .tech-marquee-wrap::before {
-          left: 0;
-          background: linear-gradient(to right, var(--white) 0%, transparent 100%);
-        }
-        .tech-marquee-wrap::after {
-          right: 0;
-          background: linear-gradient(to left, var(--white) 0%, transparent 100%);
-        }
+        .tech-marquee-wrap::before { left: 0; background: linear-gradient(to right, var(--white) 0%, transparent 100%); }
+        .tech-marquee-wrap::after { right: 0; background: linear-gradient(to left, var(--white) 0%, transparent 100%); }
         .tech-marquee-track {
-          display: flex;
-          width: max-content;
-          gap: 10px;
-          padding: 6px 0;
+          display: flex; width: max-content; gap: 10px; padding: 6px 0;
           animation: techScrollRight 38s linear infinite;
         }
-        .tech-marquee-wrap:hover .tech-marquee-track {
-          animation-play-state: paused;
-        }
-        @keyframes techScrollRight {
-          from { transform: translateX(-50%); }
-          to   { transform: translateX(0); }
-        }
+        .tech-marquee-wrap:hover .tech-marquee-track { animation-play-state: paused; }
+        @keyframes techScrollRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
         .tech-pill {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 20px;
-          border-radius: 999px;
-          border: 1px solid var(--gray2);
-          background: var(--white);
-          white-space: nowrap;
-          cursor: default;
-          transition: border-color .2s, transform .2s, box-shadow .2s;
-          user-select: none;
+          display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+          border-radius: 999px; border: 1px solid var(--gray2); background: var(--white);
+          white-space: nowrap; cursor: default;
+          transition: border-color .2s, transform .2s, box-shadow .2s; user-select: none;
         }
-        .tech-pill:hover {
-          border-color: var(--coral);
-          transform: translateY(-2px) scale(1.03);
-          box-shadow: 0 4px 16px rgba(255,107,77,.12);
-        }
-        .tech-pill-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 28px;
-          height: 28px;
-          flex-shrink: 0;
-        }
-        .tech-pill span {
-          font-size: 13.5px;
-          font-weight: 600;
-          color: var(--ink);
-          letter-spacing: -.01em;
-        }
+        .tech-pill:hover { border-color: var(--coral); transform: translateY(-2px) scale(1.03); box-shadow: 0 4px 16px rgba(255,107,77,.12); }
+        .tech-pill-icon { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; }
+        .tech-pill span { font-size: 13.5px; font-weight: 600; color: var(--ink); letter-spacing: -.01em; }
 
         /* ---- SOCIAL PROOF MARQUEE ---- */
-        .proof-section {
-          padding: 5rem 0;
-          background: var(--gray1);
-          border-top: 1px solid var(--gray2);
-          border-bottom: 1px solid var(--gray2);
-          overflow: hidden;
-        }
-        .proof-header {
-          text-align: center;
-          margin-bottom: 3rem;
-          padding: 0 1.5rem;
-        }
-        .proof-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11.5px;
-          font-weight: 700;
-          letter-spacing: .1em;
-          text-transform: uppercase;
-          color: var(--coral);
-          margin-bottom: .875rem;
-        }
-        .proof-title {
-          font-family: var(--serif);
-          font-size: clamp(26px, 3vw, 38px);
-          font-weight: 600;
-          color: var(--ink);
-          letter-spacing: -.03em;
-          line-height: 1.15;
-        }
+        .proof-section { padding: 5rem 0; background: var(--gray1); border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2); overflow: hidden; }
+        .proof-header { text-align: center; margin-bottom: 3rem; padding: 0 1.5rem; }
+        .proof-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: .875rem; }
+        .proof-title { font-family: var(--serif); font-size: clamp(26px, 3vw, 38px); font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.15; }
         .proof-title em { font-style: italic; color: var(--coral); }
         .proof-marquee-wrap {
           position: relative;
@@ -755,44 +701,24 @@ export default function LandingPage() {
           to   { transform: translateX(-50%); }
         }
         .proof-card {
-          width: 520px;
+          width: 300px;
           flex-shrink: 0;
           background: var(--white);
           border: 1px solid var(--gray2);
           border-radius: 20px;
-          padding: 0;
+          padding: 1.5rem;
           transition: transform .2s, box-shadow .2s;
           cursor: default;
-          display: flex;
-          overflow: hidden;
         }
         .proof-card:hover {
           transform: translateY(-4px);
           box-shadow: 0 12px 36px rgba(0,0,0,.07);
         }
-        .proof-card-media {
-          width: 200px;
-          height: 220px;
-          flex-shrink: 0;
-          background: var(--gray1);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-        }
-        .proof-card-media img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-        }
         .proof-card-top {
           display: flex;
-          align-items: flex-start;
+          align-items: center;
           justify-content: space-between;
           margin-bottom: 1rem;
-          flex: 1;
         }
         .proof-avatar-wrap {
           display: flex;
@@ -848,19 +774,12 @@ export default function LandingPage() {
           font-style: italic;
           margin-bottom: 1rem;
         }
-        .proof-card-content {
-          flex: 1;
-          padding: 1.5rem;
-          display: flex;
-          flex-direction: column;
-        }
         .proof-card-footer {
           display: flex;
           align-items: center;
           gap: 6px;
           padding-top: .875rem;
           border-top: 1px solid var(--gray2);
-          margin-top: auto;
         }
         .proof-company-dot {
           width: 6px; height: 6px;
@@ -887,139 +806,48 @@ export default function LandingPage() {
         /* ---- SECTIONS ---- */
         .section { padding: 6rem 1.5rem; }
         .section-inner { max-width: 1100px; margin: 0 auto; }
-        .section-eyebrow {
-          display: inline-flex; align-items: center; gap: 6px;
-          font-size: 13px; font-weight: 700; letter-spacing: .1em;
-          text-transform: uppercase; color: var(--coral); margin-bottom: 1rem;
-        }
-        .section-title {
-          font-family: var(--serif); font-size: clamp(28px, 3.5vw, 42px);
-          font-weight: 600; color: var(--ink); line-height: 1.15;
-          letter-spacing: -.03em; margin-bottom: 1rem;
-        }
+        .section-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: 1rem; }
+        .section-title { font-family: var(--serif); font-size: clamp(28px, 3.5vw, 42px); font-weight: 600; color: var(--ink); line-height: 1.15; letter-spacing: -.03em; margin-bottom: 1rem; }
         .section-title em { font-style: italic; color: var(--coral); }
         .section-sub { font-size: 16px; color: var(--gray4); line-height: 1.65; max-width: 500px; }
 
         /* ---- HOW IT WORKS ---- */
-        .steps-grid {
-          display: grid; grid-template-columns: repeat(4,1fr);
-          gap: 1.25rem; margin-top: 3.5rem;
-        }
-        .step-card {
-          background: var(--white); border: 1px solid var(--gray2);
-          border-radius: 20px; padding: 1.75rem 1.5rem; position: relative;
-          transition: transform .2s, box-shadow .2s, border-color .2s;
-        }
-        .step-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 40px rgba(0,0,0,.07);
-          border-color: var(--coral);
-        }
-        .step-num {
-          font-family: var(--serif); font-size: 11px; font-weight: 600;
-          letter-spacing: .1em; color: var(--gray3); margin-bottom: 1rem; text-transform: uppercase;
-        }
-        .step-icon-wrap {
-          width: 48px; height: 48px; border-radius: 14px;
-          display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;
-        }
+        .steps-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.25rem; margin-top: 3.5rem; }
+        .step-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 20px; padding: 1.75rem 1.5rem; position: relative; transition: transform .2s, box-shadow .2s, border-color .2s; }
+        .step-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,.07); border-color: var(--coral); }
+        .step-num { font-family: var(--serif); font-size: 11px; font-weight: 600; letter-spacing: .1em; color: var(--gray3); margin-bottom: 1rem; text-transform: uppercase; }
+        .step-icon-wrap { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
         .step-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: .5rem; letter-spacing: -.02em; }
         .step-desc { font-size: 13.5px; color: var(--gray4); line-height: 1.6; }
-        .step-connector {
-          position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
-          width: 28px; height: 28px; background: var(--white);
-          border: 1.5px solid var(--gray2); border-radius: 50%;
-          display: flex; align-items: center; justify-content: center; z-index: 1;
-        }
+        .step-connector { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--white); border: 1.5px solid var(--gray2); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1; }
 
         /* ---- FEATURES ---- */
-        .features-grid {
-          display: grid; grid-template-columns: repeat(3,1fr);
-          gap: 1rem; margin-top: 3.5rem;
-        }
-        .feature-card {
-          background: var(--gray1); border: 1px solid var(--gray2);
-          border-radius: 20px; padding: 1.75rem;
-          transition: transform .2s, box-shadow .2s, background .2s;
-        }
-        .feature-card:hover {
-          transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06);
-          background: var(--white);
-        }
-        .feature-icon {
-          width: 46px; height: 46px; border-radius: 13px;
-          display: flex; align-items: center; justify-content: center; margin-bottom: 1.125rem;
-        }
+        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 3.5rem; }
+        .feature-card { background: var(--gray1); border: 1px solid var(--gray2); border-radius: 20px; padding: 1.75rem; transition: transform .2s, box-shadow .2s, background .2s; }
+        .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06); background: var(--white); }
+        .feature-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.125rem; }
         .feature-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: .5rem; letter-spacing: -.02em; }
         .feature-desc { font-size: 13.5px; color: var(--gray4); line-height: 1.65; }
 
-        /* ---- Antyl SCORE ---- */
-        .score-section {
-          background: var(--gray1); padding: 6rem 1.5rem;
-          border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
+        @keyframes scoreRingFill {
+          from { stroke-dasharray: 0 264; }
+          to { stroke-dasharray: 205.92 58.08; }
         }
-        .score-card {
-          background: var(--white); border: 1px solid var(--gray2);
-          border-radius: 24px; padding: 2.5rem; max-width: 900px; margin: 3.5rem auto 0;
-          display: grid; grid-template-columns: 220px 1fr; gap: 3rem; align-items: center;
+        .score-ring-animated {
+          animation: scoreRingFill 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
-        .score-ring-outer {
-          width: 160px; height: 160px; border-radius: 50%;
-          background: linear-gradient(135deg,#FF6B4D,#FFB347,#FFD84D);
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 12px 40px rgba(255,107,77,.25); margin: 0 auto;
-        }
-        .score-ring-inner {
-          width: 120px; height: 120px; border-radius: 50%; background: var(--white);
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .score-big {
-          font-family: var(--serif); font-size: 44px; font-weight: 700;
-          line-height: 1; color: var(--ink); letter-spacing: -.04em;
-        }
-        .score-label { font-size: 11px; font-weight: 700; color: var(--gray3); letter-spacing: .05em; text-transform: uppercase; }
-        .score-tier {
-          background: linear-gradient(90deg,#FF6B4D,#FFB347); color: white;
-          font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 50px;
-          display: inline-block; margin-top: .75rem; letter-spacing: .04em; text-transform: uppercase;
-        }
-        .bars-wrap { display: flex; flex-direction: column; gap: .875rem; }
-        .bar-row { display: flex; flex-direction: column; gap: 6px; }
-        .bar-meta { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--ink); }
-        .bar-pct { color: var(--gray3); }
-        .bar-track { height: 8px; background: var(--gray2); border-radius: 4px; overflow: hidden; }
-        .bar-fill {
-          height: 100%; border-radius: 4px;
-          background: linear-gradient(90deg,#FF6B4D,#FFB347);
-          transition: width 1.2s cubic-bezier(.22,1,.36,1);
-        }
-        .tiers-row { display: flex; gap: .5rem; margin-top: 1.5rem; flex-wrap: wrap; }
-        .tier-chip {
-          font-size: 11px; font-weight: 600; padding: 4px 12px;
-          border-radius: 50px; border: 1.5px solid var(--gray2); color: var(--gray3);
-        }
-        .tier-chip.active { border-color: var(--coral); background: var(--cream); color: var(--coral); }
+
+        /* ---- ANTYL SCORE SECTION ---- */
+        .score-section { background: var(--gray1); padding: 6rem 1.5rem; border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2); }
 
         /* ---- TESTIMONIALS ---- */
-        .testimonials-grid {
-          display: grid; grid-template-columns: repeat(3,1fr);
-          gap: 1.25rem; margin-top: 3.5rem;
-        }
-        .testimonial-card {
-          background: var(--white); border: 1px solid var(--gray2);
-          border-radius: 20px; padding: 1.75rem;
-          transition: transform .2s, box-shadow .2s;
-        }
+        .testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
+        .testimonial-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 20px; padding: 1.75rem; transition: transform .2s, box-shadow .2s; }
         .testimonial-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06); }
         .quote-mark { font-family: var(--serif); font-size: 48px; line-height: .8; color: var(--beige); margin-bottom: .5rem; font-style: italic; }
         .quote-text { font-size: 14.5px; color: var(--ink); line-height: 1.65; margin-bottom: 1.25rem; }
         .testimonial-footer { display: flex; align-items: center; gap: .75rem; }
-        .t-avatar {
-          width: 40px; height: 40px; border-radius: 50%;
-          background: var(--cream); border: 2px solid var(--beige);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 13px; font-weight: 700; color: var(--coral); flex-shrink: 0;
-        }
+        .t-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--cream); border: 2px solid var(--beige); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--coral); flex-shrink: 0; }
         .t-name { font-size: 13px; font-weight: 700; color: var(--ink); }
         .t-role { font-size: 11px; color: var(--gray3); margin-top: 2px; }
         .t-score {
@@ -1028,72 +856,32 @@ export default function LandingPage() {
           font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px;
         }
 
-        @media (max-width: 900px) {
-          .testimonials-grid { grid-template-columns: 1fr; }
-        }
-
         /* ---- DUAL CTA ---- */
         .dual-cta-section { padding: 6rem 1.5rem; background: var(--white); }
-        .dual-cta-grid {
-          max-width: 1000px; margin: 0 auto;
-          display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
-        }
+        .dual-cta-grid { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
         .cta-card { border-radius: 24px; padding: 2.5rem; position: relative; overflow: hidden; }
         .cta-card-dev { background: linear-gradient(135deg,#FF6B4D,#FFB347); color: white; }
         .cta-card-rec { background: var(--ink); color: white; }
-        .cta-card-title {
-          font-family: var(--serif); font-size: 26px; font-weight: 600;
-          line-height: 1.2; margin-bottom: .625rem; letter-spacing: -.03em;
-        }
+        .cta-card-title { font-family: var(--serif); font-size: 26px; font-weight: 600; line-height: 1.2; margin-bottom: .625rem; letter-spacing: -.03em; }
         .cta-card-sub { font-size: 14px; opacity: .8; line-height: 1.6; margin-bottom: 2rem; max-width: 320px; }
-        .btn-cta-white {
-          background: white; color: var(--coral); border: none;
-          padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700;
-          cursor: pointer; font-family: var(--font); letter-spacing: -.01em;
-          transition: transform .15s, box-shadow .15s;
-          text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
-        }
+        .btn-cta-white { background: white; color: var(--coral); border: none; padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); letter-spacing: -.01em; transition: transform .15s, box-shadow .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
         .btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
-        .btn-cta-outline {
-          background: transparent; color: white; border: 1.5px solid rgba(255,255,255,.4);
-          padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700;
-          cursor: pointer; font-family: var(--font); letter-spacing: -.01em;
-          transition: border-color .15s, transform .15s;
-          text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
-        }
+        .btn-cta-outline { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,.4); padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); letter-spacing: -.01em; transition: border-color .15s, transform .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
         .btn-cta-outline:hover { border-color: rgba(255,255,255,.8); transform: translateY(-2px); }
         .cta-bg-shape { position: absolute; border-radius: 50%; opacity: .08; pointer-events: none; }
 
         /* ---- FOOTER ---- */
         .footer { background: var(--ink); color: white; padding: 3.5rem 2.5rem 2rem; }
         .footer-inner { max-width: 1100px; margin: 0 auto; }
-        .footer-top {
-          display: flex; justify-content: space-between; gap: 3rem;
-          padding-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,.08); flex-wrap: wrap;
-        }
+        .footer-top { display: flex; justify-content: space-between; gap: 3rem; padding-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,.08); flex-wrap: wrap; }
         .footer-brand { max-width: 260px; }
-        .footer-logo {
-          font-family: var(--serif); font-size: 22px; font-weight: 600;
-          background: linear-gradient(90deg,#FF6B4D,#FFB347);
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text; margin-bottom: 1rem; display: block;
-        }
+        .footer-logo { font-family: var(--serif); font-size: 22px; font-weight: 600; background: linear-gradient(90deg,#FF6B4D,#FFB347); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 1rem; display: block; }
         .footer-brand-desc { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.65; }
-        .footer-col-title {
-          font-size: 11px; font-weight: 700; text-transform: uppercase;
-          letter-spacing: .1em; color: rgba(255,255,255,.35); margin-bottom: 1rem;
-        }
+        .footer-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.35); margin-bottom: 1rem; }
         .footer-links { display: flex; flex-direction: column; gap: .625rem; }
-        .footer-link {
-          font-size: 13.5px; color: rgba(255,255,255,.6); text-decoration: none;
-          transition: color .15s, padding-left .15s; width: fit-content;
-        }
+        .footer-link { font-size: 13.5px; color: rgba(255,255,255,.6); text-decoration: none; transition: color .15s, padding-left .15s; width: fit-content; }
         .footer-link:hover { color: white; padding-left: 3px; }
-        .footer-bottom {
-          display: flex; justify-content: space-between; align-items: center;
-          padding-top: 2rem; font-size: 12px; color: rgba(255,255,255,.3);
-          flex-wrap: wrap; gap: .75rem;
-        }
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 2rem; font-size: 12px; color: rgba(255,255,255,.3); flex-wrap: wrap; gap: .75rem; }
         .footer-bottom-links { display: flex; gap: 1.5rem; }
         .footer-bottom-link { color: rgba(255,255,255,.3); text-decoration: none; font-size: 12px; transition: color .15s; }
         .footer-bottom-link:hover { color: rgba(255,255,255,.7); }
@@ -1103,7 +891,6 @@ export default function LandingPage() {
           .nav-links { display: none; }
           .steps-grid { grid-template-columns: repeat(2,1fr); }
           .features-grid { grid-template-columns: repeat(2,1fr); }
-          .score-card { grid-template-columns: 1fr; text-align: center; }
           .testimonials-grid { grid-template-columns: 1fr; }
           .dual-cta-grid { grid-template-columns: 1fr; }
           .step-connector { display: none; }
@@ -1136,7 +923,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className="hero">
+      <section className={`hero lazy-section${heroVisible ? " visible" : ""}`} ref={attachHero}>
         <div className="hero-bg-blob blob-1" />
         <div className="hero-bg-blob blob-2" />
         <div className="hero-bg-blob blob-3" />
@@ -1207,7 +994,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className="section" id="how-it-works" style={{ borderTop: "1px solid var(--gray2)" }}>
+      <section className={`section lazy-section${howItWorksVisible ? " visible" : ""}`} id="how-it-works" style={{ borderTop: "1px solid var(--gray2)" }} ref={attachHowItWorks}>
         <div className="section-inner">
           <div style={{ maxWidth: 560 }}>
             <span className="section-eyebrow">
@@ -1266,7 +1053,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── STATS ─── */}
-      <div className="stats-strip" ref={statsRef}>
+      <div className={`stats-strip lazy-section${statsVisible ? " visible" : ""}`} ref={(el) => { attachStats(el); statsRef.current = el; }}>
         <div className="stats-inner">
           <div className="stats-image-container">
             <img src="/Girl.png" alt="Verified Developer on Antyl" />
@@ -1300,8 +1087,8 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ─── TECH CAROUSEL & SOCIAL PROOF ─── */}
-      <section className="tech-carousel-section">
+      {/* ─── TECH CAROUSEL ─── */}
+      <section className={`tech-carousel-section lazy-section${techVisible ? " visible" : ""}`} ref={attachTech}>
         <p className="tech-carousel-label">Verified across every major stack</p>
         <div className="tech-marquee-wrap">
           <div className="tech-marquee-track">
@@ -1315,7 +1102,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="proof-section">
+      {/* ─── SOCIAL PROOF MARQUEE ─── */}
+      <section className={`proof-section lazy-section${proofVisible ? " visible" : ""}`} ref={attachProof}>
         <div className="proof-header">
           <div className="proof-eyebrow">
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
@@ -1365,68 +1153,139 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Antyl SCORE ─── */}
-      <section className="score-section" id="antyl-score">
+      {/* ─── ANTYL SCORE ─── */}
+      <section className={`score-section lazy-section${scoreVisible ? " visible" : ""}`} id="antyl-score" ref={attachScore}>
         <div className="section-inner">
-          <div style={{ textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
+          {/* Header */}
+          <div style={{ textAlign: "center", marginBottom: "1rem" }}>
             <span className="section-eyebrow">
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
               Antyl Score
             </span>
             <h2 className="section-title">
-              One number that tells <em>the whole story</em>
+              One number that tells<em> the whole story</em>
             </h2>
-            <p className="section-sub" style={{ margin: "0 auto" }}>
-              After verification, you get a score from 0–100 across 4
-              dimensions. It lives on your profile and updates with every
-              session.
+            <p style={{ fontSize: 16, color: "var(--gray4)", lineHeight: 1.65, maxWidth: 540, margin: "0 auto" }}>
+              After verification, you get a score from 0–100 across 4 dimensions.
+              It lives on your profile and updates with every session.
             </p>
           </div>
 
-          <div className="score-card">
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div className="score-ring-outer">
-                <div className="score-ring-inner">
-                  <span className="score-big">78</span>
-                  <span className="score-label">score</span>
-                </div>
+          {/* Main Score Content */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", marginTop: "3rem" }}>
+            {/* Left - Score Card */}
+            <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem" }}>
+              {/* Verified profile badge */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--coral)", fontSize: 13, fontWeight: 600, marginBottom: "1.25rem" }}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Your verified developer profile
               </div>
-              <div className="score-tier">Advanced</div>
-              <p style={{ fontSize: 12, color: "var(--gray3)", marginTop: ".75rem", textAlign: "center" }}>
-                Top 18% of developers
-              </p>
-            </div>
 
-            <div>
-              <div className="bars-wrap">
-                {[
-                  { label: "Technical depth", pct: 82 },
-                  { label: "Code quality", pct: 74 },
-                  { label: "Project complexity", pct: 80 },
-                  { label: "Communication", pct: 68 },
-                ].map((b) => (
-                  <div className="bar-row" key={b.label}>
-                    <div className="bar-meta">
-                      <span>{b.label}</span>
-                      <span className="bar-pct">{b.pct}%</span>
-                    </div>
-                    <div className="bar-track">
-                      <div className="bar-fill" style={{ width: counted ? `${b.pct}%` : "0%" }} />
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Your Antyl Score</h3>
+              <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>A complete view of your verified capabilities.</p>
+
+              <div style={{ display: "flex", gap: "2.5rem", alignItems: "flex-start" }}>
+                {/* Phone Mockup */}
+                <div style={{ flexShrink: 0, width: 200 }}>
+                  <div style={{ background: "#1a1a1a", borderRadius: 36, padding: 10, boxShadow: "0 12px 40px rgba(0,0,0,.15)" }}>
+                    <div style={{ background: "white", borderRadius: 28, padding: "1.25rem", minHeight: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 12 }}>
+                        <svg width="12" height="12" fill="#22C55E" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span style={{ fontSize: 10, color: "var(--gray3)" }}>Verified profile</span>
+                      </div>
+                      {/* Score Ring */}
+                      <div style={{ position: "relative", width: 110, height: 110, marginBottom: 12 }}>
+                        <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
+                          <circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" />
+                          <circle className={scoreVisible ? "score-ring-animated" : ""} cx="50" cy="50" r="42" fill="none" stroke="#FF6B4D" strokeWidth="8"
+                            strokeDasharray="0 264" strokeLinecap="round" />
+                        </svg>
+                        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ fontSize: 36, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>{scoreCount}</span>
+                          <span style={{ fontSize: 10, color: "var(--gray3)" }}>/ 100</span>
+                        </div>
+                      </div>
+                      {/* Badge */}
+                      <span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 16px", borderRadius: 50, textTransform: "uppercase", letterSpacing: ".04em" }}>
+                        Advanced
+                      </span>
+                      {/* Tiers */}
+                      <div style={{ marginTop: 16, width: "100%" }}>
+                        <p style={{ fontSize: 9, fontWeight: 700, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Score Tiers</p>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                          <span style={{ fontSize: 7, border: "1px solid var(--gray2)", borderRadius: 6, padding: "2px 6px", color: "var(--gray3)" }}>Beginner 0-40</span>
+                          <span style={{ fontSize: 7, border: "1px solid var(--gray2)", borderRadius: 6, padding: "2px 6px", color: "var(--gray3)" }}>Mid 41-65</span>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                          <span style={{ fontSize: 7, border: "2px solid var(--coral)", borderRadius: 6, padding: "2px 6px", color: "var(--coral)", fontWeight: 700, background: "var(--cream)" }}>Advanced 66-85</span>
+                          <span style={{ fontSize: 7, border: "1px solid var(--gray2)", borderRadius: 6, padding: "2px 6px", color: "var(--gray3)" }}>Expert 86-100</span>
+                        </div>
+                        <p style={{ fontSize: 8, color: "var(--coral)", fontWeight: 700, marginTop: 8 }}>Top 18% of developers</p>
+                      </div>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Dimension Breakdown */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ marginBottom: 4 }}>
+                    <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)" }}>Dimension breakdown</h4>
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>See how your verified skills contribute to the score.</p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                    {scoreDimensions.map((dim) => (
+                      <div key={dim.label}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{dim.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{dim.value}%</span>
+                        </div>
+                        <div style={{ height: 10, background: "var(--gray2)", borderRadius: 5, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${dim.value}%`, background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 5, transition: "width 1s ease" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Live update note */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: "1.5rem", background: "var(--cream)", borderRadius: 12, padding: "12px 16px" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="16" height="16" fill="none" stroke="var(--coral)" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p style={{ fontSize: 13, color: "var(--gray4)" }}>This preview updates live as your score changes.</p>
+                  </div>
+                </div>
               </div>
-              <div className="tiers-row">
-                {[
-                  { label: "Beginner  0–40", active: false },
-                  { label: "Mid  41–65", active: false },
-                  { label: "Advanced  66–85", active: true },
-                  { label: "Expert  86–100", active: false },
-                ].map((t) => (
-                  <span key={t.label} className={`tier-chip${t.active ? " active" : ""}`}>
-                    {t.label}
-                  </span>
-                ))}
+            </div>
+
+            {/* Right - Keep Improving */}
+            <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem", height: "fit-content" }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>Keep improving your score</h3>
+              <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
+                A small improvement can make your profile stand out to more relevant employers.
+              </p>
+
+              {/* Next Milestone */}
+              <div style={{ background: "var(--gray1)", border: "1px solid var(--gray2)", borderRadius: 16, padding: "1.25rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gray4)" }}>Next milestone</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 44, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)", lineHeight: 1 }}>86</span>
+                  <span style={{ fontSize: 14, color: "var(--gray3)" }}>Expert tier</span>
+                </div>
+                <p style={{ fontSize: 13, color: "var(--gray3)", lineHeight: 1.6 }}>
+                  You are 8 points away. View tailored recommendations to see your fastest path forward.
+                </p>
               </div>
             </div>
           </div>
@@ -1434,7 +1293,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FEATURES ─── */}
-      <section className="section" id="features">
+      <section className={`section lazy-section${featuresVisible ? " visible" : ""}`} id="features" ref={attachFeatures}>
         <div className="section-inner">
           <div style={{ maxWidth: 560 }}>
             <span className="section-eyebrow">
@@ -1462,7 +1321,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className="section" style={{ background: "var(--gray1)", borderTop: "1px solid var(--gray2)" }}>
+      <section className={`section lazy-section${testimonialsVisible ? " visible" : ""}`} style={{ background: "var(--gray1)", borderTop: "1px solid var(--gray2)" }} ref={attachTestimonials}>
         <div className="section-inner">
           <div style={{ textAlign: "center", maxWidth: 520, margin: "0 auto" }}>
             <span className="section-eyebrow">
@@ -1495,7 +1354,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── DUAL CTA ─── */}
-      <section className="dual-cta-section" id="for-recruiters">
+      <section className={`dual-cta-section lazy-section${dualCtaVisible ? " visible" : ""}`} id="for-recruiters" ref={attachDualCta}>
         <div className="dual-cta-grid">
           <div className="cta-card cta-card-dev">
             <div className="cta-bg-shape" style={{ width: 300, height: 300, background: "white", top: -100, right: -100 }} />
