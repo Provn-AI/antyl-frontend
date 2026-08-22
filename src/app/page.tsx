@@ -5,12 +5,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 
-function useLazySection() {
-  const ref = useRef<HTMLDivElement>(null);
+function useLazySection<T extends HTMLElement = HTMLElement>() {
+  const [element, setElement] = useState<T | null>(null);
+  const attach = (node: T | null) => setElement(node);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = element;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -23,9 +24,9 @@ function useLazySection() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [element]);
 
-  return { ref, visible };
+  return [visible, attach] as const;
 }
 
 export default function LandingPage() {
@@ -34,17 +35,17 @@ export default function LandingPage() {
   const [counts, setCounts] = useState({ devs: 0, companies: 0, match: 0 });
   const statsRef = useRef<HTMLDivElement>(null);
 
-  const lazyHero = useLazySection();
-  const lazyHowItWorks = useLazySection();
-  const lazyStats = useLazySection();
-  const lazyTech = useLazySection();
-  const lazyProof = useLazySection();
-  const lazyScore = useLazySection();
+  const [heroVisible, attachHero] = useLazySection();
+  const [howItWorksVisible, attachHowItWorks] = useLazySection();
+  const [statsVisible, attachStats] = useLazySection<HTMLDivElement>();
+  const [techVisible, attachTech] = useLazySection();
+  const [proofVisible, attachProof] = useLazySection();
+  const [scoreVisible, attachScore] = useLazySection();
   const [scoreCount, setScoreCount] = useState(0);
   const scoreAnimated = useRef(false);
-  const lazyFeatures = useLazySection();
-  const lazyTestimonials = useLazySection();
-  const lazyDualCta = useLazySection();
+  const [featuresVisible, attachFeatures] = useLazySection();
+  const [testimonialsVisible, attachTestimonials] = useLazySection();
+  const [dualCtaVisible, attachDualCta] = useLazySection();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -319,6 +320,7 @@ export default function LandingPage() {
       tier: "Expert",
       bg: "#FFE8E3",
       color: "#FF6B4D",
+      photo: "/Girl.png",
     },
     {
       quote: "The Antyl Score is a game changer. I finally know who can actually do the job before I even call them.",
@@ -330,6 +332,7 @@ export default function LandingPage() {
       tier: "Recruiter",
       bg: "#F3EFFE",
       color: "#8B5CF6",
+      photo: "/Girl.png",
     },
     {
       quote: "Antyl proved my skills without a whiteboard test. My score opened doors I couldn't before.",
@@ -341,6 +344,7 @@ export default function LandingPage() {
       tier: "Advanced",
       bg: "#FFF4E3",
       color: "#FFB347",
+      photo: "/Girl.png",
     },
     {
       quote: "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
@@ -352,6 +356,7 @@ export default function LandingPage() {
       tier: "Expert",
       bg: "#EAFAF0",
       color: "#22C55E",
+      photo: "/Boy.png",
     },
     {
       quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
@@ -363,6 +368,7 @@ export default function LandingPage() {
       tier: "Recruiter",
       bg: "#FFF0F2",
       color: "#FF7A8A",
+      photo: "/Girl.png",
     },
     {
       quote: "I was skeptical, but the AI verification session actually asked smart questions about my own code.",
@@ -374,12 +380,13 @@ export default function LandingPage() {
       tier: "Advanced",
       bg: "#E6F4FF",
       color: "#3B82F6",
+      photo: "/Boy.png",
     },
   ];
 
   // Animate score number when section becomes visible
   useEffect(() => {
-    if (lazyScore.visible && !scoreAnimated.current) {
+    if (scoreVisible && !scoreAnimated.current) {
       scoreAnimated.current = true;
       const target = 78;
       const duration = 1800;
@@ -393,7 +400,7 @@ export default function LandingPage() {
       };
       requestAnimationFrame(tick);
     }
-  }, [lazyScore.visible]);
+  }, [scoreVisible]);
 
   const scoreDimensions = [
     { label: "Technical depth", value: 82 },
@@ -598,22 +605,41 @@ export default function LandingPage() {
         /* ---- STATS ---- */
         .stats-strip {
           border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
-          background: var(--white); padding: 2.5rem 2rem;
+          background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4.5rem 2rem;
         }
         .stats-inner {
-          max-width: 800px; margin: 0 auto; display: flex; justify-content: center;
+          max-width: 1080px; margin: 0 auto;
+          display: flex; gap: 4rem; align-items: center;
         }
-        .stat-item { flex: 1; text-align: center; padding: 0 2rem; position: relative; }
-        .stat-item:not(:last-child)::after {
-          content: ''; position: absolute; right: 0; top: 50%;
-          transform: translateY(-50%); height: 40px; width: 1px; background: var(--gray2);
+        .stats-image-container {
+          flex: 0 0 360px; height: 320px; border-radius: 16px; overflow: hidden;
+          background: #f1e7f8; position: relative;
+        }
+        .stats-image-container::after {
+          content: ''; position: absolute; inset: 0;
+          box-shadow: inset 0 0 0 1px rgba(29, 25, 35, .04);
+          pointer-events: none;
+        }
+        .stats-image-container img {
+          width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .stats-grid-container {
+          flex: 1; display: grid; grid-template-columns: repeat(2, 1fr);
+          column-gap: 3.5rem; row-gap: 1.5rem;
+        }
+        .stat-item {
+          text-align: left; padding: 0; position: relative;
         }
         .stat-number {
-          font-family: var(--serif); font-size: 40px; font-weight: 600;
-          color: var(--ink); line-height: 1; letter-spacing: -.03em;
+          font-family: var(--serif); font-size: 48px; font-weight: 800;
+          color: var(--ink); line-height: 1; letter-spacing: -.03em; margin-bottom: .45rem;
         }
-        .stat-suffix { background: var(--grad-90); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-top: .375rem; }
+        .stat-suffix {
+          background: var(--grad-90); -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-bottom: .45rem; }
+        .stat-desc { font-size: 16px; color: var(--ink); line-height: 1.4; }
 
         /* ---- TECH CAROUSEL ---- */
         .tech-carousel-section {
@@ -652,28 +678,170 @@ export default function LandingPage() {
         .proof-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: .875rem; }
         .proof-title { font-family: var(--serif); font-size: clamp(26px, 3vw, 38px); font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.15; }
         .proof-title em { font-style: italic; color: var(--coral); }
-        .proof-marquee-wrap { position: relative; overflow: hidden; }
-        .proof-marquee-wrap::before, .proof-marquee-wrap::after { content: ''; position: absolute; top: 0; bottom: 0; width: 140px; z-index: 2; pointer-events: none; }
-        .proof-marquee-wrap::before { left: 0; background: linear-gradient(to right, var(--gray1) 0%, transparent 100%); }
-        .proof-marquee-wrap::after { right: 0; background: linear-gradient(to left, var(--gray1) 0%, transparent 100%); }
-        .proof-marquee-track { display: flex; width: max-content; gap: 16px; padding: 8px 8px 16px; animation: proofScroll 50s linear infinite; }
-        .proof-marquee-wrap:hover .proof-marquee-track { animation-play-state: paused; }
-        @keyframes proofScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .proof-card { width: 300px; flex-shrink: 0; background: var(--white); border: 1px solid var(--gray2); border-radius: 20px; padding: 1.5rem; transition: transform .2s, box-shadow .2s; cursor: default; }
-        .proof-card:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(0,0,0,.07); }
-        .proof-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-        .proof-avatar-wrap { display: flex; align-items: center; gap: 10px; }
-        .proof-card .proof-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: none; margin-left: 0; }
-        .proof-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
-        .proof-role { font-size: 11.5px; color: var(--gray3); margin-top: 1px; }
-        .proof-score-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: linear-gradient(90deg, #FF6B4D, #FFB347); color: white; flex-shrink: 0; white-space: nowrap; }
-        .proof-recruiter-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: var(--gray1); color: var(--gray4); border: 1px solid var(--gray2); flex-shrink: 0; }
-        .proof-quote { font-size: 13.5px; color: var(--gray4); line-height: 1.65; font-style: italic; margin-bottom: 1rem; }
-        .proof-card-footer { display: flex; align-items: center; gap: 6px; padding-top: .875rem; border-top: 1px solid var(--gray2); }
-        .proof-company-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); flex-shrink: 0; }
-        .proof-company { font-size: 11.5px; font-weight: 700; color: var(--coral); }
-        .proof-stars { margin-left: auto; display: flex; gap: 2px; }
-        .proof-star { width: 11px; height: 11px; background: #FFD84D; clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); }
+        .proof-marquee-wrap {
+          position: relative;
+          overflow: hidden;
+        }
+        .proof-marquee-wrap::before,
+        .proof-marquee-wrap::after {
+          content: '';
+          position: absolute;
+          top: 0; bottom: 0;
+          width: 140px;
+          z-index: 2;
+          pointer-events: none;
+        }
+        .proof-marquee-wrap::before {
+          left: 0;
+          background: linear-gradient(to right, var(--gray1) 0%, transparent 100%);
+        }
+        .proof-marquee-wrap::after {
+          right: 0;
+          background: linear-gradient(to left, var(--gray1) 0%, transparent 100%);
+        }
+        .proof-marquee-track {
+          display: flex;
+          width: max-content;
+          gap: 16px;
+          padding: 8px 8px 16px;
+          animation: proofScroll 50s linear infinite;
+        }
+        .proof-marquee-wrap:hover .proof-marquee-track {
+          animation-play-state: paused;
+        }
+        @keyframes proofScroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        .proof-card {
+          width: 520px;
+          height: 220px;
+          flex-shrink: 0;
+          background: var(--white);
+          border: 1px solid var(--gray2);
+          border-radius: 20px;
+          padding: 0;
+          transition: transform .2s, box-shadow .2s;
+          cursor: default;
+          display: flex;
+          overflow: hidden;
+        }
+        .proof-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 36px rgba(0,0,0,.07);
+        }
+        .proof-card-media {
+          width: 200px;
+          height: 220px;
+          flex-shrink: 0;
+          background: var(--gray1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .proof-card-media img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        .proof-card-content {
+          flex: 1;
+          min-width: 0;
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+        }
+        .proof-card-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+        }
+        .proof-avatar-wrap {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .proof-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+        .proof-name {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--ink);
+          letter-spacing: -.01em;
+        }
+        .proof-role {
+          font-size: 11.5px;
+          color: var(--gray3);
+          margin-top: 1px;
+        }
+        .proof-score-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 50px;
+          background: linear-gradient(90deg, #FF6B4D, #FFB347);
+          color: white;
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+        .proof-recruiter-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 4px 10px;
+          border-radius: 50px;
+          background: var(--gray1);
+          color: var(--gray4);
+          border: 1px solid var(--gray2);
+          flex-shrink: 0;
+        }
+        .proof-quote {
+          font-size: 13.5px;
+          color: var(--gray4);
+          line-height: 1.65;
+          font-style: italic;
+          margin-bottom: 1rem;
+        }
+        .proof-card-footer {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding-top: .875rem;
+          border-top: 1px solid var(--gray2);
+        }
+        .proof-company-dot {
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: var(--coral);
+          flex-shrink: 0;
+        }
+        .proof-company {
+          font-size: 11.5px;
+          font-weight: 700;
+          color: var(--coral);
+        }
+        .proof-stars {
+          margin-left: auto;
+          display: flex;
+          gap: 2px;
+        }
+        .proof-star {
+          width: 11px; height: 11px;
+          background: #FFD84D;
+          clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+        }
 
         /* ---- SECTIONS ---- */
         .section { padding: 6rem 1.5rem; }
@@ -722,7 +890,11 @@ export default function LandingPage() {
         .t-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--cream); border: 2px solid var(--beige); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--coral); flex-shrink: 0; }
         .t-name { font-size: 13px; font-weight: 700; color: var(--ink); }
         .t-role { font-size: 11px; color: var(--gray3); margin-top: 2px; }
-        .t-score { margin-left: auto; flex-shrink: 0; background: linear-gradient(90deg,#FF6B4D,#FFB347); color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px; }
+        .t-score {
+          margin-left: auto; flex-shrink: 0;
+          background: linear-gradient(90deg,#FF6B4D,#FFB347); color: white;
+          font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px;
+        }
 
         /* ---- DUAL CTA ---- */
         .dual-cta-section { padding: 6rem 1.5rem; background: var(--white); }
@@ -768,8 +940,13 @@ export default function LandingPage() {
           .hero { padding: 6rem 1.25rem 3rem; }
           .steps-grid { grid-template-columns: 1fr; }
           .features-grid { grid-template-columns: 1fr; }
-          .stats-inner { flex-direction: column; gap: 2rem; }
-          .stat-item::after { display: none; }
+          .stats-inner { flex-direction: column; gap: 2rem; align-items: stretch; }
+          .stats-image-container { width: 100%; height: min(82vw, 320px); }
+          .stats-grid-container { width: 100%; flex-basis: auto; gap: 1.5rem; }
+          .stat-number { font-size: 34px; }
+          .stat-desc { font-size: 13px; }
+          .proof-card { width: min(520px, calc(100vw - 2rem)); }
+          .proof-card-media { width: 38%; }
         }
       `}</style>
 
@@ -791,7 +968,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className={`hero lazy-section${lazyHero.visible ? " visible" : ""}`} ref={lazyHero.ref}>
+      <section className={`hero lazy-section${heroVisible ? " visible" : ""}`} ref={attachHero}>
         <div className="hero-bg-blob blob-1" />
         <div className="hero-bg-blob blob-2" />
         <div className="hero-bg-blob blob-3" />
@@ -862,7 +1039,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className={`section lazy-section${lazyHowItWorks.visible ? " visible" : ""}`} id="how-it-works" style={{ borderTop: "1px solid var(--gray2)" }} ref={lazyHowItWorks.ref}>
+      <section className={`section lazy-section${howItWorksVisible ? " visible" : ""}`} id="how-it-works" style={{ borderTop: "1px solid var(--gray2)" }} ref={attachHowItWorks}>
         <div className="section-inner">
           <div style={{ maxWidth: 560 }}>
             <span className="section-eyebrow">
@@ -921,34 +1098,42 @@ export default function LandingPage() {
       </section>
 
       {/* ─── STATS ─── */}
-      <div className={`stats-strip lazy-section${lazyStats.visible ? " visible" : ""}`} ref={(el) => { (lazyStats.ref as React.MutableRefObject<HTMLDivElement | null>).current = el; statsRef.current = el; }}>
+      <div className={`stats-strip lazy-section${statsVisible ? " visible" : ""}`} ref={(el) => { attachStats(el); statsRef.current = el; }}>
         <div className="stats-inner">
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.devs >= 1000
-                ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
-                : counts.devs}
-              <span className="stat-suffix">+</span>
-            </div>
-            <div className="stat-label">Verified developers</div>
+          <div className="stats-image-container">
+            <img src="/Girl.png" alt="Verified Developer on Antyl" />
           </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.companies}<span className="stat-suffix">+</span>
+          <div className="stats-grid-container">
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.devs >= 1000
+                  ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
+                  : counts.devs}
+                <span className="stat-suffix">+</span>
+              </div>
+              <div className="stat-label">Verified developers</div>
+              <div className="stat-desc">Handpicked talent, verified through skills</div>
             </div>
-            <div className="stat-label">Companies hiring</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.match}<span className="stat-suffix">%</span>
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.companies}<span className="stat-suffix">+</span>
+              </div>
+              <div className="stat-label">Companies hiring</div>
+              <div className="stat-desc">Active hiring across all industries</div>
             </div>
-            <div className="stat-label">Match accuracy</div>
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.match}<span className="stat-suffix">%</span>
+              </div>
+              <div className="stat-label">Match accuracy</div>
+              <div className="stat-desc">Industry-leading job-skill alignment</div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* ─── TECH CAROUSEL ─── */}
-      <section className={`tech-carousel-section lazy-section${lazyTech.visible ? " visible" : ""}`} ref={lazyTech.ref}>
+      <section className={`tech-carousel-section lazy-section${techVisible ? " visible" : ""}`} ref={attachTech}>
         <p className="tech-carousel-label">Verified across every major stack</p>
         <div className="tech-marquee-wrap">
           <div className="tech-marquee-track">
@@ -963,7 +1148,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── SOCIAL PROOF MARQUEE ─── */}
-      <section className={`proof-section lazy-section${lazyProof.visible ? " visible" : ""}`} ref={lazyProof.ref}>
+      <section className={`proof-section lazy-section${proofVisible ? " visible" : ""}`} ref={attachProof}>
         <div className="proof-header">
           <div className="proof-eyebrow">
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
@@ -977,28 +1162,34 @@ export default function LandingPage() {
           <div className="proof-marquee-track">
             {[...carouselTestimonials, ...carouselTestimonials].map((t, i) => (
               <div className="proof-card" key={i}>
-                <div className="proof-card-top">
-                  <div className="proof-avatar-wrap">
-                    <div className="proof-avatar" style={{ background: t.bg, color: t.color }}>
-                      {t.initials}
-                    </div>
+                <div className="proof-card-media" style={{ background: t.bg }}>
+                  {t.photo && (
+                    <img
+                      src={t.photo}
+                      alt={`${t.name} photo`}
+                      loading="lazy"
+                    />
+                  )}
+                </div>
+                <div className="proof-card-content">
+                  <div className="proof-card-top">
                     <div>
                       <div className="proof-name">{t.name}</div>
                       <div className="proof-role">{t.role}</div>
                     </div>
+                    {t.score ? (
+                      <div className="proof-score-badge">{t.tier} · {t.score}</div>
+                    ) : (
+                      <div className="proof-recruiter-badge">Recruiter</div>
+                    )}
                   </div>
-                  {t.score ? (
-                    <div className="proof-score-badge">{t.tier} · {t.score}</div>
-                  ) : (
-                    <div className="proof-recruiter-badge">Recruiter</div>
-                  )}
-                </div>
-                <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
-                <div className="proof-card-footer">
-                  <span className="proof-company-dot" />
-                  <span className="proof-company">{t.company}</span>
-                  <div className="proof-stars">
-                    {[...Array(5)].map((_, si) => <div className="proof-star" key={si} />)}
+                  <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="proof-card-footer">
+                    <span className="proof-company-dot" />
+                    <span className="proof-company">{t.company}</span>
+                    <div className="proof-stars">
+                      {[...Array(5)].map((_, si) => <div className="proof-star" key={si} />)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1008,7 +1199,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── ANTYL SCORE ─── */}
-      <section className={`score-section lazy-section${lazyScore.visible ? " visible" : ""}`} id="antyl-score" ref={lazyScore.ref}>
+      <section className={`score-section lazy-section${scoreVisible ? " visible" : ""}`} id="antyl-score" ref={attachScore}>
         <div className="section-inner">
           {/* Header */}
           <div style={{ textAlign: "center", marginBottom: "1rem" }}>
@@ -1053,7 +1244,7 @@ export default function LandingPage() {
                       <div style={{ position: "relative", width: 110, height: 110, marginBottom: 12 }}>
                         <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
                           <circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" />
-                          <circle className={lazyScore.visible ? "score-ring-animated" : ""} cx="50" cy="50" r="42" fill="none" stroke="#FF6B4D" strokeWidth="8"
+                          <circle className={scoreVisible ? "score-ring-animated" : ""} cx="50" cy="50" r="42" fill="none" stroke="#FF6B4D" strokeWidth="8"
                             strokeDasharray="0 264" strokeLinecap="round" />
                         </svg>
                         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -1147,7 +1338,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FEATURES ─── */}
-      <section className={`section lazy-section${lazyFeatures.visible ? " visible" : ""}`} id="features" ref={lazyFeatures.ref}>
+      <section className={`section lazy-section${featuresVisible ? " visible" : ""}`} id="features" ref={attachFeatures}>
         <div className="section-inner">
           <div style={{ maxWidth: 560 }}>
             <span className="section-eyebrow">
@@ -1175,7 +1366,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className={`section lazy-section${lazyTestimonials.visible ? " visible" : ""}`} style={{ background: "var(--gray1)", borderTop: "1px solid var(--gray2)" }} ref={lazyTestimonials.ref}>
+      <section className={`section lazy-section${testimonialsVisible ? " visible" : ""}`} style={{ background: "var(--gray1)", borderTop: "1px solid var(--gray2)" }} ref={attachTestimonials}>
         <div className="section-inner">
           <div style={{ textAlign: "center", maxWidth: 520, margin: "0 auto" }}>
             <span className="section-eyebrow">
@@ -1208,7 +1399,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── DUAL CTA ─── */}
-      <section className={`dual-cta-section lazy-section${lazyDualCta.visible ? " visible" : ""}`} id="for-recruiters" ref={lazyDualCta.ref}>
+      <section className={`dual-cta-section lazy-section${dualCtaVisible ? " visible" : ""}`} id="for-recruiters" ref={attachDualCta}>
         <div className="dual-cta-grid">
           <div className="cta-card cta-card-dev">
             <div className="cta-bg-shape" style={{ width: 300, height: 300, background: "white", top: -100, right: -100 }} />
