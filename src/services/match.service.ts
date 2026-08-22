@@ -73,3 +73,29 @@ export async function updatePipelineStage(
   return data.match;
 }
 
+export async function scheduleInterview(
+  matchId: string,
+  scheduledAt: string
+) {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(
+    `${API_URL}/match/${matchId}/interview`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ scheduled_at: scheduledAt }),
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to schedule interview");
+  }
+
+  return data.match;
+}

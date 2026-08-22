@@ -80,3 +80,34 @@ export async function getApplications() {
 
   return data.applications;
 }
+
+export interface TodayApplication {
+  application_id: string;
+  developer_name: string | null;
+  job_title: string | null;
+  applied_at: string;
+}
+
+export async function getApplicationsToday(): Promise<TodayApplication[]> {
+  const token = getToken();
+
+  const res = await fetch(
+    `${API_URL}/recruiter/applications/today`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      data.detail ||
+      "Failed to load today's applications"
+    );
+  }
+
+  return data.applications;
+}
