@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getMatches, updatePipelineStage } from "@/services/match.service";
+import { useEffect, useMemo, useState } from "react";
+import { getMatches, updatePipelineStage, scheduleInterview } from "@/services/match.service";
+import InterviewScheduleModal from "@/components/InterviewScheduleModal";
 import {
   UserCheck, Phone, CalendarDays, BadgeDollarSign,
   PartyPopper, XCircle, ChevronRight, ChevronLeft, Briefcase,
 } from "lucide-react";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Match {
   match_id: string;
@@ -14,6 +18,12 @@ interface Match {
   job_title: string;
   job_id: string;
   pipeline_stage: string;
+  interview_scheduled_at: string | null;
+}
+
+interface JobOption {
+  id: string;
+  title: string;
 }
 
 const STAGES: {
@@ -95,6 +105,19 @@ function StageCard({
 
       <ScoreBar score={match.trust_score} />
 
+      {/* Scheduled interview time, if this match is in the Interview stage */}
+      {match.pipeline_stage === "interviewing" && match.interview_scheduled_at && (
+        <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-1 w-fit">
+          <CalendarDays className="w-3 h-3" />
+          {new Date(match.interview_scheduled_at).toLocaleString([], {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </div>
+      )}
+
       {/* Move forward */}
       {nextStage && (
         <button
@@ -129,14 +152,47 @@ function StageCard({
 
 export default function PipelinePage() {
   const [matches, setMatches] = useState<Match[]>([]);
+  const [jobOptions, setJobOptions] = useState<JobOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedJobId, setSelectedJobId] = useState<string>("all");
+  // Filtering by TITLE, not id — job_id casing/shape didn't line up
+  // between /recruiter/jobs and getMatches(), so id-based comparisons
+  // always came up empty and the filter silently no-op'd to "all".
+  // job_title is confirmed consistent across both, so we join on that.
+  const [selectedJobTitle, setSelectedJobTitle] = useState<string>("all");
+  const [pendingInterviewMatch, setPendingInterviewMatch] = useState<Match | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await getMatches();
-        setMatches(data);
+        const token = localStorage.getItem("access_token");
+
+        const [matchesData, jobsRes] = await Promise.all([
+          getMatches(),
+          fetch(`${API_URL}/recruiter/jobs`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        const normalized: Match[] = (matchesData || []).map((m: any) => ({
+          match_id: m.match_id ?? m.matchId ?? m.id,
+          name: m.name ?? m.candidate_name ?? m.candidateName ?? "",
+          trust_score: m.trust_score ?? m.trustScore ?? 0,
+          job_title: m.job_title ?? m.jobTitle ?? m.job?.title ?? "",
+          job_id: String(m.job_id ?? m.jobId ?? m.job?.id ?? ""),
+          pipeline_stage: m.pipeline_stage ?? m.pipelineStage ?? m.stage ?? "matched",
+          interview_scheduled_at:
+            m.interview_scheduled_at ?? m.interviewScheduledAt ?? null,
+        }));
+        setMatches(normalized);
+
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          const options: JobOption[] = (jobsData.jobs || []).map((j: { id: string; title: string }) => ({
+            id: String(j.id),
+            title: j.title,
+          }));
+          setJobOptions(options);
+        }
       } finally {
         setLoading(false);
       }
@@ -145,21 +201,56 @@ export default function PipelinePage() {
   }, []);
 
   const handleMove = async (matchId: string, newStage: string) => {
+    if (newStage === "interviewing") {
+      const match = matches.find((m) => m.match_id === matchId);
+      if (match) {
+        setPendingInterviewMatch(match);
+        return;
+      }
+    }
     await updatePipelineStage(matchId, newStage);
     setMatches((prev) =>
       prev.map((m) => m.match_id === matchId ? { ...m, pipeline_stage: newStage } : m)
     );
   };
 
-  // Unique jobs from matches for the filter dropdown
-  const jobs = Array.from(
-    new Map(matches.map((m) => [m.job_id, m.job_title])).entries()
-  ).map(([id, title]) => ({ id, title }));
+  const handleConfirmInterview = async (scheduledAt: string) => {
+    if (!pendingInterviewMatch) return;
+    const matchId = pendingInterviewMatch.match_id;
+
+    await updatePipelineStage(matchId, "interviewing");
+    await scheduleInterview(matchId, scheduledAt);
+
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.match_id === matchId
+          ? { ...m, pipeline_stage: "interviewing", interview_scheduled_at: scheduledAt }
+          : m
+      )
+    );
+    setPendingInterviewMatch(null);
+  };
+
+  // Unique job titles, preferring the /recruiter/jobs list (so jobs with
+  // zero matches still show up), falling back to titles derived from
+  // matches if that call failed or returned nothing.
+  const jobs = useMemo(() => {
+    const source: JobOption[] =
+      jobOptions.length > 0
+        ? jobOptions
+        : matches.map((m) => ({ id: m.job_id, title: m.job_title }));
+
+    const seen = new Map<string, JobOption>();
+    for (const j of source) {
+      if (j.title && !seen.has(j.title)) seen.set(j.title, j);
+    }
+    return Array.from(seen.values());
+  }, [jobOptions, matches]);
 
   const visibleMatches =
-    selectedJobId === "all"
+    selectedJobTitle === "all"
       ? matches
-      : matches.filter((m) => m.job_id === selectedJobId);
+      : matches.filter((m) => m.job_title === selectedJobTitle);
 
   if (loading) {
     return (
@@ -176,23 +267,15 @@ export default function PipelinePage() {
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-12">
       <div className="w-full max-w-[1200px] mx-auto">
 
-        {/* Logo */}
-        <h1
-          className="text-2xl font-bold mb-10"
-          style={{ color: "#F2754A", fontFamily: "var(--font-fraunces, serif)" }}
-        >
-          Antyl
-        </h1>
-
         {/* Header */}
         <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">Pipeline</h2>
             <p className="text-sm text-gray-400 mt-1">
               {visibleMatches.length} candidate{visibleMatches.length !== 1 ? "s" : ""}
-              {selectedJobId === "all"
+              {selectedJobTitle === "all"
                 ? " across all jobs"
-                : ` for ${jobs.find((j) => j.id === selectedJobId)?.title ?? "this job"}`}
+                : ` for ${selectedJobTitle}`}
             </p>
           </div>
 
@@ -201,13 +284,13 @@ export default function PipelinePage() {
             <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-full pl-4 pr-1.5 py-1.5 shadow-sm">
               <Briefcase className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
               <select
-                value={selectedJobId}
-                onChange={(e) => setSelectedJobId(e.target.value)}
+                value={selectedJobTitle}
+                onChange={(e) => setSelectedJobTitle(e.target.value)}
                 className="text-sm font-semibold text-gray-700 bg-transparent outline-none pr-2 py-1.5 cursor-pointer"
               >
                 <option value="all">All jobs</option>
                 {jobs.map((job) => (
-                  <option key={job.id} value={job.id}>
+                  <option key={job.title} value={job.title}>
                     {job.title}
                   </option>
                 ))}
@@ -252,6 +335,16 @@ export default function PipelinePage() {
         </div>
 
       </div>
+
+      {/* Interview scheduling modal — blocks the "interviewing" stage
+          change until a date/time is confirmed. */}
+      {pendingInterviewMatch && (
+        <InterviewScheduleModal
+          candidateName={pendingInterviewMatch.name}
+          onConfirm={handleConfirmInterview}
+          onCancel={() => setPendingInterviewMatch(null)}
+        />
+      )}
     </div>
   );
 }

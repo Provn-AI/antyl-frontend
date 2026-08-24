@@ -4,6 +4,9 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
+import { submitDemoRequest } from "@/services/demo.request.service";
+
+
 
 function useLazySection() {
   const ref = useRef<HTMLDivElement>(null);
@@ -28,9 +31,9 @@ function useLazySection() {
   return { ref, visible };
 }
 
-// ─── This is the DEVELOPER landing page (root "/"). ───
-// The recruiter counterpart lives at "/recruiters" (see recruiters/page.tsx).
-export default function DeveloperLandingPage() {
+// ─── This is the RECRUITER landing page ("/recruiters"). ───
+// The developer counterpart lives at "/" (see page.tsx).
+export default function RecruiterLandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [counted, setCounted] = useState(false);
   const [counts, setCounts] = useState({ devs: 0, companies: 0, match: 0 });
@@ -46,7 +49,37 @@ export default function DeveloperLandingPage() {
   const scoreAnimated = useRef(false);
   const lazyFeatures = useLazySection();
   const lazyTestimonials = useLazySection();
+  const lazyDemo = useLazySection();
   const lazyDualCta = useLazySection();
+
+  const [demoForm, setDemoForm] = useState({
+    name: "",
+    work_email: "",
+    company: "",
+    phone: "",
+    team_size: "",
+    message: "",
+  });
+  const [demoStatus, setDemoStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const handleDemoChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setDemoForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDemoStatus("loading");
+    try {
+      await submitDemoRequest(demoForm);
+      setDemoStatus("success");
+      setDemoForm({ name: "", work_email: "", company: "", phone: "", team_size: "", message: "" });
+    } catch {
+      setDemoStatus("error");
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -86,104 +119,84 @@ export default function DeveloperLandingPage() {
     return () => observer.disconnect();
   }, [counted]);
 
-  // Developer-only 4-step flow
+  // Recruiter-only 4-step flow
   const steps = [
     {
       num: "01",
-      title: "Connect GitHub",
-      desc: "Link your repos. Antyl's AI reads your actual code - not your resume.",
+      title: "Post a job",
+      desc: "Describe the role, stack, and level. Takes under 5 minutes to publish.",
       color: "#FF6B4D",
       bg: "#FFF0ED",
     },
     {
       num: "02",
-      title: "Get verified",
-      desc: "Answer 7 questions about your own projects. Takes 30 minutes.",
+      title: "Get matched candidates",
+      desc: "Antyl surfaces GitHub-verified developers whose skills actually fit the role.",
       color: "#FFB347",
       bg: "#FFF8ED",
     },
     {
       num: "03",
-      title: "Set preferences",
-      desc: "Choose role, location, salary, and stack. Once. That's it.",
+      title: "Filter by Antyl Score",
+      desc: "Set a minimum score threshold and stack filters. Only see who clears the bar.",
       color: "#FFD84D",
       bg: "#FFFBEE",
     },
     {
       num: "04",
-      title: "Auto-apply runs for you",
-      desc: "Every 6 hours, Antyl applies you to matching jobs automatically. Wake up to real interview requests.",
+      title: "Move candidates through your pipeline",
+      desc: "Track every applicant on a kanban board, from applied to hired, in one place.",
       color: "#FF7A8A",
       bg: "#FFF0F2",
     },
   ];
 
-  // Developer-only testimonials
+  // Recruiter-only testimonials
   const testimonials = [
     {
       quote:
-        "I got 3 interview calls in the first week without applying to a single job manually.",
-      name: "A. Singh",
-      role: "Frontend Engineer · Hired at Razorpay",
-      initials: "AS",
-      score: 88,
-      tier: "Expert",
+        "The Antyl Score is a game changer. I know exactly who can actually do the job before I even call them.",
+      name: "Nidhi Sharma",
+      role: "Talent Lead · Zomato",
+      initials: "NS",
+      score: null as number | null,
+      tier: "Recruiter",
     },
     {
       quote:
-        "Finally a platform that proves my skills without a whiteboard test. My score opened doors I couldn't before.",
-      name: "Priya Sharma",
-      role: "Full-Stack Dev · Hired at PhonePe",
-      initials: "PS",
-      score: 79,
-      tier: "Advanced",
+        "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
+      name: "Kavya R.",
+      role: "Founder & CTO · Buildfast",
+      initials: "KR",
+      score: null as number | null,
+      tier: "Recruiter",
     },
     {
       quote:
-        "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
-      name: "Rahul M.",
-      role: "Backend Engineer · Hired at Swiggy",
-      initials: "RM",
-      score: 91,
-      tier: "Expert",
+        "We cut our screening time in half. Every candidate that reaches us has already proven their code, not just claimed it.",
+      name: "Arjun Mehta",
+      role: "Engineering Manager · CRED",
+      initials: "AM",
+      score: null as number | null,
+      tier: "Recruiter",
     },
   ];
 
-  // Developer-relevant features only
+  // Recruiter-relevant features only
   const features = [
     {
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       ),
-      title: "GitHub verified",
-      desc: "AI asks you about your own code - no faking it. Your commits, your architecture decisions, your trade-offs.",
-      color: "#FF6B4D",
-      bg: "#FFF0ED",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      ),
-      title: "Auto-apply engine",
-      desc: "Set your preferences once. Antyl applies to matching jobs every 6 hours - only above your match threshold.",
-      color: "#FFB347",
-      bg: "#FFF8ED",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="6" />
-          <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
-        </svg>
-      ),
-      title: "Antyl score badge",
-      desc: "One score from 0–100 that tells the whole story. Carries across every job application on Antyl.",
-      color: "#22C55E",
-      bg: "#EAFAF0",
+      title: "Recruiter matching",
+      desc: "Filter by Antyl Score, skills, and location. Only verified developers appear in your feed.",
+      color: "#8B5CF6",
+      bg: "#F3EFFE",
     },
     {
       icon: (
@@ -195,55 +208,74 @@ export default function DeveloperLandingPage() {
           <line x1="15" y1="3" x2="15" y2="21" />
         </svg>
       ),
-      title: "Application tracking",
-      desc: "See every job you've been auto-applied to and its live status, in one dashboard.",
-      color: "#8B5CF6",
-      bg: "#F3EFFE",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-          <polyline points="17 6 23 6 23 12" />
-        </svg>
-      ),
-      title: "Score improvements",
-      desc: "After each session, get a precise breakdown: what to fix in your repos to move up to the next tier.",
-      color: "#FFD84D",
-      bg: "#FFFBEE",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      title: "Seen by real recruiters",
-      desc: "Verified companies filter candidates by Antyl Score - your profile surfaces to people actively hiring.",
+      title: "Kanban pipeline",
+      desc: "Move candidates through stages - applied, screening, interview, offer, hired - with a single view.",
       color: "#FF7A8A",
       bg: "#FFF0F2",
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="6" />
+          <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+        </svg>
+      ),
+      title: "Antyl score badge",
+      desc: "One score from 0–100 on every candidate's profile - the whole story, at a glance.",
+      color: "#22C55E",
+      bg: "#EAFAF0",
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+        </svg>
+      ),
+      title: "GitHub-verified candidates",
+      desc: "Every developer is questioned by AI about their own code before they reach your feed - no faked resumes.",
+      color: "#FF6B4D",
+      bg: "#FFF0ED",
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      ),
+      title: "Trust score filtering",
+      desc: "Set a minimum score range with a slider and instantly narrow your candidate pool to who's qualified.",
+      color: "#FFB347",
+      bg: "#FFF8ED",
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+      ),
+      title: "Live application feed",
+      desc: "See candidates land in your pipeline the moment auto-apply matches them to your open role.",
+      color: "#FFD84D",
+      bg: "#FFFBEE",
     },
   ];
 
   const logos: Record<string, React.ReactElement> = {
     nextjs: (
       <svg width="28" height="28" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <mask id="nxt-m" style={{ maskType: "alpha" }} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="180">
+        <mask id="nxt-m-r" style={{ maskType: "alpha" }} maskUnits="userSpaceOnUse" x="0" y="0" width="180" height="180">
           <circle cx="90" cy="90" r="90" fill="black" />
         </mask>
-        <g mask="url(#nxt-m)">
+        <g mask="url(#nxt-m-r)">
           <circle cx="90" cy="90" r="90" fill="black" />
-          <path d="M149.508 157.52L69.142 54H54V125.97H66.12V69.38L140 164.845C143.333 162.614 146.51 160.165 149.508 157.52Z" fill="url(#nxt-g1)" />
-          <rect x="115" y="54" width="12" height="72" fill="url(#nxt-g2)" />
+          <path d="M149.508 157.52L69.142 54H54V125.97H66.12V69.38L140 164.845C143.333 162.614 146.51 160.165 149.508 157.52Z" fill="url(#nxt-g1-r)" />
+          <rect x="115" y="54" width="12" height="72" fill="url(#nxt-g2-r)" />
         </g>
         <defs>
-          <linearGradient id="nxt-g1" x1="109" y1="116.5" x2="144.5" y2="160.5" gradientUnits="userSpaceOnUse">
+          <linearGradient id="nxt-g1-r" x1="109" y1="116.5" x2="144.5" y2="160.5" gradientUnits="userSpaceOnUse">
             <stop stopColor="white" /><stop offset="1" stopColor="white" stopOpacity="0" />
           </linearGradient>
-          <linearGradient id="nxt-g2" x1="121" y1="54" x2="120.8" y2="106.875" gradientUnits="userSpaceOnUse">
+          <linearGradient id="nxt-g2-r" x1="121" y1="54" x2="120.8" y2="106.875" gradientUnits="userSpaceOnUse">
             <stop stopColor="white" /><stop offset="1" stopColor="white" stopOpacity="0" />
           </linearGradient>
         </defs>
@@ -313,51 +345,43 @@ export default function DeveloperLandingPage() {
     { key: "angular",     name: "Angular" },
   ];
 
-  // Developer-only testimonials for the marquee
+  // Recruiter-only testimonials for the marquee
   const carouselTestimonials = [
     {
-      quote: "Got 3 interview calls in the first week - without applying to a single job manually.",
-      name: "Vanshika K.",
-      role: "Frontend Engineer",
-      company: "Razorpay",
-      initials: "VK",
-      score: 88,
-      tier: "Expert",
-      bg: "#FFE8E3",
-      color: "#FF6B4D",
+      quote: "The Antyl Score is a game changer. I finally know who can actually do the job before I even call them.",
+      name: "Nidhi S.",
+      role: "Talent Lead",
+      company: "Zomato",
+      initials: "NS",
+      bg: "#F3EFFE",
+      color: "#8B5CF6",
     },
     {
-      quote: "Antyl proved my skills without a whiteboard test. My score opened doors I couldn't before.",
-      name: "Priya S.",
-      role: "Full-Stack Dev",
-      company: "PhonePe",
-      initials: "PS",
-      score: 79,
-      tier: "Advanced",
-      bg: "#FFF4E3",
-      color: "#FFB347",
+      quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
+      name: "Kavya R.",
+      role: "Founder & CTO",
+      company: "Buildfast",
+      initials: "KR",
+      bg: "#FFF0F2",
+      color: "#FF7A8A",
     },
     {
-      quote: "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
-      name: "Rahul M.",
-      role: "Backend Engineer",
-      company: "Swiggy",
-      initials: "RM",
-      score: 91,
-      tier: "Expert",
-      bg: "#EAFAF0",
-      color: "#22C55E",
-    },
-    {
-      quote: "I was skeptical, but the AI verification session actually asked smart questions about my own code.",
-      name: "Dev P.",
-      role: "DevOps Engineer",
+      quote: "We cut our screening time in half. Every candidate that reaches us has already proven their code.",
+      name: "Arjun M.",
+      role: "Engineering Manager",
       company: "CRED",
-      initials: "DP",
-      score: 83,
-      tier: "Advanced",
+      initials: "AM",
       bg: "#E6F4FF",
       color: "#3B82F6",
+    },
+    {
+      quote: "The kanban pipeline alone saved our team from three different spreadsheets. Everything lives in one place now.",
+      name: "Sana K.",
+      role: "Head of Talent",
+      company: "Groww",
+      initials: "SK",
+      bg: "#EAFAF0",
+      color: "#22C55E",
     },
   ];
 
@@ -553,12 +577,12 @@ export default function DeveloperLandingPage() {
           text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
         }
         .btn-hero-secondary:hover { border-color: var(--ink); transform: translateY(-2px); }
-        .hero-recruiter-link {
+        .hero-dev-link {
           font-size: 13px; color: var(--gray3); margin-bottom: 1.75rem;
           animation: fadeUp .7s .35s ease both;
         }
-        .hero-recruiter-link a { color: var(--coral); font-weight: 700; text-decoration: none; }
-        .hero-recruiter-link a:hover { text-decoration: underline; }
+        .hero-dev-link a { color: var(--coral); font-weight: 700; text-decoration: none; }
+        .hero-dev-link a:hover { text-decoration: underline; }
         .hero-social-proof {
           display: flex; align-items: center; gap: .625rem; font-size: 13px;
           color: var(--gray3); animation: fadeUp .7s .45s ease both; margin-bottom: .75rem;
@@ -656,7 +680,7 @@ export default function DeveloperLandingPage() {
         .proof-card .proof-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: none; margin-left: 0; }
         .proof-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
         .proof-role { font-size: 11.5px; color: var(--gray3); margin-top: 1px; }
-        .proof-score-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: linear-gradient(90deg, #FF6B4D, #FFB347); color: white; flex-shrink: 0; white-space: nowrap; }
+        .proof-recruiter-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: var(--gray1); color: var(--gray4); border: 1px solid var(--gray2); flex-shrink: 0; }
         .proof-quote { font-size: 13.5px; color: var(--gray4); line-height: 1.65; font-style: italic; margin-bottom: 1rem; }
         .proof-card-footer { display: flex; align-items: center; gap: 6px; padding-top: .875rem; border-top: 1px solid var(--gray2); }
         .proof-company-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); flex-shrink: 0; }
@@ -711,16 +735,64 @@ export default function DeveloperLandingPage() {
         .t-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--cream); border: 2px solid var(--beige); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--coral); flex-shrink: 0; }
         .t-name { font-size: 13px; font-weight: 700; color: var(--ink); }
         .t-role { font-size: 11px; color: var(--gray3); margin-top: 2px; }
-        .t-score { margin-left: auto; flex-shrink: 0; background: linear-gradient(90deg,#FF6B4D,#FFB347); color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px; }
+        .t-recruiter-badge { margin-left: auto; flex-shrink: 0; background: var(--gray1); color: var(--gray4); border: 1px solid var(--gray2); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px; }
 
-        /* ---- SINGLE CTA (recruiter teaser) ---- */
-        .single-cta-section { padding: 6rem 1.5rem; background: var(--white); }
-        .single-cta-card { max-width: 1000px; margin: 0 auto; border-radius: 24px; padding: 3rem; position: relative; overflow: hidden; background: var(--ink); color: white; text-align: center; }
+        /* ---- DEMO REQUEST ---- */
+        .demo-section { padding: 6rem 1.5rem; background: var(--white); border-top: 1px solid var(--gray2); }
+        .demo-grid { display: grid; grid-template-columns: 1fr 420px; gap: 2.5rem; margin-top: 3rem; align-items: start; }
+        .demo-info-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.75rem; }
+        .demo-info-item { display: flex; align-items: flex-start; gap: 12px; }
+        .demo-info-icon { width: 32px; height: 32px; border-radius: 10px; background: var(--cream); color: var(--coral); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .demo-info-text { font-size: 14px; color: var(--gray4); line-height: 1.6; padding-top: 4px; }
+        .demo-info-text strong { color: var(--ink); }
+
+        .demo-form-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,.05); transition: box-shadow .2s, transform .2s; }
+        .demo-form-card:hover { box-shadow: 0 14px 44px rgba(0,0,0,.08); }
+        .demo-form-footer { display: flex; align-items: center; gap: 8px; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--gray2); font-size: 12px; color: var(--gray3); }
+        .demo-form-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 4px; letter-spacing: -.02em; }
+        .demo-form-sub { font-size: 13px; color: var(--gray3); margin-bottom: 1.5rem; }
+        .demo-form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1rem; }
+        .demo-form-row-split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .demo-label { font-size: 12.5px; font-weight: 600; color: var(--gray4); }
+        .demo-input, .demo-textarea, .demo-select {
+          width: 100%; border: 1.5px solid var(--gray2); background: var(--gray1);
+          border-radius: 12px; padding: 11px 14px; font-size: 14px; font-family: var(--font);
+          color: var(--ink); transition: border-color .15s, box-shadow .15s;
+        }
+        .demo-input:focus, .demo-textarea:focus, .demo-select:focus {
+          outline: none; border-color: var(--coral); box-shadow: 0 0 0 3px rgba(255,107,77,.1); background: var(--white);
+        }
+        .demo-textarea { resize: vertical; min-height: 80px; font-family: var(--font); }
+        .demo-submit-btn {
+          width: 100%; background: linear-gradient(135deg, #FF6B4D, #FFB347); color: white;
+          border: none; padding: 13px 24px; border-radius: 50px; font-size: 14.5px; font-weight: 700;
+          cursor: pointer; font-family: var(--font); letter-spacing: -.01em; margin-top: .5rem;
+          transition: transform .15s, box-shadow .15s, opacity .15s;
+          box-shadow: 0 4px 20px rgba(255,107,77,.25);
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .demo-submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,107,77,.35); }
+        .demo-submit-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+        .demo-status-msg {
+          display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600;
+          padding: 12px 16px; border-radius: 12px; margin-top: 1rem;
+        }
+        .demo-status-success { background: #EAFAF0; color: #16A34A; }
+        .demo-status-error { background: #FFF0F2; color: #E5542F; }
+
+        @media (max-width: 900px) {
+          .demo-grid { grid-template-columns: 1fr; }
+          .demo-form-row-split { grid-template-columns: 1fr; }
+        }
+
+        /* ---- SINGLE CTA (developer teaser) ---- */
+        .single-cta-section { padding: 6rem 1.5rem; background: var(--white); border-top: 1px solid var(--gray2); }
+        .single-cta-card { max-width: 1000px; margin: 0 auto; border-radius: 24px; padding: 3rem; position: relative; overflow: hidden; background: linear-gradient(135deg,#FF6B4D,#FFB347); color: white; text-align: center; }
         .single-cta-title { font-family: var(--serif); font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.2; margin-bottom: .75rem; letter-spacing: -.03em; }
-        .single-cta-sub { font-size: 14.5px; opacity: .75; line-height: 1.6; margin-bottom: 2rem; max-width: 440px; margin-left: auto; margin-right: auto; }
+        .single-cta-sub { font-size: 14.5px; opacity: .85; line-height: 1.6; margin-bottom: 2rem; max-width: 440px; margin-left: auto; margin-right: auto; }
         .btn-cta-white { background: white; color: var(--coral); border: none; padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); letter-spacing: -.01em; transition: transform .15s, box-shadow .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
         .btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
-        .cta-bg-shape { position: absolute; border-radius: 50%; opacity: .08; pointer-events: none; }
+        .cta-bg-shape { position: absolute; border-radius: 50%; opacity: .1; pointer-events: none; background: white; }
 
         /* ---- FOOTER ---- */
         .footer { background: var(--ink); color: white; padding: 3.5rem 2.5rem 2rem; }
@@ -741,6 +813,7 @@ export default function DeveloperLandingPage() {
         /* ---- RESPONSIVE ---- */
         @media (max-width: 900px) {
           .nav-links { display: none; }
+          .nav-demo-btn { display: none; }
           .steps-grid { grid-template-columns: repeat(2,1fr); }
           .features-grid { grid-template-columns: repeat(2,1fr); }
           .testimonials-grid { grid-template-columns: 1fr; }
@@ -759,18 +832,19 @@ export default function DeveloperLandingPage() {
 
       {/* ─── NAVBAR ─── */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
-        <Link href='/' style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+        <Link href='/recruiters' style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
           <Image src="/Antyl.png" alt="Antyl" width={50} height={50} />
         </Link>
         <div className="nav-links">
           <a href="#how-it-works" className="nav-link">How it works</a>
           <a href="#features" className="nav-link">Features</a>
           <a href="#antyl-score" className="nav-link">Antyl Score</a>
-          <Link href="/recruiters" className="nav-link">For recruiters</Link>
+          <Link href="/" className="nav-link">For developers</Link>
         </div>
         <div className="nav-actions">
           <a href="/login" className="btn-ghost-nav">Log in</a>
-          <a href="/signup?role=developer" className="btn-primary-nav">Get started free</a>
+          <a href="#request-demo" className="btn-ghost-nav nav-demo-btn">Request a demo</a>
+          <a href="/signup?role=recruiter" className="btn-primary-nav">Post a job</a>
         </div>
       </nav>
 
@@ -782,25 +856,25 @@ export default function DeveloperLandingPage() {
 
         <div className="hero-eyebrow">
           <span className="eyebrow-dot" />
-          AI verification · Auto-apply built in
+          AI-verified candidates · Score-based filtering
         </div>
 
         <h1 className="hero-title">
-          Jobs that actually match.
+          Hire people who can
           <br />
-          Skills that actually <em>prove themselves.</em>
+          actually <em>do the job.</em>
         </h1>
 
         <p className="hero-sub">
-          Antyl verifies your skills with AI, then <strong>automatically applies you to matching jobs every 6 hours</strong> - no ghosting, no guessing, just your next interview.
+          Antyl verifies every developer with AI before they ever reach your inbox. <strong>Filter by Antyl Score</strong> and skip the resume guesswork entirely.
         </p>
 
         <div className="hero-ctas">
-          <a href="/signup?role=developer" className="btn-hero-primary">
+          <a href="/signup?role=recruiter" className="btn-hero-primary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
             </svg>
-            Start free as a developer
+            Post a job free
           </a>
           <a href="#how-it-works" className="btn-hero-secondary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -810,38 +884,38 @@ export default function DeveloperLandingPage() {
           </a>
         </div>
 
-        <p className="hero-recruiter-link">
-          Hiring instead? <Link href="/recruiters">Go to the recruiter side →</Link>
+        <p className="hero-dev-link">
+          Looking for a job instead? <Link href="/">Go to the developer side →</Link>
         </p>
 
         <div className="hero-social-proof">
           <div className="proof-avatars">
             {[
-              { initials: "AK", bg: "#FFE8E3", color: "#FF6B4D" },
-              { initials: "PS", bg: "#FFF4E3", color: "#FFB347" },
-              { initials: "VR", bg: "#F3EFFE", color: "#8B5CF6" },
-              { initials: "NR", bg: "#EAFAF0", color: "#22C55E" },
+              { initials: "NS", bg: "#F3EFFE", color: "#8B5CF6" },
+              { initials: "KR", bg: "#FFF0F2", color: "#FF7A8A" },
+              { initials: "AM", bg: "#E6F4FF", color: "#3B82F6" },
+              { initials: "SK", bg: "#EAFAF0", color: "#22C55E" },
             ].map((a) => (
               <div key={a.initials} className="proof-avatar" style={{ background: a.bg, color: a.color }}>
                 {a.initials}
               </div>
             ))}
           </div>
-          Join 12,000+ verified developers already on Antyl
+          Trusted by 340+ companies hiring on Antyl
         </div>
 
         <div className="hero-badge-row" style={{ marginTop: "1rem" }}>
           <span className="hero-badge">
             <span className="hero-badge-dot" style={{ background: "#22C55E" }} />
-            No whiteboard tests
+            Every candidate GitHub-verified
           </span>
           <span className="hero-badge">
             <span className="hero-badge-dot" style={{ background: "#FF6B4D" }} />
-            Auto-apply every 6 hours
+            Filter by Antyl Score
           </span>
           <span className="hero-badge">
             <span className="hero-badge-dot" style={{ background: "#FFB347" }} />
-            Free for developers
+            Free to post
           </span>
         </div>
       </section>
@@ -855,11 +929,11 @@ export default function DeveloperLandingPage() {
               How it works
             </span>
             <h2 className="section-title">
-              From signup to <em>interview request</em> in 4 steps
+              From job post to <em>qualified pipeline</em> in 4 steps
             </h2>
             <p className="section-sub">
-              No tedious forms. No weeks of waiting. Connect GitHub, get
-              verified, set preferences, and let auto-apply run in the background.
+              No sifting through hundreds of unverified resumes. Post a role,
+              get matched, filter by score, and manage everything from one pipeline.
             </p>
           </div>
 
@@ -870,23 +944,27 @@ export default function DeveloperLandingPage() {
                 <div className="step-icon-wrap" style={{ background: step.bg, color: step.color }}>
                   {i === 0 && (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                      <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                     </svg>
                   )}
                   {i === 1 && (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                   )}
                   {i === 2 && (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" /><path d="M4.93 4.93a10 10 0 0 0 0 14.14" />
+                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
                   )}
                   {i === 3 && (
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <line x1="9" y1="3" x2="9" y2="21" />
+                      <line x1="15" y1="3" x2="15" y2="21" />
                     </svg>
                   )}
                 </div>
@@ -915,7 +993,7 @@ export default function DeveloperLandingPage() {
                 : counts.devs}
               <span className="stat-suffix">+</span>
             </div>
-            <div className="stat-label">Verified developers</div>
+            <div className="stat-label">Verified developers to hire from</div>
           </div>
           <div className="stat-item">
             <div className="stat-number">
@@ -934,7 +1012,7 @@ export default function DeveloperLandingPage() {
 
       {/* ─── TECH CAROUSEL ─── */}
       <section className={`tech-carousel-section lazy-section${lazyTech.visible ? " visible" : ""}`} ref={lazyTech.ref}>
-        <p className="tech-carousel-label">Verified across every major stack</p>
+        <p className="tech-carousel-label">Verified candidates across every major stack</p>
         <div className="tech-marquee-wrap">
           <div className="tech-marquee-track">
             {[...carouselSkills, ...carouselSkills].map((s, i) => (
@@ -952,10 +1030,10 @@ export default function DeveloperLandingPage() {
         <div className="proof-header">
           <div className="proof-eyebrow">
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
-            Trusted by developers
+            Trusted by hiring teams
           </div>
           <h2 className="proof-title">
-            Real people. <em>Real results.</em>
+            Real hires. <em>Real confidence.</em>
           </h2>
         </div>
         <div className="proof-marquee-wrap">
@@ -972,7 +1050,7 @@ export default function DeveloperLandingPage() {
                       <div className="proof-role">{t.role}</div>
                     </div>
                   </div>
-                  <div className="proof-score-badge">{t.tier} · {t.score}</div>
+                  <div className="proof-recruiter-badge">Recruiter</div>
                 </div>
                 <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
                 <div className="proof-card-footer">
@@ -1001,8 +1079,8 @@ export default function DeveloperLandingPage() {
               One number that tells<em> the whole story</em>
             </h2>
             <p style={{ fontSize: 16, color: "var(--gray4)", lineHeight: 1.65, maxWidth: 540, margin: "0 auto" }}>
-              After verification, you get a score from 0–100 across 4 dimensions.
-              It lives on your profile and updates with every session.
+              Every candidate arrives with a score from 0–100 across 4 dimensions,
+              so you know their strengths before the first call.
             </p>
           </div>
 
@@ -1015,11 +1093,11 @@ export default function DeveloperLandingPage() {
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Your verified developer profile
+                A candidate&apos;s verified profile
               </div>
 
-              <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Your Antyl Score</h3>
-              <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>A complete view of your verified capabilities.</p>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Their Antyl Score</h3>
+              <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>A complete view of their verified capabilities.</p>
 
               <div style={{ display: "flex", gap: "2.5rem", alignItems: "flex-start" }}>
                 {/* Phone Mockup */}
@@ -1068,7 +1146,7 @@ export default function DeveloperLandingPage() {
                   <div style={{ marginBottom: 4 }}>
                     <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)" }}>Dimension breakdown</h4>
                   </div>
-                  <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>See how your verified skills contribute to the score.</p>
+                  <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>See exactly where a candidate's strengths lie.</p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                     {scoreDimensions.map((dim) => (
@@ -1091,35 +1169,35 @@ export default function DeveloperLandingPage() {
                         <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <p style={{ fontSize: 13, color: "var(--gray4)" }}>This preview updates live as your score changes.</p>
+                    <p style={{ fontSize: 13, color: "var(--gray4)" }}>This score updates live as the candidate keeps building.</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right - Keep Improving */}
+            {/* Right - Filter by Score */}
             <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem", height: "fit-content" }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>Keep improving your score</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>Set your own bar</h3>
               <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
-                A small improvement can make your profile stand out to more relevant employers.
+                Pick a minimum Antyl Score for your role, and only qualifying candidates make it into your feed.
               </p>
 
-              {/* Next Milestone */}
+              {/* Threshold card */}
               <div style={{ background: "var(--gray1)", border: "1px solid var(--gray2)", borderRadius: 16, padding: "1.25rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                   <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" stroke="white" strokeWidth="2" />
                     </svg>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gray4)" }}>Next milestone</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gray4)" }}>Minimum score</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 44, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)", lineHeight: 1 }}>86</span>
-                  <span style={{ fontSize: 14, color: "var(--gray3)" }}>Expert tier</span>
+                  <span style={{ fontSize: 44, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)", lineHeight: 1 }}>70</span>
+                  <span style={{ fontSize: 14, color: "var(--gray3)" }}>and up</span>
                 </div>
                 <p style={{ fontSize: 13, color: "var(--gray3)", lineHeight: 1.6 }}>
-                  You are 8 points away. View tailored recommendations to see your fastest path forward.
+                  Set once per role. Adjust anytime as your pipeline fills - or empties too fast.
                 </p>
               </div>
             </div>
@@ -1136,11 +1214,11 @@ export default function DeveloperLandingPage() {
               Everything included
             </span>
             <h2 className="section-title">
-              Built for developers <em>tired of the grind</em>
+              Built for hiring teams that <em>need signal, not noise</em>
             </h2>
             <p className="section-sub">
-              Every feature is designed to remove friction from your job
-              search - so you spend less time applying and more time coding.
+              Every feature is designed to cut screening time - so you spend
+              less time filtering resumes and more time talking to people worth hiring.
             </p>
           </div>
           <div className="features-grid">
@@ -1161,10 +1239,10 @@ export default function DeveloperLandingPage() {
           <div style={{ textAlign: "center", maxWidth: 520, margin: "0 auto" }}>
             <span className="section-eyebrow">
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
-              What developers say
+              What recruiters say
             </span>
             <h2 className="section-title">
-              Real results for <em>real developers</em>
+              Real signal for <em>real hiring teams</em>
             </h2>
           </div>
           <div className="testimonials-grid">
@@ -1178,7 +1256,7 @@ export default function DeveloperLandingPage() {
                     <div className="t-name">{t.name}</div>
                     <div className="t-role">{t.role}</div>
                   </div>
-                  <div className="t-score">{t.tier} {t.score}</div>
+                  <div className="t-recruiter-badge">Recruiter</div>
                 </div>
               </div>
             ))}
@@ -1186,19 +1264,173 @@ export default function DeveloperLandingPage() {
         </div>
       </section>
 
-      {/* ─── SINGLE CTA: RECRUITER TEASER ─── */}
+      {/* ─── DEMO REQUEST ─── */}
+      <section className={`demo-section lazy-section${lazyDemo.visible ? " visible" : ""}`} id="request-demo" ref={lazyDemo.ref}>
+        <div className="section-inner">
+          <div className="demo-grid">
+            <div>
+              <span className="section-eyebrow">
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
+                Request a demo
+              </span>
+              <h2 className="section-title">
+                See Antyl <em>working for your team</em>
+              </h2>
+              <p className="section-sub">
+                We&apos;ll walk you through the Antyl Score, the kanban pipeline, and how
+                matching works for your specific stack and hiring bar.
+              </p>
+
+              <div className="demo-info-list">
+                <div className="demo-info-item">
+                  <span className="demo-info-icon">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </span>
+                  <span className="demo-info-text"><strong>15-20 minutes.</strong> No slide deck, just a live walkthrough with your actual roles in mind.</span>
+                </div>
+                <div className="demo-info-item">
+                  <span className="demo-info-icon">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </span>
+                  <span className="demo-info-text"><strong>Set your own score bar.</strong> We&apos;ll show you how filtering by Antyl Score works for your stack.</span>
+                </div>
+                <div className="demo-info-item">
+                  <span className="demo-info-icon">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                    </svg>
+                  </span>
+                  <span className="demo-info-text"><strong>We&apos;ll reply within a day.</strong> Someone from the team follows up to find a time that works.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="demo-form-card">
+              <div className="demo-form-title">Request a demo</div>
+              <div className="demo-form-sub">Tell us a bit about your team.</div>
+
+              <form onSubmit={handleDemoSubmit}>
+                <div className="demo-form-row-split">
+                  <div className="demo-form-row">
+                    <label className="demo-label" htmlFor="demo-name">Full name</label>
+                    <input
+                      id="demo-name" name="name" className="demo-input" type="text"
+                      value={demoForm.name} onChange={handleDemoChange} required
+                      placeholder="Your name"
+                    />
+                  </div>
+                  <div className="demo-form-row">
+                    <label className="demo-label" htmlFor="demo-company">Company</label>
+                    <input
+                      id="demo-company" name="company" className="demo-input" type="text"
+                      value={demoForm.company} onChange={handleDemoChange} required
+                      placeholder="Company name"
+                    />
+                  </div>
+                </div>
+
+                <div className="demo-form-row">
+                  <label className="demo-label" htmlFor="demo-email">Work email</label>
+                  <input
+                    id="demo-email" name="work_email" className="demo-input" type="email"
+                    value={demoForm.work_email} onChange={handleDemoChange} required
+                    placeholder="you@company.com"
+                  />
+                </div>
+
+                <div className="demo-form-row-split">
+                  <div className="demo-form-row">
+                    <label className="demo-label" htmlFor="demo-phone">Phone (optional)</label>
+                    <input
+                      id="demo-phone" name="phone" className="demo-input" type="tel"
+                      value={demoForm.phone} onChange={handleDemoChange}
+                      placeholder="+91 ..."
+                    />
+                  </div>
+                  <div className="demo-form-row">
+                    <label className="demo-label" htmlFor="demo-team-size">Team size</label>
+                    <select
+                      id="demo-team-size" name="team_size" className="demo-select"
+                      value={demoForm.team_size} onChange={handleDemoChange}
+                    >
+                      <option value="">Select</option>
+                      <option value="1-10">1–10</option>
+                      <option value="11-50">11–50</option>
+                      <option value="51-200">51–200</option>
+                      <option value="200+">200+</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="demo-form-row">
+                  <label className="demo-label" htmlFor="demo-message">Anything specific you&apos;re hiring for? (optional)</label>
+                  <textarea
+                    id="demo-message" name="message" className="demo-textarea"
+                    value={demoForm.message} onChange={handleDemoChange}
+                    placeholder="e.g. Senior backend engineers, Node.js/Python"
+                  />
+                </div>
+
+                <button type="submit" className="demo-submit-btn" disabled={demoStatus === "loading"}>
+                  {demoStatus === "loading" ? (
+                    "Sending..."
+                  ) : (
+                    <>
+                      Request demo
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+
+                {demoStatus === "success" && (
+                  <div className="demo-status-msg demo-status-success">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Thanks! We&apos;ll be in touch within a day.
+                  </div>
+                )}
+                {demoStatus === "error" && (
+                  <div className="demo-status-msg demo-status-error">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    Something went wrong. Try again or email info@antyl.org.
+                  </div>
+                )}
+              </form>
+
+              <div className="demo-form-footer">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                We&apos;ll never share your info. No spam, ever.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SINGLE CTA: DEVELOPER TEASER ─── */}
+
       <section className={`single-cta-section lazy-section${lazyDualCta.visible ? " visible" : ""}`} ref={lazyDualCta.ref}>
         <div className="single-cta-card">
-          <div className="cta-bg-shape" style={{ width: 300, height: 300, background: "white", top: -100, right: -100 }} />
-          <div className="cta-bg-shape" style={{ width: 220, height: 220, background: "white", bottom: -80, left: -80 }} />
+          <div className="cta-bg-shape" style={{ width: 300, height: 300, top: -100, right: -100 }} />
+          <div className="cta-bg-shape" style={{ width: 220, height: 220, bottom: -80, left: -80 }} />
           <div style={{ position: "relative", zIndex: 1 }}>
-            <span style={{ background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.6)", fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 50, display: "inline-block", marginBottom: "1.25rem", letterSpacing: ".06em", textTransform: "uppercase" as const, border: "1px solid rgba(255,255,255,.1)" }}>
-              Hiring, not job-hunting?
+            <span style={{ background: "rgba(255,255,255,.2)", color: "white", fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 50, display: "inline-block", marginBottom: "1.25rem", letterSpacing: ".06em", textTransform: "uppercase" as const }}>
+              Job-hunting, not hiring?
             </span>
             <h3 className="single-cta-title">Antyl also works the other way around.</h3>
-            <p className="single-cta-sub">If you&apos;re a recruiter or founder looking to hire, head over to the recruiter side to post a job and browse verified candidates.</p>
-            <Link href="/recruiters" className="btn-cta-white">
-              Go to recruiter page
+            <p className="single-cta-sub">If you&apos;re a developer looking for your next role, head over to the developer side to get verified and let auto-apply do the work.</p>
+            <Link href="/" className="btn-cta-white">
+              Go to developer page
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
@@ -1215,7 +1447,7 @@ export default function DeveloperLandingPage() {
               <Image src="/Antyl.png" alt="Antyl" width={60} height={60} style={{ marginBottom: "1rem" }} />
               <p className="footer-brand-desc">
                 AI-powered developer verification and smart job matching. Built
-                for engineers who want to prove their skills, not just list them.
+                for hiring teams who want proof, not just promises.
               </p>
             </div>
             <div>
@@ -1227,19 +1459,19 @@ export default function DeveloperLandingPage() {
               </div>
             </div>
             <div>
-              <div className="footer-col-title">Developers</div>
+              <div className="footer-col-title">Recruiters</div>
               <div className="footer-links">
-                <a href="/signup?role=developer" className="footer-link">Get verified</a>
-                <a href="/signup?role=developer" className="footer-link">Job feed</a>
-                <a href="/signup?role=developer" className="footer-link">Improve score</a>
+                <a href="/signup?role=recruiter" className="footer-link">Post a job</a>
+                <a href="/signup?role=recruiter" className="footer-link">Browse talent</a>
+                <a href="/signup?role=recruiter" className="footer-link">Plans</a>
               </div>
             </div>
             <div>
-              <div className="footer-col-title">Recruiters</div>
+              <div className="footer-col-title">Developers</div>
               <div className="footer-links">
-                <Link href="/recruiters" className="footer-link">Post a job</Link>
-                <Link href="/recruiters" className="footer-link">Browse talent</Link>
-                <Link href="/recruiters" className="footer-link">Plans</Link>
+                <Link href="/" className="footer-link">Get verified</Link>
+                <Link href="/" className="footer-link">Job feed</Link>
+                <Link href="/" className="footer-link">Improve score</Link>
               </div>
             </div>
             <div id="contact">
