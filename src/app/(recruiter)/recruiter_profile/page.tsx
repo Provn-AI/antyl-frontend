@@ -16,6 +16,11 @@ interface RecruiterProfile {
   location: string;
   remote_policy: string;
   logo_url?: string;
+  company_vision: string;
+  founded_year: string;
+  funding_stage: string;
+  linkedin_url: string;
+  perks_benefits: string;
 }
 
 const emptyProfile: RecruiterProfile = {
@@ -27,12 +32,39 @@ const emptyProfile: RecruiterProfile = {
   location: "",
   remote_policy: "",
   logo_url: "",
+  company_vision: "",
+  founded_year: "",
+  funding_stage: "",
+  linkedin_url: "",
+  perks_benefits: "",
 };
+
+// Ensures every field is a safe string ("" instead of null/undefined) so
+// that .trim() calls on form fields never crash, regardless of what the
+// backend returns.
+function sanitizeProfile(raw: Partial<RecruiterProfile>): RecruiterProfile {
+  const merged: RecruiterProfile = { ...emptyProfile, ...raw };
+  const result = { ...emptyProfile };
+  (Object.keys(emptyProfile) as (keyof RecruiterProfile)[]).forEach((key) => {
+    const value = merged[key];
+    result[key] = value === null || value === undefined ? "" : value;
+  });
+  return result;
+}
 
 const remotePolicyLabels: Record<string, string> = {
   onsite: "Onsite",
   hybrid: "Hybrid",
   remote: "Remote",
+};
+
+const fundingStageLabels: Record<string, string> = {
+  bootstrapped: "Bootstrapped",
+  "pre-seed": "Pre-seed",
+  seed: "Seed",
+  "series-a": "Series A",
+  "series-b-plus": "Series B+",
+  public: "Public",
 };
 
 const inputClass =
@@ -43,6 +75,8 @@ const textareaClass =
 
 const MAX_LOGO_SIZE = 0.2 * 1024 * 1024; // 200kb
 const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const URL_REGEX = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -72,10 +106,21 @@ export default function RecruiterProfilePage() {
   const [logoError, setLogoError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const websiteValid =
+    form.website.trim() === "" || URL_REGEX.test(form.website.trim());
+  const linkedinValid =
+    form.linkedin_url.trim() === "" || URL_REGEX.test(form.linkedin_url.trim());
+  const foundedYearValid =
+    form.founded_year.trim() === "" ||
+    (Number(form.founded_year) >= 1900 && Number(form.founded_year) <= 2026);
+
   const isValid =
     form.company_name.trim() !== "" &&
     form.industry.trim() !== "" &&
-    form.company_size.trim() !== "";
+    form.company_size.trim() !== "" &&
+    websiteValid &&
+    linkedinValid &&
+    foundedYearValid;
 
   useEffect(() => {
     async function loadProfile() {
@@ -101,7 +146,12 @@ export default function RecruiterProfilePage() {
           throw new Error(data.detail || "Failed to load profile");
         }
 
-        const merged = { ...emptyProfile, ...data.profile };
+        const merged = sanitizeProfile({
+          ...data.profile,
+          founded_year: data.profile.founded_year
+            ? String(data.profile.founded_year)
+            : "",
+        });
         setSavedProfile(merged);
         setForm(merged);
       } catch (err) {
@@ -169,7 +219,7 @@ export default function RecruiterProfilePage() {
       }
 
       const data = await res.json();
-      const newLogoUrl = data.profile.logo_url as string;
+      const newLogoUrl = (data.profile.logo_url as string) || "";
 
       setSavedProfile((prev) => ({ ...prev, logo_url: newLogoUrl }));
       setForm((prev) => ({ ...prev, logo_url: newLogoUrl }));
@@ -192,28 +242,56 @@ export default function RecruiterProfilePage() {
 
       const token = localStorage.getItem("access_token");
 
+      const payload = {
+        ...form,
+        company_name: form.company_name.trim(),
+        industry: form.industry.trim(),
+        website: form.website.trim() || null,
+        about: form.about.trim() || null,
+        location: form.location.trim() || null,
+        remote_policy: form.remote_policy || null,
+        company_vision: form.company_vision.trim() || null,
+        founded_year: form.founded_year.trim()
+          ? parseInt(form.founded_year, 10)
+          : null,
+        funding_stage: form.funding_stage || null,
+        linkedin_url: form.linkedin_url.trim() || null,
+        perks_benefits: form.perks_benefits.trim() || null,
+      };
+
       const res = await fetch(`${API_URL}/recruiter/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.detail || "Failed to save profile");
+        const message = Array.isArray(data.detail)
+          ? data.detail[0]?.msg || "Please check your inputs."
+          : data.detail || "We couldn't save your profile. Please try again.";
+        throw new Error(message);
       }
 
-      setSavedProfile(form);
+      const merged = sanitizeProfile({
+        ...form,
+        founded_year: form.founded_year ? String(form.founded_year) : "",
+      });
+      setSavedProfile(merged);
       setIsEditing(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
       console.error(err);
-      setError("We couldn't save your profile. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "We couldn't save your profile. Please try again."
+      );
     } finally {
       setSaving(false);
     }
@@ -333,6 +411,19 @@ export default function RecruiterProfilePage() {
                     : ""
                 }
               />
+              <Field label="Company Vision" value={savedProfile.company_vision} />
+              <Field label="Founded Year" value={savedProfile.founded_year} />
+              <Field
+                label="Funding Stage"
+                value={
+                  savedProfile.funding_stage
+                    ? fundingStageLabels[savedProfile.funding_stage] ??
+                      savedProfile.funding_stage
+                    : ""
+                }
+              />
+              <Field label="LinkedIn" value={savedProfile.linkedin_url} />
+              <Field label="Perks & Benefits" value={savedProfile.perks_benefits} />
               <Field label="About Company" value={savedProfile.about} />
             </div>
           ) : (
@@ -397,6 +488,11 @@ export default function RecruiterProfilePage() {
                   }
                   placeholder="https://company.com"
                 />
+                {!websiteValid && (
+                  <p className="text-xs text-red-500 mt-1.5 ml-1">
+                    Enter a valid URL starting with http:// or https://
+                  </p>
+                )}
               </div>
 
               <div>
@@ -433,6 +529,100 @@ export default function RecruiterProfilePage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Company Vision
+                </label>
+                <textarea
+                  className={textareaClass}
+                  value={form.company_vision}
+                  onChange={(e) =>
+                    setForm({ ...form, company_vision: e.target.value })
+                  }
+                  placeholder="What is your company building towards? What's the mission?"
+                  maxLength={2000}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Founded Year
+                  </label>
+                  <input
+                    type="number"
+                    className={inputClass}
+                    value={form.founded_year}
+                    onChange={(e) =>
+                      setForm({ ...form, founded_year: e.target.value })
+                    }
+                    placeholder="2021"
+                    min={1900}
+                    max={2026}
+                  />
+                  {!foundedYearValid && (
+                    <p className="text-xs text-red-500 mt-1.5 ml-1">
+                      Enter a valid year
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                    Funding Stage
+                  </label>
+                  <select
+                    className={inputClass}
+                    value={form.funding_stage}
+                    onChange={(e) =>
+                      setForm({ ...form, funding_stage: e.target.value })
+                    }
+                  >
+                    <option value="">Select</option>
+                    <option value="bootstrapped">Bootstrapped</option>
+                    <option value="pre-seed">Pre-seed</option>
+                    <option value="seed">Seed</option>
+                    <option value="series-a">Series A</option>
+                    <option value="series-b-plus">Series B+</option>
+                    <option value="public">Public</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  LinkedIn URL
+                </label>
+                <input
+                  className={inputClass}
+                  value={form.linkedin_url}
+                  onChange={(e) =>
+                    setForm({ ...form, linkedin_url: e.target.value })
+                  }
+                  placeholder="https://linkedin.com/company/acme"
+                />
+                {!linkedinValid && (
+                  <p className="text-xs text-red-500 mt-1.5 ml-1">
+                    Enter a valid URL starting with http:// or https://
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  Perks & Benefits
+                </label>
+                <textarea
+                  className={textareaClass}
+                  value={form.perks_benefits}
+                  onChange={(e) =>
+                    setForm({ ...form, perks_benefits: e.target.value })
+                  }
+                  placeholder="Health insurance, equity, remote stipend, learning budget..."
+                  maxLength={2000}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-2">
                   About Company
                 </label>
                 <textarea
@@ -442,6 +632,7 @@ export default function RecruiterProfilePage() {
                     setForm({ ...form, about: e.target.value })
                   }
                   placeholder="Tell developers about your company, culture, mission and what makes it unique..."
+                  maxLength={2000}
                 />
               </div>
 
