@@ -355,6 +355,7 @@ export default function RecruiterLandingPage() {
       initials: "NS",
       bg: "#F3EFFE",
       color: "#8B5CF6",
+      photo: "/Girl.png",
     },
     {
       quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
@@ -364,6 +365,7 @@ export default function RecruiterLandingPage() {
       initials: "KR",
       bg: "#FFF0F2",
       color: "#FF7A8A",
+      photo: "/girl2.png",
     },
     {
       quote: "We cut our screening time in half. Every candidate that reaches us has already proven their code.",
@@ -373,6 +375,7 @@ export default function RecruiterLandingPage() {
       initials: "AM",
       bg: "#E6F4FF",
       color: "#3B82F6",
+      photo: "/Boy.png",
     },
     {
       quote: "The kanban pipeline alone saved our team from three different spreadsheets. Everything lives in one place now.",
@@ -382,6 +385,7 @@ export default function RecruiterLandingPage() {
       initials: "SK",
       bg: "#EAFAF0",
       color: "#22C55E",
+      photo: "/girl3.png",
     },
   ];
 
@@ -677,7 +681,8 @@ export default function RecruiterLandingPage() {
         .proof-card:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(0,0,0,.07); }
         .proof-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
         .proof-avatar-wrap { display: flex; align-items: center; gap: 10px; }
-        .proof-card .proof-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: none; margin-left: 0; }
+        .proof-card .proof-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: none; margin-left: 0; overflow: hidden; }
+        .proof-card .proof-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .proof-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
         .proof-role { font-size: 11.5px; color: var(--gray3); margin-top: 1px; }
         .proof-recruiter-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: var(--gray1); color: var(--gray4); border: 1px solid var(--gray2); flex-shrink: 0; }
@@ -1043,7 +1048,7 @@ export default function RecruiterLandingPage() {
                 <div className="proof-card-top">
                   <div className="proof-avatar-wrap">
                     <div className="proof-avatar" style={{ background: t.bg, color: t.color }}>
-                      {t.initials}
+                      {t.photo ? <img src={t.photo} alt={`${t.name} photo`} /> : t.initials}
                     </div>
                     <div>
                       <div className="proof-name">{t.name}</div>
