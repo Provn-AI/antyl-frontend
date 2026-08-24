@@ -52,30 +52,12 @@ const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
   e.currentTarget.blur();
 };
 
-// BUG-FIX: `params` is only a real Promise under Next.js 15's App Router
-// (where unwrapping it with React.use() is required). On Next 14, params
-// arrives as a plain `{ jobId: string }` object — calling React.use() on
-// a non-Promise throws during render, and that unhandled throw is the
-// most likely reason this route was 404'ing even though the file exists
-// in the right place with the right name. Resolving params defensively
-// here makes the page work correctly on either Next.js version without
-// needing to know which one the project is actually on.
-type ParamsShape = { jobId: string } | Promise<{ jobId: string }>;
-
-function resolveParams(params: ParamsShape): { jobId: string } {
-  const maybePromise = params as Promise<{ jobId: string }>;
-  if (maybePromise && typeof maybePromise.then === "function") {
-    return React.use(maybePromise);
-  }
-  return params as { jobId: string };
-}
-
 export default function EditJobPage({
   params,
 }: {
-  params: ParamsShape;
+  params: Promise<{ jobId: string }>;
 }) {
-  const { jobId } = resolveParams(params);
+  const { jobId } = React.use(params);
   const router = useRouter();
 
   const [saving, setSaving] = useState(false);
@@ -167,9 +149,7 @@ export default function EditJobPage({
         required_tech_stack: techTags,
       });
       setSuccess(true);
-      // BUG-FIX: this page lives at /dashboard/jobs/[jobId]/edit, so the
-      // jobs listing is at /dashboard/jobs, not /jobs.
-      setTimeout(() => router.push("/dashboard/jobs"), 1200);
+      setTimeout(() => router.push("/jobs"), 1200);
     } catch (err) {
       console.error(err);
       setError("We couldn't save this job. Please try again.");
@@ -187,8 +167,7 @@ export default function EditJobPage({
           <h1 className="text-3xl font-bold text-gray-900">Edit Job</h1>
           <button
             type="button"
-            // BUG-FIX: same /jobs → /dashboard/jobs correction.
-            onClick={() => router.push("/dashboard/jobs")}
+            onClick={() => router.push("/jobs")}
             className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
           >
             Back to jobs

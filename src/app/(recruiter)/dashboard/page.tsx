@@ -10,9 +10,6 @@ import {
   PlusCircle,
   PartyPopper,
   BarChart3,
-  Clock3,
-  CalendarClock,
-  X,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -28,15 +25,9 @@ import {
   Legend,
 } from "recharts";
 import { getMatches } from "@/services/match.service";
-import { getApplicationsToday, TodayApplication } from "@/services/application.service";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-// Shown once per browser session — reset on next login/tab close, so a
-// recruiter isn't re-nagged every time they click back to the dashboard,
-// but does see it again on their next session while jobs are still expiring.
-const EXPIRY_MODAL_SEEN_KEY = "antyl_expiry_modal_seen";
 
 interface Job {
   id: string;
@@ -44,9 +35,12 @@ interface Job {
   status: string;
   applicant_count: number;
   created_at?: string;
-  expires_at?: string;
 }
 
+// BUG-FIX: the dashboard previously only fetched /recruiter/jobs, which
+// never touches the matches table or pipeline_stage — so a candidate
+// reaching "hired" had no effect anywhere on this page. Pulling matches in
+// alongside jobs lets us surface hires here too.
 interface Match {
   match_id: string;
   name: string;
@@ -54,11 +48,23 @@ interface Match {
   job_title: string;
   job_id: string;
   pipeline_stage: string;
-  interview_scheduled_at: string | null;
 }
 
 // Brand-ish palette for chart slices/bars.
 const CHART_COLORS = ["#F2754A", "#F8B36B", "#34D399", "#60A5FA", "#A78BFA", "#F472B6"];
+
+function StatusBadge({ status }: { status: string }) {
+  const isActive = status === "active";
+  return (
+    <span
+      className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize ${
+        isActive ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
+      }`}
+    >
+      {status}
+    </span>
+  );
+}
 
 function ChartCard({
   title,
@@ -80,123 +86,13 @@ function ChartCard({
   );
 }
 
-function ReminderRow({
-  icon: Icon,
-  iconClassName,
-  iconBg,
-  title,
-  children,
-}: {
-  icon: React.ElementType;
-  iconClassName: string;
-  iconBg: string;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
-      <div className="flex items-center gap-2.5 flex-shrink-0 sm:w-52">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-          <Icon className={`w-4 h-4 ${iconClassName}`} />
-        </div>
-        <span className="font-bold text-gray-900 text-sm">{title}</span>
-      </div>
-      <div className="flex items-center gap-2 overflow-x-auto flex-1 pb-0.5 -mx-1 px-1">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// One-time popup on login when jobs are within 7 days of expiring. Lists
-// each job with days remaining and a direct link to edit/renew it.
-function ExpiryModal({
-  jobs,
-  onClose,
-  onEdit,
-}: {
-  jobs: Job[];
-  onClose: () => void;
-  onEdit: (jobId: string) => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-[28px] shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 p-6 pb-0">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-              <Clock3 className="w-5 h-5 text-amber-600" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                {jobs.length === 1 ? "A job is expiring soon" : "Jobs expiring soon"}
-              </h2>
-              <p className="text-sm text-gray-400">
-                Postings run for 30 days — renew before they close.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-2">
-          {jobs.map((job) => {
-            const daysLeft = Math.ceil(
-              (new Date(job.expires_at!).getTime() - Date.now()) /
-                (1000 * 60 * 60 * 24)
-            );
-            return (
-              <button
-                key={job.id}
-                type="button"
-                onClick={() => onEdit(job.id)}
-                className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 border border-gray-100 hover:border-amber-200 hover:bg-amber-50/50 transition-colors text-left"
-              >
-                <span className="font-semibold text-gray-900 truncate">{job.title}</span>
-                <span className="text-xs font-black px-2 py-1 rounded-full bg-amber-50 text-amber-600 flex-shrink-0">
-                  {daysLeft <= 0 ? "Today" : `${daysLeft}d left`}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="px-6 pb-6">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full text-sm font-semibold px-5 py-2.5 rounded-full text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors"
-          >
-            Got it
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function RecruiterDashboard() {
   const router = useRouter();
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
-  const [appsToday, setAppsToday] = useState<TodayApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showExpiryModal, setShowExpiryModal] = useState(false);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -204,12 +100,13 @@ export default function RecruiterDashboard() {
         setError("");
         const token = localStorage.getItem("access_token");
 
-        const [jobsRes, matchesData, appsTodayData] = await Promise.all([
+        // BUG-FIX: fetch jobs and matches together so hires (which only
+        // live in the matches/pipeline data) are reflected on this page.
+        const [jobsRes, matchesData] = await Promise.all([
           fetch(`${API_URL}/recruiter/jobs`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
           getMatches(),
-          getApplicationsToday(),
         ]);
 
         if (!jobsRes.ok) {
@@ -219,7 +116,6 @@ export default function RecruiterDashboard() {
         const jobsData = await jobsRes.json();
         setJobs(jobsData.jobs || []);
         setMatches(matchesData || []);
-        setAppsToday(appsTodayData || []);
       } catch (err) {
         console.error(err);
         setError("We couldn't load your dashboard. Please try again.");
@@ -237,65 +133,15 @@ export default function RecruiterDashboard() {
     0
   );
 
+  // BUG-FIX: this is the actual source of truth for hires — pipeline_stage
+  // on the matches table, not anything derived from jobs/applications.
   const hiredMatches = matches.filter((m) => m.pipeline_stage === "hired");
   const hiredCount = hiredMatches.length;
 
-  // ── Reminder widgets ────────────────────────────────────────────────
-
-  const expiringJobs = useMemo(() => {
-    const now = Date.now();
-    const soonThreshold = now + 7 * 24 * 60 * 60 * 1000;
-    return jobs
-      .filter((j) => j.status === "active" && j.expires_at)
-      .filter((j) => new Date(j.expires_at!).getTime() <= soonThreshold)
-      .sort(
-        (a, b) =>
-          new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime()
-      );
-  }, [jobs]);
-
-  // Once loading finishes, decide whether to pop the modal: only if there
-  // are jobs expiring soon and this session hasn't seen it yet.
-  useEffect(() => {
-    if (loading) return;
-    if (expiringJobs.length === 0) return;
-    if (typeof window === "undefined") return;
-    if (sessionStorage.getItem(EXPIRY_MODAL_SEEN_KEY)) return;
-
-    setShowExpiryModal(true);
-  }, [loading, expiringJobs]);
-
-  function dismissExpiryModal() {
-    setShowExpiryModal(false);
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(EXPIRY_MODAL_SEEN_KEY, "1");
-    }
-  }
-
-  const interviewsToday = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
-
-    return matches
-      .filter((m) => m.interview_scheduled_at)
-      .filter((m) => {
-        const t = new Date(m.interview_scheduled_at!).getTime();
-        return t >= start.getTime() && t <= end.getTime();
-      })
-      .sort(
-        (a, b) =>
-          new Date(a.interview_scheduled_at!).getTime() -
-          new Date(b.interview_scheduled_at!).getTime()
-      );
-  }, [matches]);
-
-  const hasReminders =
-    expiringJobs.length > 0 || appsToday.length > 0 || interviewsToday.length > 0;
-
   // ── Chart data ──────────────────────────────────────────────────────
 
+  // Applicants by job, top 8 by applicant count, longest titles truncated
+  // so the axis labels don't collide.
   const applicantsByJobData = useMemo(() => {
     return [...jobs]
       .sort((a, b) => (b.applicant_count || 0) - (a.applicant_count || 0))
@@ -306,6 +152,7 @@ export default function RecruiterDashboard() {
       }));
   }, [jobs]);
 
+  // Active vs closed job split.
   const jobStatusData = useMemo(() => {
     const closed = jobs.length - activeJobs;
     return [
@@ -314,6 +161,9 @@ export default function RecruiterDashboard() {
     ].filter((d) => d.value > 0);
   }, [jobs, activeJobs]);
 
+  // Pipeline funnel — grouped from whatever pipeline_stage values are
+  // actually present in the matches data, so this doesn't assume a fixed
+  // set of stage names.
   const pipelineData = useMemo(() => {
     const counts = new Map<string, number>();
     for (const m of matches) {
@@ -430,94 +280,7 @@ export default function RecruiterDashboard() {
               </div>
             </div>
 
-            {/* Reminder rows — expiring jobs, today's applications, today's
-                interviews. Each is a full-width row so the layout reads
-                the same whether one, two, or all three have data. */}
-            {hasReminders && (
-              <div className="flex flex-col gap-3 mb-6">
-                {expiringJobs.length > 0 && (
-                  <ReminderRow
-                    title="Jobs expiring soon"
-                    icon={Clock3}
-                    iconClassName="text-amber-600"
-                    iconBg="bg-amber-50"
-                  >
-                    {expiringJobs.map((job) => {
-                      const daysLeft = Math.ceil(
-                        (new Date(job.expires_at!).getTime() - Date.now()) /
-                          (1000 * 60 * 60 * 24)
-                      );
-                      return (
-                        <button
-                          key={job.id}
-                          type="button"
-                          onClick={() => router.push(`/jobs/${job.id}/edit`)}
-                          className="flex-shrink-0 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 transition-colors whitespace-nowrap"
-                        >
-                          <span className="text-xs font-semibold text-amber-900">
-                            {job.title}
-                          </span>
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-amber-600">
-                            {daysLeft <= 0 ? "Today" : `${daysLeft}d`}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </ReminderRow>
-                )}
-
-                {appsToday.length > 0 && (
-                  <ReminderRow
-                    title="New applications today"
-                    icon={Users}
-                    iconClassName="text-[#F2754A]"
-                    iconBg="bg-orange-50"
-                  >
-                    {appsToday.map((app) => (
-                      <div
-                        key={app.application_id}
-                        className="flex-shrink-0 px-3 py-1.5 rounded-full bg-orange-50 whitespace-nowrap"
-                      >
-                        <span className="text-xs font-semibold text-orange-900">
-                          {app.developer_name || "Candidate"}
-                        </span>
-                        <span className="text-xs text-orange-400"> · {app.job_title}</span>
-                      </div>
-                    ))}
-                  </ReminderRow>
-                )}
-
-                {interviewsToday.length > 0 && (
-                  <ReminderRow
-                    title="Interviews today"
-                    icon={CalendarClock}
-                    iconClassName="text-violet-600"
-                    iconBg="bg-violet-50"
-                  >
-                    {interviewsToday.map((m) => (
-                      <button
-                        key={m.match_id}
-                        type="button"
-                        onClick={() => router.push("/dashboard/pipeline")}
-                        className="flex-shrink-0 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-violet-50 hover:bg-violet-100 transition-colors whitespace-nowrap"
-                      >
-                        <span className="text-xs font-semibold text-violet-900">
-                          {m.name}
-                        </span>
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-violet-600">
-                          {new Date(m.interview_scheduled_at!).toLocaleTimeString(
-                            [],
-                            { hour: "2-digit", minute: "2-digit" }
-                          )}
-                        </span>
-                      </button>
-                    ))}
-                  </ReminderRow>
-                )}
-              </div>
-            )}
-
-            {/* Recently Hired */}
+            {/* Recently Hired — kept as-is */}
             {hiredCount > 0 && (
               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-6">
                 <div className="flex items-center gap-2 mb-5">
@@ -531,7 +294,7 @@ export default function RecruiterDashboard() {
                     <button
                       key={m.match_id}
                       type="button"
-                      onClick={() => router.push("/dashboard/pipeline")}
+                      onClick={() => router.push("/pipeline")}
                       className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-3 hover:bg-emerald-50/60 transition-colors text-left"
                     >
                       <div className="min-w-0 flex items-center gap-3">
@@ -669,17 +432,6 @@ export default function RecruiterDashboard() {
           </>
         )}
       </div>
-
-      {showExpiryModal && (
-        <ExpiryModal
-          jobs={expiringJobs}
-          onClose={dismissExpiryModal}
-          onEdit={(jobId) => {
-            dismissExpiryModal();
-            router.push(`/jobs/${jobId}/edit`);
-          }}
-        />
-      )}
     </div>
   );
 }

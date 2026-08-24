@@ -14,10 +14,7 @@ function useLazySection() {
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(el);
-        }
+        setVisible(entry.isIntersecting);
       },
       { threshold: 0.1, rootMargin: "0px 0px -60px 0px" }
     );
@@ -28,9 +25,7 @@ function useLazySection() {
   return { ref, visible };
 }
 
-// ─── This is the DEVELOPER landing page (root "/"). ───
-// The recruiter counterpart lives at "/recruiters" (see recruiters/page.tsx).
-export default function DeveloperLandingPage() {
+export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [counted, setCounted] = useState(false);
   const [counts, setCounts] = useState({ devs: 0, companies: 0, match: 0 });
@@ -86,7 +81,6 @@ export default function DeveloperLandingPage() {
     return () => observer.disconnect();
   }, [counted]);
 
-  // Developer-only 4-step flow
   const steps = [
     {
       num: "01",
@@ -118,16 +112,24 @@ export default function DeveloperLandingPage() {
     },
   ];
 
-  // Developer-only testimonials
   const testimonials = [
     {
       quote:
         "I got 3 interview calls in the first week without applying to a single job manually.",
-      name: "A. Singh",
+      name: " Singh",
       role: "Frontend Engineer · Hired at Razorpay",
       initials: "AS",
       score: 88,
       tier: "Expert",
+    },
+    {
+      quote:
+        "As a recruiter, the Antyl Score is a game changer. I know exactly who can actually do the job.",
+      name: "Nidhi Sharma",
+      role: "Talent Lead · Zomato",
+      initials: "NS",
+      score: null,
+      tier: null,
     },
     {
       quote:
@@ -138,18 +140,8 @@ export default function DeveloperLandingPage() {
       score: 79,
       tier: "Advanced",
     },
-    {
-      quote:
-        "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
-      name: "Rahul M.",
-      role: "Backend Engineer · Hired at Swiggy",
-      initials: "RM",
-      score: 91,
-      tier: "Expert",
-    },
   ];
 
-  // Developer-relevant features only
   const features = [
     {
       icon: (
@@ -188,6 +180,20 @@ export default function DeveloperLandingPage() {
     {
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+      title: "Recruiter matching",
+      desc: "Recruiters filter by Antyl Score, skills, and location. Only verified developers appear in their feed.",
+      color: "#8B5CF6",
+      bg: "#F3EFFE",
+    },
+    {
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
           <line x1="3" y1="9" x2="21" y2="9" />
           <line x1="3" y1="15" x2="21" y2="15" />
@@ -195,10 +201,10 @@ export default function DeveloperLandingPage() {
           <line x1="15" y1="3" x2="15" y2="21" />
         </svg>
       ),
-      title: "Application tracking",
-      desc: "See every job you've been auto-applied to and its live status, in one dashboard.",
-      color: "#8B5CF6",
-      bg: "#F3EFFE",
+      title: "Kanban pipeline",
+      desc: "Recruiters move candidates through stages. Developers see their application status in real time.",
+      color: "#FF7A8A",
+      bg: "#FFF0F2",
     },
     {
       icon: (
@@ -211,20 +217,6 @@ export default function DeveloperLandingPage() {
       desc: "After each session, get a precise breakdown: what to fix in your repos to move up to the next tier.",
       color: "#FFD84D",
       bg: "#FFFBEE",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      title: "Seen by real recruiters",
-      desc: "Verified companies filter candidates by Antyl Score - your profile surfaces to people actively hiring.",
-      color: "#FF7A8A",
-      bg: "#FFF0F2",
     },
   ];
 
@@ -313,18 +305,28 @@ export default function DeveloperLandingPage() {
     { key: "angular",     name: "Angular" },
   ];
 
-  // Developer-only testimonials for the marquee
   const carouselTestimonials = [
     {
       quote: "Got 3 interview calls in the first week - without applying to a single job manually.",
-      name: "Vanshika K.",
+      name: "Vanshika Katal",
       role: "Frontend Engineer",
       company: "Razorpay",
-      initials: "VK",
+      initials: "AK",
       score: 88,
       tier: "Expert",
       bg: "#FFE8E3",
       color: "#FF6B4D",
+    },
+    {
+      quote: "The Antyl Score is a game changer. I finally know who can actually do the job before I even call them.",
+      name: "Nidhi S.",
+      role: "Talent Lead",
+      company: "Zomato",
+      initials: "NS",
+      score: null,
+      tier: "Recruiter",
+      bg: "#F3EFFE",
+      color: "#8B5CF6",
     },
     {
       quote: "Antyl proved my skills without a whiteboard test. My score opened doors I couldn't before.",
@@ -347,6 +349,17 @@ export default function DeveloperLandingPage() {
       tier: "Expert",
       bg: "#EAFAF0",
       color: "#22C55E",
+    },
+    {
+      quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
+      name: "Kavya R.",
+      role: "Founder & CTO",
+      company: "Buildfast",
+      initials: "KR",
+      score: null,
+      tier: "Recruiter",
+      bg: "#FFF0F2",
+      color: "#FF7A8A",
     },
     {
       quote: "I was skeptical, but the AI verification session actually asked smart questions about my own code.",
@@ -433,16 +446,62 @@ export default function DeveloperLandingPage() {
           border-radius: 4px;
         }
 
-        /* ---- LAZY LOADING ---- */
+        /* ---- LAZY LOADING & SCROLL ANIMATIONS ---- */
         .lazy-section {
           opacity: 0;
-          transform: translateY(40px);
-          transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+          transform: translateY(40px) scale(0.98);
+          transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .lazy-section.visible {
           opacity: 1;
-          transform: translateY(0);
+          transform: translateY(0) scale(1);
         }
+
+        /* Staggered children animation */
+        .lazy-section .stagger-child {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .lazy-section.visible .stagger-child:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
+        .lazy-section.visible .stagger-child:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
+        .lazy-section.visible .stagger-child:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
+        .lazy-section.visible .stagger-child:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 0.4s; }
+        .lazy-section.visible .stagger-child:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 0.5s; }
+        .lazy-section.visible .stagger-child:nth-child(6) { opacity: 1; transform: translateY(0); transition-delay: 0.6s; }
+
+        /* Slide from left */
+        .lazy-section .slide-left {
+          opacity: 0;
+          transform: translateX(-40px);
+          transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .lazy-section.visible .slide-left { opacity: 1; transform: translateX(0); }
+
+        /* Slide from right */
+        .lazy-section .slide-right {
+          opacity: 0;
+          transform: translateX(40px);
+          transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .lazy-section.visible .slide-right { opacity: 1; transform: translateX(0); }
+
+        /* Scale up pop */
+        .lazy-section .scale-up {
+          opacity: 0;
+          transform: scale(0.85);
+          transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .lazy-section.visible .scale-up { opacity: 1; transform: scale(1); transition-delay: 0.2s; }
+
+        /* Blur reveal */
+        .lazy-section .blur-reveal {
+          opacity: 0;
+          filter: blur(8px);
+          transform: translateY(20px);
+          transition: opacity 0.8s ease, filter 0.8s ease, transform 0.8s ease;
+        }
+        .lazy-section.visible .blur-reveal { opacity: 1; filter: blur(0); transform: translateY(0); }
 
         /* ---- NAVBAR ---- */
         .navbar {
@@ -534,7 +593,7 @@ export default function DeveloperLandingPage() {
         .hero-sub strong { color: var(--ink); font-weight: 700; }
         .hero-ctas {
           display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
-          margin-bottom: 1.5rem; animation: fadeUp .7s .3s ease both;
+          margin-bottom: 2.5rem; animation: fadeUp .7s .3s ease both;
         }
         .btn-hero-primary {
           background: linear-gradient(135deg, #FF6B4D, #FFB347); color: white; border: none;
@@ -553,12 +612,6 @@ export default function DeveloperLandingPage() {
           text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
         }
         .btn-hero-secondary:hover { border-color: var(--ink); transform: translateY(-2px); }
-        .hero-recruiter-link {
-          font-size: 13px; color: var(--gray3); margin-bottom: 1.75rem;
-          animation: fadeUp .7s .35s ease both;
-        }
-        .hero-recruiter-link a { color: var(--coral); font-weight: 700; text-decoration: none; }
-        .hero-recruiter-link a:hover { text-decoration: underline; }
         .hero-social-proof {
           display: flex; align-items: center; gap: .625rem; font-size: 13px;
           color: var(--gray3); animation: fadeUp .7s .45s ease both; margin-bottom: .75rem;
@@ -657,6 +710,7 @@ export default function DeveloperLandingPage() {
         .proof-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
         .proof-role { font-size: 11.5px; color: var(--gray3); margin-top: 1px; }
         .proof-score-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: linear-gradient(90deg, #FF6B4D, #FFB347); color: white; flex-shrink: 0; white-space: nowrap; }
+        .proof-recruiter-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: var(--gray1); color: var(--gray4); border: 1px solid var(--gray2); flex-shrink: 0; }
         .proof-quote { font-size: 13.5px; color: var(--gray4); line-height: 1.65; font-style: italic; margin-bottom: 1rem; }
         .proof-card-footer { display: flex; align-items: center; gap: 6px; padding-top: .875rem; border-top: 1px solid var(--gray2); }
         .proof-company-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); flex-shrink: 0; }
@@ -683,12 +737,55 @@ export default function DeveloperLandingPage() {
         .step-connector { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--white); border: 1.5px solid var(--gray2); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1; }
 
         /* ---- FEATURES ---- */
-        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 3.5rem; }
-        .feature-card { background: var(--gray1); border: 1px solid var(--gray2); border-radius: 20px; padding: 1.75rem; transition: transform .2s, box-shadow .2s, background .2s; }
-        .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06); background: var(--white); }
-        .feature-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.125rem; }
-        .feature-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: .5rem; letter-spacing: -.02em; }
-        .feature-desc { font-size: 13.5px; color: var(--gray4); line-height: 1.65; }
+        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
+        .hiw-step-num {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--grad-90);
+          color: white;
+          font-size: 14px;
+          font-weight: 800;
+          margin-bottom: 1rem;
+        }
+        .feature-card {
+          background: var(--white);
+          border: 1px solid var(--gray2);
+          border-radius: 24px;
+          padding: 2.25rem 2rem;
+          min-height: 240px;
+          transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s;
+          position: relative;
+          overflow: hidden;
+        }
+        .feature-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 4px;
+          background: var(--grad-90);
+          opacity: 0;
+          transition: opacity .25s;
+          border-radius: 24px 24px 0 0;
+        }
+        .feature-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 16px 48px rgba(255,107,77,.10);
+          border-color: var(--coral);
+        }
+        .feature-card:hover::before { opacity: 1; }
+        .feature-icon {
+          width: 56px; height: 56px;
+          border-radius: 16px;
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 1.5rem;
+          box-shadow: 0 4px 12px rgba(0,0,0,.04);
+        }
+        .feature-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: .625rem; letter-spacing: -.02em; }
+        .feature-desc { font-size: 14px; color: var(--gray4); line-height: 1.7; }
 
         @keyframes scoreRingFill {
           from { stroke-dasharray: 0 264; }
@@ -713,13 +810,18 @@ export default function DeveloperLandingPage() {
         .t-role { font-size: 11px; color: var(--gray3); margin-top: 2px; }
         .t-score { margin-left: auto; flex-shrink: 0; background: linear-gradient(90deg,#FF6B4D,#FFB347); color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px; }
 
-        /* ---- SINGLE CTA (recruiter teaser) ---- */
-        .single-cta-section { padding: 6rem 1.5rem; background: var(--white); }
-        .single-cta-card { max-width: 1000px; margin: 0 auto; border-radius: 24px; padding: 3rem; position: relative; overflow: hidden; background: var(--ink); color: white; text-align: center; }
-        .single-cta-title { font-family: var(--serif); font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.2; margin-bottom: .75rem; letter-spacing: -.03em; }
-        .single-cta-sub { font-size: 14.5px; opacity: .75; line-height: 1.6; margin-bottom: 2rem; max-width: 440px; margin-left: auto; margin-right: auto; }
+        /* ---- DUAL CTA ---- */
+        .dual-cta-section { padding: 6rem 1.5rem; background: var(--white); }
+        .dual-cta-grid { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .cta-card { border-radius: 24px; padding: 2.5rem; position: relative; overflow: hidden; }
+        .cta-card-dev { background: linear-gradient(135deg,#FF6B4D,#FFB347); color: white; }
+        .cta-card-rec { background: var(--ink); color: white; }
+        .cta-card-title { font-family: var(--serif); font-size: 26px; font-weight: 600; line-height: 1.2; margin-bottom: .625rem; letter-spacing: -.03em; }
+        .cta-card-sub { font-size: 14px; opacity: .8; line-height: 1.6; margin-bottom: 2rem; max-width: 320px; }
         .btn-cta-white { background: white; color: var(--coral); border: none; padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); letter-spacing: -.01em; transition: transform .15s, box-shadow .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
         .btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
+        .btn-cta-outline { background: transparent; color: white; border: 1.5px solid rgba(255,255,255,.4); padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); letter-spacing: -.01em; transition: border-color .15s, transform .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
+        .btn-cta-outline:hover { border-color: rgba(255,255,255,.8); transform: translateY(-2px); }
         .cta-bg-shape { position: absolute; border-radius: 50%; opacity: .08; pointer-events: none; }
 
         /* ---- FOOTER ---- */
@@ -742,8 +844,9 @@ export default function DeveloperLandingPage() {
         @media (max-width: 900px) {
           .nav-links { display: none; }
           .steps-grid { grid-template-columns: repeat(2,1fr); }
-          .features-grid { grid-template-columns: repeat(2,1fr); }
+          .features-grid { grid-template-columns: 1fr 1fr; }
           .testimonials-grid { grid-template-columns: 1fr; }
+          .dual-cta-grid { grid-template-columns: 1fr; }
           .step-connector { display: none; }
         }
         @media (max-width: 600px) {
@@ -753,7 +856,6 @@ export default function DeveloperLandingPage() {
           .features-grid { grid-template-columns: 1fr; }
           .stats-inner { flex-direction: column; gap: 2rem; }
           .stat-item::after { display: none; }
-          .single-cta-card { padding: 2rem 1.5rem; }
         }
       `}</style>
 
@@ -766,11 +868,11 @@ export default function DeveloperLandingPage() {
           <a href="#how-it-works" className="nav-link">How it works</a>
           <a href="#features" className="nav-link">Features</a>
           <a href="#antyl-score" className="nav-link">Antyl Score</a>
-          <Link href="/recruiters" className="nav-link">For recruiters</Link>
+          <a href="#for-recruiters" className="nav-link">For recruiters</a>
         </div>
         <div className="nav-actions">
           <a href="/login" className="btn-ghost-nav">Log in</a>
-          <a href="/signup?role=developer" className="btn-primary-nav">Get started free</a>
+          <a href="/signup" className="btn-primary-nav">Get started free</a>
         </div>
       </nav>
 
@@ -785,14 +887,14 @@ export default function DeveloperLandingPage() {
           AI verification · Auto-apply built in
         </div>
 
-        <h1 className="hero-title">
+        <h1 className="hero-title blur-reveal">
           Jobs that actually match.
           <br />
           Skills that actually <em>prove themselves.</em>
         </h1>
 
-        <p className="hero-sub">
-          Antyl verifies your skills with AI, then <strong>automatically applies you to matching jobs every 6 hours</strong> - no ghosting, no guessing, just your next interview.
+        <p className="hero-sub blur-reveal">
+          Antyl verifies developers with AI, then <strong>automatically applies you to matching jobs every 6 hours</strong> - no ghosting, no guessing, just your next interview.
         </p>
 
         <div className="hero-ctas">
@@ -802,17 +904,16 @@ export default function DeveloperLandingPage() {
             </svg>
             Start free as a developer
           </a>
-          <a href="#how-it-works" className="btn-hero-secondary">
+          <a href="/signup?role=recruiter" className="btn-hero-secondary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            See how it works
+            Hire verified talent
           </a>
         </div>
-
-        <p className="hero-recruiter-link">
-          Hiring instead? <Link href="/recruiters">Go to the recruiter side →</Link>
-        </p>
 
         <div className="hero-social-proof">
           <div className="proof-avatars">
@@ -854,7 +955,7 @@ export default function DeveloperLandingPage() {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
               How it works
             </span>
-            <h2 className="section-title">
+            <h2 className="section-title blur-reveal">
               From signup to <em>interview request</em> in 4 steps
             </h2>
             <p className="section-sub">
@@ -865,7 +966,7 @@ export default function DeveloperLandingPage() {
 
           <div className="steps-grid">
             {steps.map((step, i) => (
-              <div className="step-card" key={step.num}>
+              <div className="step-card stagger-child" key={step.num}>
                 <div className="step-num">{step.num}</div>
                 <div className="step-icon-wrap" style={{ background: step.bg, color: step.color }}>
                   {i === 0 && (
@@ -908,7 +1009,7 @@ export default function DeveloperLandingPage() {
       {/* ─── STATS ─── */}
       <div className={`stats-strip lazy-section${lazyStats.visible ? " visible" : ""}`} ref={(el) => { (lazyStats.ref as React.MutableRefObject<HTMLDivElement | null>).current = el; statsRef.current = el; }}>
         <div className="stats-inner">
-          <div className="stat-item">
+          <div className="stat-item stagger-child">
             <div className="stat-number">
               {counts.devs >= 1000
                 ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
@@ -917,13 +1018,13 @@ export default function DeveloperLandingPage() {
             </div>
             <div className="stat-label">Verified developers</div>
           </div>
-          <div className="stat-item">
+          <div className="stat-item stagger-child">
             <div className="stat-number">
               {counts.companies}<span className="stat-suffix">+</span>
             </div>
             <div className="stat-label">Companies hiring</div>
           </div>
-          <div className="stat-item">
+          <div className="stat-item stagger-child">
             <div className="stat-number">
               {counts.match}<span className="stat-suffix">%</span>
             </div>
@@ -952,7 +1053,7 @@ export default function DeveloperLandingPage() {
         <div className="proof-header">
           <div className="proof-eyebrow">
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
-            Trusted by developers
+            Trusted by thousands
           </div>
           <h2 className="proof-title">
             Real people. <em>Real results.</em>
@@ -972,7 +1073,11 @@ export default function DeveloperLandingPage() {
                       <div className="proof-role">{t.role}</div>
                     </div>
                   </div>
-                  <div className="proof-score-badge">{t.tier} · {t.score}</div>
+                  {t.score ? (
+                    <div className="proof-score-badge">{t.tier} · {t.score}</div>
+                  ) : (
+                    <div className="proof-recruiter-badge">Recruiter</div>
+                  )}
                 </div>
                 <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
                 <div className="proof-card-footer">
@@ -997,7 +1102,7 @@ export default function DeveloperLandingPage() {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
               Antyl Score
             </span>
-            <h2 className="section-title">
+            <h2 className="section-title blur-reveal">
               One number that tells<em> the whole story</em>
             </h2>
             <p style={{ fontSize: 16, color: "var(--gray4)", lineHeight: 1.65, maxWidth: 540, margin: "0 auto" }}>
@@ -1007,7 +1112,7 @@ export default function DeveloperLandingPage() {
           </div>
 
           {/* Main Score Content */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", marginTop: "3rem" }}>
+          <div className="scale-up" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", marginTop: "3rem" }}>
             {/* Left - Score Card */}
             <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem" }}>
               {/* Verified profile badge */}
@@ -1129,28 +1234,175 @@ export default function DeveloperLandingPage() {
 
       {/* ─── FEATURES ─── */}
       <section className={`section lazy-section${lazyFeatures.visible ? " visible" : ""}`} id="features" ref={lazyFeatures.ref}>
-        <div className="section-inner">
-          <div style={{ maxWidth: 560 }}>
-            <span className="section-eyebrow">
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
-              Everything included
-            </span>
-            <h2 className="section-title">
-              Built for developers <em>tired of the grind</em>
-            </h2>
-            <p className="section-sub">
-              Every feature is designed to remove friction from your job
-              search - so you spend less time applying and more time coding.
-            </p>
-          </div>
+        <div className="section-inner" style={{ textAlign: "center" }}>
+          <span className="section-eyebrow" style={{ justifyContent: "center" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
+            Everything included
+          </span>
+          <h2 className="section-title blur-reveal">
+            Built for how <em>real hiring</em> works
+          </h2>
+          <p className="section-sub" style={{ margin: "0 auto 3.5rem" }}>
+            Every feature is designed to remove friction - for developers who
+            are tired of the process and recruiters who need signal, not noise.
+          </p>
+
           <div className="features-grid">
-            {features.map((f) => (
-              <div className="feature-card" key={f.title}>
-                <div className="feature-icon" style={{ background: f.bg, color: f.color }}>{f.icon}</div>
-                <div className="feature-title">{f.title}</div>
-                <p className="feature-desc">{f.desc}</p>
+            {/* Card 1: Connect Portfolio */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">1</span>
+              <div className="feature-title">Connect your portfolio</div>
+              <p className="feature-desc">We securely connect with your portfolio to understand your real work and projects.</p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 24, height: 24, background: "var(--cream)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="11" height="11" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--gray3)", fontWeight: 500 }}>Secure connection</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                    </svg>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Portfolio</span>
+                  </div>
+                  <svg viewBox="0 0 32 14" fill="none" style={{ width: 32, height: 14 }}>
+                    <path d="M2 7h24m0 0l-5-5m5 5l-5 5" stroke="url(#connArrowFeat)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <defs><linearGradient id="connArrowFeat" x1="0" y1="7" x2="32" y2="7"><stop stopColor="#FF6B4D"/><stop offset="1" stopColor="#FFB347"/></linearGradient></defs>
+                  </svg>
+                  <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
+                    <Image src="/Antyl.png" alt="Antyl" width={36} height={36} style={{ objectFit: "contain" }} />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Antyl</span>
+                  </div>
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Card 2: Auto-apply */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">2</span>
+              <div className="feature-title">Auto-apply runs for you</div>
+              <p className="feature-desc">Every 6 hours, Antyl applies you to matching jobs automatically.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                {[
+                  { text: "Applied to Frontend @ Microsoft", time: "2h ago" },
+                  { text: "Applied to SDE II @ Meta", time: "4h ago" },
+                  { text: "Applied to Full Stack @ SAP", time: "6h ago" },
+                ].map((item) => (
+                  <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--coral)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>{item.text}</span>
+                    <span style={{ fontSize: 10, color: "var(--gray3)", marginLeft: "auto" }}>{item.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 3: Antyl Score Badge */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">3</span>
+              <div className="feature-title">Antyl score badge</div>
+              <p className="feature-desc">One score from 0–100 that tells the whole story. Carries across every job application on Antyl.</p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginTop: "1rem" }}>
+                <Image src="/badge-3.png" alt="Antyl Score Badge" width={120} height={120} style={{ objectFit: "contain" }} />
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "var(--coral)" }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>Advanced Tier</span>
+                  <span style={{ fontSize: 11, color: "var(--gray3)", marginLeft: 4 }}>Top 18%</span>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+                  {["React", "Node.js", "AWS"].map((s) => (
+                    <span key={s} style={{ fontSize: 10, background: "var(--cream)", border: "1px solid var(--beige)", borderRadius: 50, padding: "4px 10px", color: "var(--coral)", fontWeight: 600 }}>{s}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Card 4: Recruiter Matching */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">4</span>
+              <div className="feature-title">Recruiter matching</div>
+              <p className="feature-desc">Recruiters filter by Antyl Score, skills, and location. Only verified developers appear in their feed.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: ".5rem" }}>
+                {[
+                  { role: "Frontend Engineer", detail: "React · 3+ yrs · Bangalore", match: "92%", color: "#22C55E", bg: "#EAFAF0", iconBg: "#F3EFFE", iconColor: "#8B5CF6" },
+                  { role: "Full Stack Dev", detail: "Node.js · Remote · $120k+", match: "87%", color: "var(--coral)", bg: "#FFF0ED", iconBg: "#FFF0ED", iconColor: "#FF6B4D" },
+                  { role: "SDE II - Backend", detail: "Python · 4+ yrs · Hybrid", match: "81%", color: "var(--amber)", bg: "#FFF8ED", iconBg: "#FFF8ED", iconColor: "#FFB347" },
+                ].map((j) => (
+                  <div key={j.role} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 14, padding: "12px 14px" }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: j.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={j.iconColor} strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{j.role}</div>
+                      <div style={{ fontSize: 10, color: "var(--gray3)" }}>{j.detail}</div>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: j.color, background: j.bg, padding: "3px 8px", borderRadius: 50 }}>{j.match} match</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Card 5: Kanban Pipeline */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">5</span>
+              <div className="feature-title">Kanban pipeline</div>
+              <p className="feature-desc">Recruiters move candidates through stages. Developers see their application status in real time.</p>
+              <div style={{ display: "flex", gap: 8, marginTop: "1rem" }}>
+                <div style={{ flex: 1, background: "var(--gray1)", borderRadius: 12, padding: "10px 8px" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--gray3)", textTransform: "uppercase" as const, letterSpacing: ".06em", marginBottom: 8, textAlign: "center" }}>Applied</div>
+                  {["Microsoft", "SAP"].map((c) => (
+                    <div key={c} style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 8, padding: "6px 8px", fontSize: 10, fontWeight: 500, color: "var(--ink)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#FFB347" }} />{c}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ flex: 1, background: "#FFF6EE", borderRadius: 12, padding: "10px 8px" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--coral)", textTransform: "uppercase" as const, letterSpacing: ".06em", marginBottom: 8, textAlign: "center" }}>Interview</div>
+                  {["Meta", "PhonePe"].map((c) => (
+                    <div key={c} style={{ background: "var(--white)", border: "1px solid var(--beige)", borderRadius: 8, padding: "6px 8px", fontSize: 10, fontWeight: 500, color: "var(--ink)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)" }} />{c}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ flex: 1, background: "#EAFAF0", borderRadius: 12, padding: "10px 8px" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#22C55E", textTransform: "uppercase" as const, letterSpacing: ".06em", marginBottom: 8, textAlign: "center" }}>{"Offer 🎉"}</div>
+                  <div style={{ background: "var(--white)", border: "1px solid #BBF7D0", borderRadius: 8, padding: "6px 8px", fontSize: 10, fontWeight: 700, color: "#22C55E", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E" }} />Google
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 6: Score Improvement Tips */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">6</span>
+              <div className="feature-title">Score improvement tips</div>
+              <p className="feature-desc">Get <strong style={{ color: "var(--coral)" }}>AI-powered</strong> suggestions based on <strong style={{ color: "var(--coral)" }}>current industry demands</strong> and what top companies are hiring for.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem", textAlign: "left" }}>
+                {[
+                  { icon: "🎯", text: "Learn System Design — required by Meta, Google", priority: "High", color: "var(--coral)", bg: "#FFF0ED" },
+                  { icon: "📊", text: "Add AWS/Cloud certs — trending at SAP, Microsoft", priority: "Med", color: "var(--amber)", bg: "#FFF8ED" },
+                  { icon: "🤖", text: "Build AI/ML projects — top demand in industry", priority: "Hot", color: "#22C55E", bg: "#EAFAF0" },
+                ].map((tip) => (
+                  <div key={tip.text} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--gray1)", borderRadius: 12 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: tip.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{tip.icon}</div>
+                    <span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, textAlign: "left" }}>{tip.text}</span>
+                    <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: tip.color, flexShrink: 0 }}>{tip.priority}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Security footer note */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "3rem", fontSize: 13, color: "var(--gray3)" }}>
+            <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="12" height="12" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            </div>
+            <span>Your data is secure. We never post on your behalf.</span>
           </div>
         </div>
       </section>
@@ -1161,16 +1413,16 @@ export default function DeveloperLandingPage() {
           <div style={{ textAlign: "center", maxWidth: 520, margin: "0 auto" }}>
             <span className="section-eyebrow">
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
-              What developers say
+              What people say
             </span>
-            <h2 className="section-title">
+            <h2 className="section-title blur-reveal">
               Real results for <em>real developers</em>
             </h2>
           </div>
           <div className="testimonials-grid">
             {testimonials.map((t) => (
-              <div className="testimonial-card" key={t.name}>
-                <div className="quote-mark">&ldquo;</div>
+              <div className="testimonial-card stagger-child" key={t.name}>
+                <div className="quote-mark"></div>
                 <p className="quote-text">{t.quote}</p>
                 <div className="testimonial-footer">
                   <div className="t-avatar">{t.initials}</div>
@@ -1178,7 +1430,9 @@ export default function DeveloperLandingPage() {
                     <div className="t-name">{t.name}</div>
                     <div className="t-role">{t.role}</div>
                   </div>
-                  <div className="t-score">{t.tier} {t.score}</div>
+                  {t.score && (
+                    <div className="t-score">{t.tier} {t.score}</div>
+                  )}
                 </div>
               </div>
             ))}
@@ -1186,23 +1440,40 @@ export default function DeveloperLandingPage() {
         </div>
       </section>
 
-      {/* ─── SINGLE CTA: RECRUITER TEASER ─── */}
-      <section className={`single-cta-section lazy-section${lazyDualCta.visible ? " visible" : ""}`} ref={lazyDualCta.ref}>
-        <div className="single-cta-card">
-          <div className="cta-bg-shape" style={{ width: 300, height: 300, background: "white", top: -100, right: -100 }} />
-          <div className="cta-bg-shape" style={{ width: 220, height: 220, background: "white", bottom: -80, left: -80 }} />
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <span style={{ background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.6)", fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 50, display: "inline-block", marginBottom: "1.25rem", letterSpacing: ".06em", textTransform: "uppercase" as const, border: "1px solid rgba(255,255,255,.1)" }}>
-              Hiring, not job-hunting?
-            </span>
-            <h3 className="single-cta-title">Antyl also works the other way around.</h3>
-            <p className="single-cta-sub">If you&apos;re a recruiter or founder looking to hire, head over to the recruiter side to post a job and browse verified candidates.</p>
-            <Link href="/recruiters" className="btn-cta-white">
-              Go to recruiter page
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </Link>
+      {/* ─── DUAL CTA ─── */}
+      <section className={`dual-cta-section lazy-section${lazyDualCta.visible ? " visible" : ""}`} id="for-recruiters" ref={lazyDualCta.ref}>
+        <div className="dual-cta-grid">
+          <div className="cta-card cta-card-dev slide-left">
+            <div className="cta-bg-shape" style={{ width: 300, height: 300, background: "white", top: -100, right: -100 }} />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <span style={{ background: "rgba(255,255,255,.2)", color: "white", fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 50, display: "inline-block", marginBottom: "1.25rem", letterSpacing: ".06em", textTransform: "uppercase" as const }}>
+                For developers
+              </span>
+              <h3 className="cta-card-title">Your skills deserve a fair shot.</h3>
+              <p className="cta-card-sub">Get verified in 30 minutes. Never write a cold cover letter again.</p>
+              <a href="/signup?role=developer" className="btn-cta-white">
+                Start free
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </a>
+            </div>
+          </div>
+          <div className="cta-card cta-card-rec slide-right">
+            <div className="cta-bg-shape" style={{ width: 300, height: 300, background: "white", top: -100, right: -100 }} />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <span style={{ background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.6)", fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 50, display: "inline-block", marginBottom: "1.25rem", letterSpacing: ".06em", textTransform: "uppercase" as const, border: "1px solid rgba(255,255,255,.1)" }}>
+                For recruiters
+              </span>
+              <h3 className="cta-card-title">Hire people who can actually do the job.</h3>
+              <p className="cta-card-sub">Filter by Antyl Score. Every candidate you see is already verified.</p>
+              <a href="/signup?role=recruiter" className="btn-cta-outline">
+                Post a job
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -1224,22 +1495,23 @@ export default function DeveloperLandingPage() {
                 <a href="#how-it-works" className="footer-link">How it works</a>
                 <a href="#antyl-score" className="footer-link">Antyl Score</a>
                 <a href="#features" className="footer-link">Features</a>
+                <a href="#for-recruiters" className="footer-link">Pricing</a>
               </div>
             </div>
             <div>
               <div className="footer-col-title">Developers</div>
               <div className="footer-links">
-                <a href="/signup?role=developer" className="footer-link">Get verified</a>
-                <a href="/signup?role=developer" className="footer-link">Job feed</a>
-                <a href="/signup?role=developer" className="footer-link">Improve score</a>
+                <a href="/signup" className="footer-link">Get verified</a>
+                <a href="/signup" className="footer-link">Job feed</a>
+                <a href="/signup" className="footer-link">Improve score</a>
               </div>
             </div>
             <div>
               <div className="footer-col-title">Recruiters</div>
               <div className="footer-links">
-                <Link href="/recruiters" className="footer-link">Post a job</Link>
-                <Link href="/recruiters" className="footer-link">Browse talent</Link>
-                <Link href="/recruiters" className="footer-link">Plans</Link>
+                <a href="/signup?role=recruiter" className="footer-link">Post a job</a>
+                <Link href="/signup?role=recruiter" className="footer-link">Browse talent</Link>
+                <a href="#for-recruiters" className="footer-link">Plans</a>
               </div>
             </div>
             <div id="contact">
