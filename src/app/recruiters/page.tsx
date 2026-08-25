@@ -355,7 +355,7 @@ export default function RecruiterLandingPage() {
       initials: "NS",
       bg: "#F3EFFE",
       color: "#8B5CF6",
-      photo: "/Girl.png",
+      photo: "/Girl.jpeg",
     },
     {
       quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
@@ -365,7 +365,7 @@ export default function RecruiterLandingPage() {
       initials: "KR",
       bg: "#FFF0F2",
       color: "#FF7A8A",
-      photo: "/girl2.png",
+      photo: "/girl2.jpeg",
     },
     {
       quote: "We cut our screening time in half. Every candidate that reaches us has already proven their code.",
@@ -375,7 +375,7 @@ export default function RecruiterLandingPage() {
       initials: "AM",
       bg: "#E6F4FF",
       color: "#3B82F6",
-      photo: "/Boy.png",
+      photo: "/Boy.jpeg",
     },
     {
       quote: "The kanban pipeline alone saved our team from three different spreadsheets. Everything lives in one place now.",
@@ -385,7 +385,7 @@ export default function RecruiterLandingPage() {
       initials: "SK",
       bg: "#EAFAF0",
       color: "#22C55E",
-      photo: "/girl3.png",
+      photo: "/girl3.jpeg",
     },
   ];
 

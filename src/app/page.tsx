@@ -284,7 +284,7 @@ export default function LandingPage() {
       tier: "Expert",
       bg: "#FFE8E3",
       color: "#FF6B4D",
-      photo: "/Girl.png",
+      photo: "/Girl.jpeg",
     },
     {
       quote: "The Antyl Score is a game changer. I finally know who can actually do the job before I even call them.",
@@ -296,7 +296,7 @@ export default function LandingPage() {
       tier: "Recruiter",
       bg: "#F3EFFE",
       color: "#8B5CF6",
-      photo: "/girl2.png",
+      photo: "/girl2.jpeg",
     },
     {
       quote: "Antyl proved my skills without a whiteboard test. My score opened doors I couldn't before.",
@@ -308,7 +308,7 @@ export default function LandingPage() {
       tier: "Advanced",
       bg: "#FFF4E3",
       color: "#FFB347",
-      photo: "/girl3.png",
+      photo: "/girl3.jpeg",
     },
     {
       quote: "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
@@ -320,7 +320,7 @@ export default function LandingPage() {
       tier: "Expert",
       bg: "#EAFAF0",
       color: "#22C55E",
-      photo: "/Boy.png",
+      photo: "/Boy.jpeg",
     },
     {
       quote: "As a startup founder, filtering by Antyl Score meant our first hire was genuinely excellent.",
@@ -332,7 +332,7 @@ export default function LandingPage() {
       tier: "Recruiter",
       bg: "#FFF0F2",
       color: "#FF7A8A",
-      photo: "/girl4.png",
+      photo: "/girl4.jpeg",
     },
     {
       quote: "I was skeptical, but the AI verification session actually asked smart questions about my own code.",
@@ -344,7 +344,7 @@ export default function LandingPage() {
       tier: "Advanced",
       bg: "#E6F4FF",
       color: "#3B82F6",
-      photo: "/boy2.png",
+      photo: "/boy2.jpeg",
     },
     {
       quote: "The verified profile helped me stand out to the right teams without endless applications.",
@@ -356,7 +356,7 @@ export default function LandingPage() {
       tier: "Recruiter",
       bg: "#E8F3FF",
       color: "#3B82F6",
-      photo: "/boy3.png",
+      photo: "/boy3.jpeg",
     },
   ];
 
@@ -1281,7 +1281,7 @@ export default function LandingPage() {
       <div className="stats-strip" ref={statsRef}>
         <div className="stats-inner">
           <div className="stats-image-container">
-            <img src="/Girl.png" alt="Verified Developer on Antyl" />
+            <img src="/Girl.jpeg" alt="Verified Developer on Antyl" />
           </div>
           <div className="stats-grid-container">
             <div className="stat-item">
