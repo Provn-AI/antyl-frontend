@@ -77,6 +77,33 @@ const MILESTONE_STYLES: Record<string, { icon: typeof Flame; color: string; titl
   field_leader: { icon: Crown, color: "#FFD37A", title: "Field Leader!" },
 };
 
+// ── Time-of-day gif, shown at the bottom of the sidebar ──
+// Split into three 8-hour blocks:
+//   morning:   6:00  - 13:59
+//   afternoon: 14:00 - 21:59
+//   evening:   22:00 - 5:59
+type TimeOfDay = "morning" | "afternoon" | "evening";
+
+const TIME_OF_DAY_GIFS: Record<TimeOfDay, string> = {
+  morning: "/morning.gif",
+  afternoon: "/afternoon.gif",
+  evening: "/night.gif",
+};
+
+// Hover tooltip copy for each time-of-day gif.
+const TIME_OF_DAY_MESSAGES: Record<TimeOfDay, string> = {
+  morning: "Good morning! Antyl's up and hunting for jobs ☀️",
+  afternoon: "Afternoon grind — Antyl's still on it 💪",
+  evening: "Time to sleep, Antyl is on rest 🌙",
+};
+
+function getTimeOfDay(): TimeOfDay {
+  const hour = new Date().getHours();
+  if (hour >= 6 && hour < 14) return "morning";
+  if (hour >= 14 && hour < 22) return "afternoon";
+  return "evening";
+}
+
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
@@ -356,6 +383,14 @@ export default function DeveloperNavbar() {
   // ── Sidebar collapse — persisted so it survives navigation/reloads ──
   const [collapsed, setCollapsed] = useState(false);
 
+  // ── Time-of-day gif shown at the bottom of the sidebar ──
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(() => getTimeOfDay());
+
+  useEffect(() => {
+    const interval = setInterval(() => setTimeOfDay(getTimeOfDay()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
     // Reading localStorage requires an effect (unavailable during SSR, and
@@ -630,6 +665,42 @@ export default function DeveloperNavbar() {
             </Link>
           )}
         </nav>
+
+        {/* ── Time-of-day gif ── swaps between morning/afternoon/evening
+            based on the current local hour (8-hour blocks). Lives just
+            above the tour/logout buttons at the bottom of the sidebar.
+            Square container so the gif is never stretched into an oval.
+            Hovering shows a speech-bubble tooltip with a matching message. */}
+        <div className={`flex items-center justify-center mb-3 ${collapsed ? "px-0" : "px-10"}`}>
+          <div className={`group relative block ${collapsed ? "w-auto" : "w-full"}`}>
+            {/* Speech bubble — hidden by default, fades/slides in on hover */}
+            <div
+              className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px]
+                         opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0
+                         transition-all duration-200 ease-out z-20"
+            >
+              <div className="relative rounded-xl bg-gray-900 text-white text-[11px] leading-snug font-medium px-3 py-2 shadow-lg text-center">
+                {TIME_OF_DAY_MESSAGES[timeOfDay]}
+                {/* tail */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+              </div>
+            </div>
+
+            <div
+              className={`relative overflow-hidden rounded-2xl bg-gradient-to-b from-orange-50 to-white border border-orange-100/70 cursor-default ${
+                collapsed ? "w-8 h-8" : "w-full aspect-square"
+              }`}
+            >
+              <Image
+                src={TIME_OF_DAY_GIFS[timeOfDay]}
+                alt={`${timeOfDay} illustration`}
+                fill
+                unoptimized
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </div>
 
         <button
           type="button"
