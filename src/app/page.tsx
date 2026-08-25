@@ -325,6 +325,7 @@ export default function DeveloperLandingPage() {
       tier: "Expert",
       bg: "#FFE8E3",
       color: "#FF6B4D",
+      photo: "/Girl.jpeg",
     },
     {
       quote: "Antyl proved my skills without a whiteboard test. My score opened doors I couldn't before.",
@@ -336,6 +337,7 @@ export default function DeveloperLandingPage() {
       tier: "Advanced",
       bg: "#FFF4E3",
       color: "#FFB347",
+      photo: "/girl2.jpeg",
     },
     {
       quote: "Auto-apply saved me hours every week. Woke up one morning with 2 interview requests waiting.",
@@ -347,6 +349,7 @@ export default function DeveloperLandingPage() {
       tier: "Expert",
       bg: "#EAFAF0",
       color: "#22C55E",
+      photo: "/Boy.jpeg",
     },
     {
       quote: "I was skeptical, but the AI verification session actually asked smart questions about my own code.",
@@ -358,6 +361,7 @@ export default function DeveloperLandingPage() {
       tier: "Advanced",
       bg: "#E6F4FF",
       color: "#3B82F6",
+      photo: "/boy2.jpeg",
     },
   ];
 
@@ -588,22 +592,37 @@ export default function DeveloperLandingPage() {
         /* ---- STATS ---- */
         .stats-strip {
           border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
-          background: var(--white); padding: 2.5rem 2rem;
+          background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4rem 2rem;
         }
         .stats-inner {
-          max-width: 800px; margin: 0 auto; display: flex; justify-content: center;
+          max-width: 1200px; margin: 0 auto; display: flex; gap: 4rem; align-items: center;
         }
-        .stat-item { flex: 1; text-align: center; padding: 0 2rem; position: relative; }
-        .stat-item:not(:last-child)::after {
-          content: ''; position: absolute; right: 0; top: 50%;
-          transform: translateY(-50%); height: 40px; width: 1px; background: var(--gray2);
+        .stats-image-container {
+          flex: 0 0 360px; height: 380px; border-radius: 20px; overflow: hidden;
+          background: linear-gradient(135deg, #FFD6E8 0%, #FFE8D6 100%);
+          box-shadow: 0 20px 50px rgba(0,0,0,.08);
+        }
+        .stats-image-container img {
+          width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .stats-grid-container {
+          flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem;
+        }
+        .stat-item {
+          display: flex; flex-direction: column; text-align: left; padding: 1.25rem;
+          background: var(--white); border: 1px solid var(--gray2); border-radius: 12px;
+          transition: transform .2s, box-shadow .2s;
+        }
+        .stat-item:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+        .stat-item:last-child { grid-column: 1 / -1; }
+        .stat-item:not(:last-child)::after { display: none;
         }
         .stat-number {
-          font-family: var(--serif); font-size: 40px; font-weight: 600;
-          color: var(--ink); line-height: 1; letter-spacing: -.03em;
+          font-family: var(--serif); font-size: 48px; font-weight: 800;
+          color: var(--ink); line-height: 1; letter-spacing: -.03em; margin-bottom: .5rem;
         }
         .stat-suffix { background: var(--grad-90); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .stat-label { font-size: 13px; color: var(--gray3); font-weight: 500; margin-top: .375rem; }
+        .stat-label { font-size: 15px; color: var(--ink); font-weight: 700; line-height: 1.2; }
 
         /* ---- TECH CAROUSEL ---- */
         .tech-carousel-section {
@@ -649,16 +668,19 @@ export default function DeveloperLandingPage() {
         .proof-marquee-track { display: flex; width: max-content; gap: 16px; padding: 8px 8px 16px; animation: proofScroll 50s linear infinite; }
         .proof-marquee-wrap:hover .proof-marquee-track { animation-play-state: paused; }
         @keyframes proofScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .proof-card { width: 300px; flex-shrink: 0; background: var(--white); border: 1px solid var(--gray2); border-radius: 20px; padding: 1.5rem; transition: transform .2s, box-shadow .2s; cursor: default; }
+        .proof-card { width: 520px; min-height: 220px; display: flex; flex-shrink: 0; overflow: hidden; background: var(--white); border: 1px solid var(--gray2); border-radius: 20px; padding: 0; transition: transform .2s, box-shadow .2s; cursor: default; }
         .proof-card:hover { transform: translateY(-4px); box-shadow: 0 12px 36px rgba(0,0,0,.07); }
-        .proof-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+        .proof-card-media { width: 200px; min-height: 220px; flex-shrink: 0; overflow: hidden; }
+        .proof-card-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .proof-card-content { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 1.5rem; }
+        .proof-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
         .proof-avatar-wrap { display: flex; align-items: center; gap: 10px; }
         .proof-card .proof-avatar { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: none; margin-left: 0; }
         .proof-name { font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
         .proof-role { font-size: 11.5px; color: var(--gray3); margin-top: 1px; }
         .proof-score-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 50px; background: linear-gradient(90deg, #FF6B4D, #FFB347); color: white; flex-shrink: 0; white-space: nowrap; }
         .proof-quote { font-size: 13.5px; color: var(--gray4); line-height: 1.65; font-style: italic; margin-bottom: 1rem; }
-        .proof-card-footer { display: flex; align-items: center; gap: 6px; padding-top: .875rem; border-top: 1px solid var(--gray2); }
+        .proof-card-footer { display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: .875rem; border-top: 1px solid var(--gray2); }
         .proof-company-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); flex-shrink: 0; }
         .proof-company { font-size: 11.5px; font-weight: 700; color: var(--coral); }
         .proof-stars { margin-left: auto; display: flex; gap: 2px; }
@@ -752,6 +774,10 @@ export default function DeveloperLandingPage() {
           .steps-grid { grid-template-columns: 1fr; }
           .features-grid { grid-template-columns: 1fr; }
           .stats-inner { flex-direction: column; gap: 2rem; }
+          .stats-image-container { width: 100%; max-width: 360px; height: 320px; flex-basis: auto; }
+          .stats-grid-container { width: 100%; gap: 1rem; }
+          .proof-card { width: min(88vw, 420px); }
+          .proof-card-media { width: 135px; }
           .stat-item::after { display: none; }
           .single-cta-card { padding: 2rem 1.5rem; }
         }
@@ -908,26 +934,31 @@ export default function DeveloperLandingPage() {
       {/* ─── STATS ─── */}
       <div className={`stats-strip lazy-section${lazyStats.visible ? " visible" : ""}`} ref={(el) => { (lazyStats.ref as React.MutableRefObject<HTMLDivElement | null>).current = el; statsRef.current = el; }}>
         <div className="stats-inner">
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.devs >= 1000
-                ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
-                : counts.devs}
-              <span className="stat-suffix">+</span>
-            </div>
-            <div className="stat-label">Verified developers</div>
+          <div className="stats-image-container">
+            <img src="/Girl.jpeg" alt="Verified developer on Antyl" />
           </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.companies}<span className="stat-suffix">+</span>
+          <div className="stats-grid-container">
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.devs >= 1000
+                  ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
+                  : counts.devs}
+                <span className="stat-suffix">+</span>
+              </div>
+              <div className="stat-label">Verified developers</div>
             </div>
-            <div className="stat-label">Companies hiring</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-number">
-              {counts.match}<span className="stat-suffix">%</span>
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.companies}<span className="stat-suffix">+</span>
+              </div>
+              <div className="stat-label">Companies hiring</div>
             </div>
-            <div className="stat-label">Match accuracy</div>
+            <div className="stat-item">
+              <div className="stat-number">
+                {counts.match}<span className="stat-suffix">%</span>
+              </div>
+              <div className="stat-label">Match accuracy</div>
+            </div>
           </div>
         </div>
       </div>
@@ -962,24 +993,24 @@ export default function DeveloperLandingPage() {
           <div className="proof-marquee-track">
             {[...carouselTestimonials, ...carouselTestimonials].map((t, i) => (
               <div className="proof-card" key={i}>
-                <div className="proof-card-top">
-                  <div className="proof-avatar-wrap">
-                    <div className="proof-avatar" style={{ background: t.bg, color: t.color }}>
-                      {t.initials}
-                    </div>
+                <div className="proof-card-media" style={{ background: t.bg }}>
+                  <img src={t.photo} alt={`${t.name} photo`} loading="lazy" />
+                </div>
+                <div className="proof-card-content">
+                  <div className="proof-card-top">
                     <div>
                       <div className="proof-name">{t.name}</div>
                       <div className="proof-role">{t.role}</div>
                     </div>
+                    <div className="proof-score-badge">{t.tier} · {t.score}</div>
                   </div>
-                  <div className="proof-score-badge">{t.tier} · {t.score}</div>
-                </div>
-                <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
-                <div className="proof-card-footer">
-                  <span className="proof-company-dot" />
-                  <span className="proof-company">{t.company}</span>
-                  <div className="proof-stars">
-                    {[...Array(5)].map((_, si) => <div className="proof-star" key={si} />)}
+                  <p className="proof-quote">&ldquo;{t.quote}&rdquo;</p>
+                  <div className="proof-card-footer">
+                    <span className="proof-company-dot" />
+                    <span className="proof-company">{t.company}</span>
+                    <div className="proof-stars">
+                      {[...Array(5)].map((_, si) => <div className="proof-star" key={si} />)}
+                    </div>
                   </div>
                 </div>
               </div>
