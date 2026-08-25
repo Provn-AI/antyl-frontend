@@ -14,10 +14,7 @@ function useLazySection() {
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(el);
-        }
+        setVisible(entry.isIntersecting);
       },
       { threshold: 0.1, rootMargin: "0px 0px -60px 0px" }
     );
@@ -43,7 +40,6 @@ export default function DeveloperLandingPage() {
   const lazyProof = useLazySection();
   const lazyScore = useLazySection();
   const [scoreCount, setScoreCount] = useState(0);
-  const scoreAnimated = useRef(false);
   const lazyFeatures = useLazySection();
   const lazyTestimonials = useLazySection();
   const lazyDualCta = useLazySection();
@@ -146,85 +142,6 @@ export default function DeveloperLandingPage() {
       initials: "RM",
       score: 91,
       tier: "Expert",
-    },
-  ];
-
-  // Developer-relevant features only
-  const features = [
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-        </svg>
-      ),
-      title: "GitHub verified",
-      desc: "AI asks you about your own code - no faking it. Your commits, your architecture decisions, your trade-offs.",
-      color: "#FF6B4D",
-      bg: "#FFF0ED",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      ),
-      title: "Auto-apply engine",
-      desc: "Set your preferences once. Antyl applies to matching jobs every 6 hours - only above your match threshold.",
-      color: "#FFB347",
-      bg: "#FFF8ED",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="6" />
-          <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
-        </svg>
-      ),
-      title: "Antyl score badge",
-      desc: "One score from 0–100 that tells the whole story. Carries across every job application on Antyl.",
-      color: "#22C55E",
-      bg: "#EAFAF0",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <line x1="3" y1="9" x2="21" y2="9" />
-          <line x1="3" y1="15" x2="21" y2="15" />
-          <line x1="9" y1="3" x2="9" y2="21" />
-          <line x1="15" y1="3" x2="15" y2="21" />
-        </svg>
-      ),
-      title: "Application tracking",
-      desc: "See every job you've been auto-applied to and its live status, in one dashboard.",
-      color: "#8B5CF6",
-      bg: "#F3EFFE",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-          <polyline points="17 6 23 6 23 12" />
-        </svg>
-      ),
-      title: "Score improvements",
-      desc: "After each session, get a precise breakdown: what to fix in your repos to move up to the next tier.",
-      color: "#FFD84D",
-      bg: "#FFFBEE",
-    },
-    {
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-      title: "Seen by real recruiters",
-      desc: "Verified companies filter candidates by Antyl Score - your profile surfaces to people actively hiring.",
-      color: "#FF7A8A",
-      bg: "#FFF0F2",
     },
   ];
 
@@ -365,10 +282,9 @@ export default function DeveloperLandingPage() {
     },
   ];
 
-  // Animate score number when section becomes visible
+  // Animate score number when section becomes visible (re-triggers on scroll)
   useEffect(() => {
-    if (lazyScore.visible && !scoreAnimated.current) {
-      scoreAnimated.current = true;
+    if (lazyScore.visible) {
       const target = 78;
       const duration = 1800;
       const start = performance.now();
@@ -380,6 +296,8 @@ export default function DeveloperLandingPage() {
         else setScoreCount(target);
       };
       requestAnimationFrame(tick);
+    } else {
+      setScoreCount(0);
     }
   }, [lazyScore.visible]);
 
@@ -437,16 +355,37 @@ export default function DeveloperLandingPage() {
           border-radius: 4px;
         }
 
-        /* ---- LAZY LOADING ---- */
+        /* ---- LAZY LOADING & RE-TRIGGERING SCROLL ANIMATIONS ---- */
         .lazy-section {
           opacity: 0;
-          transform: translateY(40px);
-          transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+          transform: translateY(40px) scale(0.98);
+          transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .lazy-section.visible {
           opacity: 1;
-          transform: translateY(0);
+          transform: translateY(0) scale(1);
         }
+        .lazy-section .stagger-child {
+          opacity: 0;
+          transform: translateY(30px);
+          transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .lazy-section.visible .stagger-child:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
+        .lazy-section.visible .stagger-child:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
+        .lazy-section.visible .stagger-child:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
+        .lazy-section.visible .stagger-child:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 0.4s; }
+        .lazy-section.visible .stagger-child:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 0.5s; }
+        .lazy-section.visible .stagger-child:nth-child(6) { opacity: 1; transform: translateY(0); transition-delay: 0.6s; }
+        .lazy-section .blur-reveal {
+          opacity: 0; filter: blur(8px); transform: translateY(20px);
+          transition: opacity 0.8s ease, filter 0.8s ease, transform 0.8s ease;
+        }
+        .lazy-section.visible .blur-reveal { opacity: 1; filter: blur(0); transform: translateY(0); }
+        .lazy-section .scale-up {
+          opacity: 0; transform: scale(0.85);
+          transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .lazy-section.visible .scale-up { opacity: 1; transform: scale(1); transition-delay: 0.2s; }
 
         /* ---- NAVBAR ---- */
         .navbar {
@@ -459,12 +398,6 @@ export default function DeveloperLandingPage() {
           background: rgba(255,255,255,0.88);
           backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
           box-shadow: 0 1px 0 var(--gray2);
-        }
-        .nav-logo {
-          font-family: var(--serif); font-size: 24px; font-weight: 600;
-          background: var(--grad-90); -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent; background-clip: text;
-          letter-spacing: -.02em; text-decoration: none;
         }
         .nav-links { display: flex; gap: 2rem; align-items: center; }
         .nav-link {
@@ -495,12 +428,10 @@ export default function DeveloperLandingPage() {
         }
         .btn-primary-nav:hover { background: #E5542F; box-shadow: 0 4px 16px rgba(255,107,77,.3); }
 
-        /* ---- HERO ---- */
+        /* ---- HERO (split layout) ---- */
         .hero {
-          min-height: 100vh; display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          padding: 7rem 1.5rem 4rem; text-align: center;
-          position: relative; overflow: hidden; background: var(--white);
+          min-height: 100vh; display: flex; align-items: center; justify-content: center;
+          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: var(--white);
         }
         .hero-bg-blob {
           position: absolute; border-radius: 50%;
@@ -509,12 +440,15 @@ export default function DeveloperLandingPage() {
         .blob-1 { width: 600px; height: 600px; background: var(--coral); top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: var(--lemon); bottom: -100px; right: -150px; }
         .blob-3 { width: 300px; height: 300px; background: var(--amber); top: 40%; left: 50%; transform: translate(-50%,-50%); }
+        .hero-inner { display: flex; align-items: center; gap: 4rem; max-width: 1200px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
+        .hero-content { flex: 1; text-align: left; }
+        .hero-image-wrap { flex: 0 0 480px; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
+        .hero-image-wrap img { position: relative; z-index: 1; object-fit: cover; border-radius: 0; background: transparent; }
         .hero-eyebrow {
           display: inline-flex; align-items: center; gap: 7px;
           background: var(--cream); border: 1px solid var(--beige);
           color: var(--coral); font-size: 14px; font-weight: 700;
-          padding: 8px 20px; border-radius: 50px; margin-bottom: 2rem;
-          letter-spacing: .02em; animation: fadeUp .6s ease both;
+          padding: 8px 20px; border-radius: 50px; margin-bottom: 2rem; letter-spacing: .02em;
         }
         .eyebrow-dot {
           width: 8px; height: 8px; border-radius: 50%; background: var(--coral);
@@ -525,20 +459,18 @@ export default function DeveloperLandingPage() {
           50% { opacity: .5; transform: scale(.7); }
         }
         .hero-title {
-          font-family: var(--serif); font-size: clamp(38px, 5.5vw, 60px);
+          font-family: var(--serif); font-size: clamp(34px, 4.5vw, 54px);
           font-weight: 600; line-height: 1.1; color: var(--ink);
-          max-width: 780px; letter-spacing: -.03em; margin-bottom: 1.25rem;
-          animation: fadeUp .7s .1s ease both;
+          max-width: 580px; letter-spacing: -.03em; margin-bottom: 1.25rem;
         }
         .hero-title em { font-style: italic; color: var(--coral); }
         .hero-sub {
-          font-size: 17px; color: var(--gray4); max-width: 540px; line-height: 1.65;
-          margin-bottom: 2.5rem; animation: fadeUp .7s .2s ease both; font-weight: 400;
+          font-size: 16px; color: var(--gray4); max-width: 480px; line-height: 1.65;
+          margin-bottom: 2rem; font-weight: 400;
         }
         .hero-sub strong { color: var(--ink); font-weight: 700; }
         .hero-ctas {
-          display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
-          margin-bottom: 1.5rem; animation: fadeUp .7s .3s ease both;
+          display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;
         }
         .btn-hero-primary {
           background: linear-gradient(135deg, #FF6B4D, #FFB347); color: white; border: none;
@@ -557,15 +489,12 @@ export default function DeveloperLandingPage() {
           text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
         }
         .btn-hero-secondary:hover { border-color: var(--ink); transform: translateY(-2px); }
-        .hero-recruiter-link {
-          font-size: 13px; color: var(--gray3); margin-bottom: 1.75rem;
-          animation: fadeUp .7s .35s ease both;
-        }
+        .hero-recruiter-link { font-size: 13px; color: var(--gray3); margin-bottom: 1.25rem; }
         .hero-recruiter-link a { color: var(--coral); font-weight: 700; text-decoration: none; }
         .hero-recruiter-link a:hover { text-decoration: underline; }
         .hero-social-proof {
           display: flex; align-items: center; gap: .625rem; font-size: 13px;
-          color: var(--gray3); animation: fadeUp .7s .45s ease both; margin-bottom: .75rem;
+          color: var(--gray3); margin-bottom: .75rem;
         }
         .proof-avatars { display: flex; }
         .proof-avatar {
@@ -574,10 +503,7 @@ export default function DeveloperLandingPage() {
           font-size: 9px; font-weight: 700; margin-left: -8px; flex-shrink: 0;
         }
         .proof-avatar:first-child { margin-left: 0; }
-        .hero-badge-row {
-          display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap;
-          animation: fadeUp .7s .5s ease both;
-        }
+        .hero-badge-row { display: flex; gap: .75rem; flex-wrap: wrap; }
         .hero-badge {
           display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
           font-weight: 600; color: var(--gray4); background: var(--gray1);
@@ -589,7 +515,7 @@ export default function DeveloperLandingPage() {
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ---- STATS ---- */
+        /* ---- STATS (with image) ---- */
         .stats-strip {
           border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
           background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4rem 2rem;
@@ -615,8 +541,6 @@ export default function DeveloperLandingPage() {
         }
         .stat-item:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
         .stat-item:last-child { grid-column: 1 / -1; }
-        .stat-item:not(:last-child)::after { display: none;
-        }
         .stat-number {
           font-family: var(--serif); font-size: 48px; font-weight: 800;
           color: var(--ink); line-height: 1; letter-spacing: -.03em; margin-bottom: .5rem;
@@ -655,7 +579,7 @@ export default function DeveloperLandingPage() {
         .tech-pill-icon { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; flex-shrink: 0; }
         .tech-pill span { font-size: 13.5px; font-weight: 600; color: var(--ink); letter-spacing: -.01em; }
 
-        /* ---- SOCIAL PROOF MARQUEE ---- */
+        /* ---- SOCIAL PROOF MARQUEE (with photos) ---- */
         .proof-section { padding: 5rem 0; background: var(--gray1); border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2); overflow: hidden; }
         .proof-header { text-align: center; margin-bottom: 3rem; padding: 0 1.5rem; }
         .proof-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: .875rem; }
@@ -704,13 +628,15 @@ export default function DeveloperLandingPage() {
         .step-desc { font-size: 13.5px; color: var(--gray4); line-height: 1.6; }
         .step-connector { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--white); border: 1.5px solid var(--gray2); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1; }
 
-        /* ---- FEATURES ---- */
-        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 3.5rem; }
-        .feature-card { background: var(--gray1); border: 1px solid var(--gray2); border-radius: 20px; padding: 1.75rem; transition: transform .2s, box-shadow .2s, background .2s; }
-        .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06); background: var(--white); }
-        .feature-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.125rem; }
-        .feature-title { font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: .5rem; letter-spacing: -.02em; }
-        .feature-desc { font-size: 13.5px; color: var(--gray4); line-height: 1.65; }
+        /* ---- FEATURES (enhanced 6-card) ---- */
+        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
+        .hiw-step-num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--grad-90); color: white; font-size: 14px; font-weight: 800; margin-bottom: 1rem; }
+        .feature-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2.25rem 2rem; min-height: 240px; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s; position: relative; overflow: hidden; text-align: left; }
+        .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--grad-90); opacity: 0; transition: opacity .25s; border-radius: 24px 24px 0 0; }
+        .feature-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(255,107,77,.10); border-color: var(--coral); }
+        .feature-card:hover::before { opacity: 1; }
+        .feature-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: .625rem; letter-spacing: -.02em; }
+        .feature-desc { font-size: 14px; color: var(--gray4); line-height: 1.7; }
 
         @keyframes scoreRingFill {
           from { stroke-dasharray: 0 264; }
@@ -749,7 +675,6 @@ export default function DeveloperLandingPage() {
         .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top { display: flex; justify-content: space-between; gap: 3rem; padding-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,.08); flex-wrap: wrap; }
         .footer-brand { max-width: 260px; }
-        .footer-logo { font-family: var(--serif); font-size: 22px; font-weight: 600; background: linear-gradient(90deg,#FF6B4D,#FFB347); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 1rem; display: block; }
         .footer-brand-desc { font-size: 13px; color: rgba(255,255,255,.45); line-height: 1.65; }
         .footer-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.35); margin-bottom: 1rem; }
         .footer-links { display: flex; flex-direction: column; gap: .625rem; }
@@ -763,6 +688,12 @@ export default function DeveloperLandingPage() {
         /* ---- RESPONSIVE ---- */
         @media (max-width: 900px) {
           .nav-links { display: none; }
+          .hero-inner { flex-direction: column; text-align: center; }
+          .hero-content { text-align: center; }
+          .hero-image-wrap { flex: none; width: 360px; }
+          .hero-ctas { justify-content: center; }
+          .hero-badge-row { justify-content: center; }
+          .hero-social-proof { justify-content: center; }
           .steps-grid { grid-template-columns: repeat(2,1fr); }
           .features-grid { grid-template-columns: repeat(2,1fr); }
           .testimonials-grid { grid-template-columns: 1fr; }
@@ -778,7 +709,6 @@ export default function DeveloperLandingPage() {
           .stats-grid-container { width: 100%; gap: 1rem; }
           .proof-card { width: min(88vw, 420px); }
           .proof-card-media { width: 135px; }
-          .stat-item::after { display: none; }
           .single-cta-card { padding: 2rem 1.5rem; }
         }
       `}</style>
@@ -800,75 +730,47 @@ export default function DeveloperLandingPage() {
         </div>
       </nav>
 
-      {/* ─── HERO ─── */}
+      {/* ─── HERO (split layout: text left, image right) ─── */}
       <section className={`hero lazy-section${lazyHero.visible ? " visible" : ""}`} ref={lazyHero.ref}>
-        <div className="hero-bg-blob blob-1" />
-        <div className="hero-bg-blob blob-2" />
-        <div className="hero-bg-blob blob-3" />
-
-        <div className="hero-eyebrow">
-          <span className="eyebrow-dot" />
-          AI verification · Auto-apply built in
-        </div>
-
-        <h1 className="hero-title">
-          Jobs that actually match.
-          <br />
-          Skills that actually <em>prove themselves.</em>
-        </h1>
-
-        <p className="hero-sub">
-          Antyl verifies your skills with AI, then <strong>automatically applies you to matching jobs every 6 hours</strong> - no ghosting, no guessing, just your next interview.
-        </p>
-
-        <div className="hero-ctas">
-          <a href="/signup?role=developer" className="btn-hero-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
-            </svg>
-            Start free as a developer
-          </a>
-          <a href="#how-it-works" className="btn-hero-secondary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-            </svg>
-            See how it works
-          </a>
-        </div>
-
-        <p className="hero-recruiter-link">
-          Hiring instead? <Link href="/recruiters">Go to the recruiter side →</Link>
-        </p>
-
-        <div className="hero-social-proof">
-          <div className="proof-avatars">
-            {[
-              { initials: "AK", bg: "#FFE8E3", color: "#FF6B4D" },
-              { initials: "PS", bg: "#FFF4E3", color: "#FFB347" },
-              { initials: "VR", bg: "#F3EFFE", color: "#8B5CF6" },
-              { initials: "NR", bg: "#EAFAF0", color: "#22C55E" },
-            ].map((a) => (
-              <div key={a.initials} className="proof-avatar" style={{ background: a.bg, color: a.color }}>
-                {a.initials}
+        <div className="hero-bg-blob blob-1" /><div className="hero-bg-blob blob-2" /><div className="hero-bg-blob blob-3" />
+        <div className="hero-inner">
+          <div className="hero-content">
+            <div className="hero-eyebrow"><span className="eyebrow-dot" />AI verification · Auto-apply built in</div>
+            <h1 className="hero-title blur-reveal">Jobs that actually match.<br />Skills that actually <em>prove themselves.</em></h1>
+            <p className="hero-sub blur-reveal">Antyl verifies your skills with AI, then <strong>automatically applies you to matching jobs every 6 hours</strong> - no ghosting, no guessing, just your next interview.</p>
+            <div className="hero-ctas">
+              <a href="/signup?role=developer" className="btn-hero-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+                </svg>
+                Start free as a developer
+              </a>
+              <a href="#how-it-works" className="btn-hero-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                </svg>
+                See how it works
+              </a>
+            </div>
+            <p className="hero-recruiter-link">Hiring instead? <Link href="/recruiters">Go to the recruiter side →</Link></p>
+            <div className="hero-social-proof">
+              <div className="proof-avatars">
+                {[{ initials: "AK", bg: "#FFE8E3", color: "#FF6B4D" },{ initials: "PS", bg: "#FFF4E3", color: "#FFB347" },{ initials: "VR", bg: "#F3EFFE", color: "#8B5CF6" },{ initials: "NR", bg: "#EAFAF0", color: "#22C55E" }].map((a) => (
+                  <div key={a.initials} className="proof-avatar" style={{ background: a.bg, color: a.color }}>{a.initials}</div>
+                ))}
               </div>
-            ))}
+              Join 12,000+ verified developers already on Antyl
+            </div>
+            <div className="hero-badge-row" style={{ marginTop: ".75rem" }}>
+              <span className="hero-badge"><span className="hero-badge-dot" style={{ background: "#22C55E" }} />No whiteboard tests</span>
+              <span className="hero-badge"><span className="hero-badge-dot" style={{ background: "#FF6B4D" }} />Auto-apply every 6 hours</span>
+              <span className="hero-badge"><span className="hero-badge-dot" style={{ background: "#FFB347" }} />Free for developers</span>
+            </div>
           </div>
-          Join 12,000+ verified developers already on Antyl
-        </div>
-
-        <div className="hero-badge-row" style={{ marginTop: "1rem" }}>
-          <span className="hero-badge">
-            <span className="hero-badge-dot" style={{ background: "#22C55E" }} />
-            No whiteboard tests
-          </span>
-          <span className="hero-badge">
-            <span className="hero-badge-dot" style={{ background: "#FF6B4D" }} />
-            Auto-apply every 6 hours
-          </span>
-          <span className="hero-badge">
-            <span className="hero-badge-dot" style={{ background: "#FFB347" }} />
-            Free for developers
-          </span>
+          {/* Hero image - no blob, no border-radius */}
+          <div className="hero-image-wrap">
+            <Image src="/developer_pic.png" alt="Developer using Antyl" width={4460} height={4540} style={{ objectFit: "cover", background: "transparent" }} priority />
+          </div>
         </div>
       </section>
 
@@ -891,38 +793,19 @@ export default function DeveloperLandingPage() {
 
           <div className="steps-grid">
             {steps.map((step, i) => (
-              <div className="step-card" key={step.num}>
+              <div className="step-card stagger-child" key={step.num}>
                 <div className="step-num">{step.num}</div>
                 <div className="step-icon-wrap" style={{ background: step.bg, color: step.color }}>
-                  {i === 0 && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                    </svg>
-                  )}
-                  {i === 1 && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  )}
-                  {i === 2 && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" /><path d="M4.93 4.93a10 10 0 0 0 0 14.14" />
-                    </svg>
-                  )}
-                  {i === 3 && (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
-                    </svg>
-                  )}
+                  {i === 0 && (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" /></svg>)}
+                  {i === 1 && (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>)}
+                  {i === 2 && (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /><path d="M4.93 4.93a10 10 0 0 0 0 14.14" /></svg>)}
+                  {i === 3 && (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>)}
                 </div>
                 <div className="step-title">{step.title}</div>
                 <p className="step-desc">{step.desc}</p>
                 {i < steps.length - 1 && (
                   <div className="step-connector">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gray3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gray3)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
                   </div>
                 )}
               </div>
@@ -931,32 +814,26 @@ export default function DeveloperLandingPage() {
         </div>
       </section>
 
-      {/* ─── STATS ─── */}
+      {/* ─── STATS (with image + grid) ─── */}
       <div className={`stats-strip lazy-section${lazyStats.visible ? " visible" : ""}`} ref={(el) => { (lazyStats.ref as React.MutableRefObject<HTMLDivElement | null>).current = el; statsRef.current = el; }}>
         <div className="stats-inner">
           <div className="stats-image-container">
             <img src="/Girl.jpeg" alt="Verified developer on Antyl" />
           </div>
           <div className="stats-grid-container">
-            <div className="stat-item">
+            <div className="stat-item stagger-child">
               <div className="stat-number">
-                {counts.devs >= 1000
-                  ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
-                  : counts.devs}
+                {counts.devs >= 1000 ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k` : counts.devs}
                 <span className="stat-suffix">+</span>
               </div>
               <div className="stat-label">Verified developers</div>
             </div>
-            <div className="stat-item">
-              <div className="stat-number">
-                {counts.companies}<span className="stat-suffix">+</span>
-              </div>
+            <div className="stat-item stagger-child">
+              <div className="stat-number">{counts.companies}<span className="stat-suffix">+</span></div>
               <div className="stat-label">Companies hiring</div>
             </div>
-            <div className="stat-item">
-              <div className="stat-number">
-                {counts.match}<span className="stat-suffix">%</span>
-              </div>
+            <div className="stat-item stagger-child">
+              <div className="stat-number">{counts.match}<span className="stat-suffix">%</span></div>
               <div className="stat-label">Match accuracy</div>
             </div>
           </div>
@@ -978,7 +855,7 @@ export default function DeveloperLandingPage() {
         </div>
       </section>
 
-      {/* ─── SOCIAL PROOF MARQUEE ─── */}
+      {/* ─── SOCIAL PROOF MARQUEE (with photos) ─── */}
       <section className={`proof-section lazy-section${lazyProof.visible ? " visible" : ""}`} ref={lazyProof.ref}>
         <div className="proof-header">
           <div className="proof-eyebrow">
@@ -1022,38 +899,25 @@ export default function DeveloperLandingPage() {
       {/* ─── ANTYL SCORE ─── */}
       <section className={`score-section lazy-section${lazyScore.visible ? " visible" : ""}`} id="antyl-score" ref={lazyScore.ref}>
         <div className="section-inner">
-          {/* Header */}
           <div style={{ textAlign: "center", marginBottom: "1rem" }}>
             <span className="section-eyebrow">
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
               Antyl Score
             </span>
-            <h2 className="section-title">
-              One number that tells<em> the whole story</em>
-            </h2>
+            <h2 className="section-title">One number that tells<em> the whole story</em></h2>
             <p style={{ fontSize: 16, color: "var(--gray4)", lineHeight: 1.65, maxWidth: 540, margin: "0 auto" }}>
-              After verification, you get a score from 0–100 across 4 dimensions.
-              It lives on your profile and updates with every session.
+              After verification, you get a score from 0–100 across 4 dimensions. It lives on your profile and updates with every session.
             </p>
           </div>
-
-          {/* Main Score Content */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", marginTop: "3rem" }}>
-            {/* Left - Score Card */}
+          <div className="scale-up" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", marginTop: "3rem" }}>
             <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem" }}>
-              {/* Verified profile badge */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--coral)", fontSize: 13, fontWeight: 600, marginBottom: "1.25rem" }}>
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Your verified developer profile
               </div>
-
               <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Your Antyl Score</h3>
               <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>A complete view of your verified capabilities.</p>
-
               <div style={{ display: "flex", gap: "2.5rem", alignItems: "flex-start" }}>
-                {/* Phone Mockup */}
                 <div style={{ flexShrink: 0, width: 200 }}>
                   <div style={{ background: "#1a1a1a", borderRadius: 36, padding: 10, boxShadow: "0 12px 40px rgba(0,0,0,.15)" }}>
                     <div style={{ background: "white", borderRadius: 28, padding: "1.25rem", minHeight: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -1061,23 +925,17 @@ export default function DeveloperLandingPage() {
                         <svg width="12" height="12" fill="#22C55E" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         <span style={{ fontSize: 10, color: "var(--gray3)" }}>Verified profile</span>
                       </div>
-                      {/* Score Ring */}
                       <div style={{ position: "relative", width: 110, height: 110, marginBottom: 12 }}>
                         <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
                           <circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" />
-                          <circle className={lazyScore.visible ? "score-ring-animated" : ""} cx="50" cy="50" r="42" fill="none" stroke="#FF6B4D" strokeWidth="8"
-                            strokeDasharray="0 264" strokeLinecap="round" />
+                          <circle className={lazyScore.visible ? "score-ring-animated" : ""} cx="50" cy="50" r="42" fill="none" stroke="#FF6B4D" strokeWidth="8" strokeDasharray="0 264" strokeLinecap="round" />
                         </svg>
                         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                           <span style={{ fontSize: 36, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>{scoreCount}</span>
                           <span style={{ fontSize: 10, color: "var(--gray3)" }}>/ 100</span>
                         </div>
                       </div>
-                      {/* Badge */}
-                      <span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 16px", borderRadius: 50, textTransform: "uppercase", letterSpacing: ".04em" }}>
-                        Advanced
-                      </span>
-                      {/* Tiers */}
+                      <span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 16px", borderRadius: 50, textTransform: "uppercase", letterSpacing: ".04em" }}>Advanced</span>
                       <div style={{ marginTop: 16, width: "100%" }}>
                         <p style={{ fontSize: 9, fontWeight: 700, color: "var(--ink)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 6 }}>Score Tiers</p>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
@@ -1093,55 +951,38 @@ export default function DeveloperLandingPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Dimension Breakdown */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ marginBottom: 4 }}>
-                    <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)" }}>Dimension breakdown</h4>
-                  </div>
+                  <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Dimension breakdown</h4>
                   <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>See how your verified skills contribute to the score.</p>
-
                   <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                    {scoreDimensions.map((dim) => (
+                    {scoreDimensions.map((dim, i) => (
                       <div key={dim.label}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{dim.label}</span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{dim.value}%</span>
                         </div>
                         <div style={{ height: 10, background: "var(--gray2)", borderRadius: 5, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${dim.value}%`, background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 5, transition: "width 1s ease" }} />
+                          <div style={{ height: "100%", width: lazyScore.visible ? `${dim.value}%` : "0%", background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 5, transition: `width 1.2s cubic-bezier(0.22, 1, 0.36, 1) ${0.3 + i * 0.15}s` }} />
                         </div>
                       </div>
                     ))}
                   </div>
-
-                  {/* Live update note */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: "1.5rem", background: "var(--cream)", borderRadius: 12, padding: "12px 16px" }}>
                     <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <svg width="16" height="16" fill="none" stroke="var(--coral)" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                      <svg width="16" height="16" fill="none" stroke="var(--coral)" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                     <p style={{ fontSize: 13, color: "var(--gray4)" }}>This preview updates live as your score changes.</p>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Right - Keep Improving */}
             <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem", height: "fit-content" }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>Keep improving your score</h3>
-              <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
-                A small improvement can make your profile stand out to more relevant employers.
-              </p>
-
-              {/* Next Milestone */}
+              <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem", lineHeight: 1.6 }}>A small improvement can make your profile stand out to more relevant employers.</p>
               <div style={{ background: "var(--gray1)", border: "1px solid var(--gray2)", borderRadius: 16, padding: "1.25rem" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                   <div style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="12" height="12" fill="white" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
+                    <svg width="12" height="12" fill="white" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "var(--gray4)" }}>Next milestone</span>
                 </div>
@@ -1149,39 +990,120 @@ export default function DeveloperLandingPage() {
                   <span style={{ fontSize: 44, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)", lineHeight: 1 }}>86</span>
                   <span style={{ fontSize: 14, color: "var(--gray3)" }}>Expert tier</span>
                 </div>
-                <p style={{ fontSize: 13, color: "var(--gray3)", lineHeight: 1.6 }}>
-                  You are 8 points away. View tailored recommendations to see your fastest path forward.
-                </p>
+                <p style={{ fontSize: 13, color: "var(--gray3)", lineHeight: 1.6 }}>You are 8 points away. View tailored recommendations to see your fastest path forward.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── FEATURES ─── */}
+      {/* ─── FEATURES (enhanced 6-card with stagger) ─── */}
       <section className={`section lazy-section${lazyFeatures.visible ? " visible" : ""}`} id="features" ref={lazyFeatures.ref}>
-        <div className="section-inner">
-          <div style={{ maxWidth: 560 }}>
-            <span className="section-eyebrow">
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
-              Everything included
-            </span>
-            <h2 className="section-title">
-              Built for developers <em>tired of the grind</em>
-            </h2>
-            <p className="section-sub">
-              Every feature is designed to remove friction from your job
-              search - so you spend less time applying and more time coding.
-            </p>
-          </div>
+        <div className="section-inner" style={{ textAlign: "center" }}>
+          <span className="section-eyebrow" style={{ justifyContent: "center" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
+            Everything included
+          </span>
+          <h2 className="section-title blur-reveal">Built for developers <em>tired of the grind</em></h2>
+          <p className="section-sub" style={{ margin: "0 auto 3.5rem" }}>Every feature is designed to remove friction from your job search - so you spend less time applying and more time coding.</p>
+
           <div className="features-grid">
-            {features.map((f) => (
-              <div className="feature-card" key={f.title}>
-                <div className="feature-icon" style={{ background: f.bg, color: f.color }}>{f.icon}</div>
-                <div className="feature-title">{f.title}</div>
-                <p className="feature-desc">{f.desc}</p>
+            {/* Card 1 */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">1</span>
+              <div className="feature-title">Connect your portfolio</div>
+              <p className="feature-desc">We securely connect with your portfolio to understand your real work and projects.</p>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 24, height: 24, background: "var(--cream)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="11" height="11" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--gray3)", fontWeight: 500 }}>Secure connection</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Portfolio</span>
+                  </div>
+                  <svg viewBox="0 0 32 14" fill="none" style={{ width: 32, height: 14 }}><path d="M2 7h24m0 0l-5-5m5 5l-5 5" stroke="url(#ca2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="ca2" x1="0" y1="7" x2="32" y2="7"><stop stopColor="#FF6B4D"/><stop offset="1" stopColor="#FFB347"/></linearGradient></defs></svg>
+                  <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
+                    <Image src="/Antyl.png" alt="Antyl" width={36} height={36} style={{ objectFit: "contain" }} />
+                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Antyl</span>
+                  </div>
+                </div>
               </div>
-            ))}
+            </div>
+            {/* Card 2 */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">2</span>
+              <div className="feature-title">Auto-apply runs for you</div>
+              <p className="feature-desc">Every 6 hours, Antyl applies you to matching jobs automatically.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                {[{ text: "Applied to Frontend @ Microsoft", time: "2h ago" },{ text: "Applied to SDE II @ Meta", time: "4h ago" },{ text: "Applied to Full Stack @ SAP", time: "6h ago" }].map((item) => (
+                  <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--coral)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>{item.text}</span>
+                    <span style={{ fontSize: 10, color: "var(--gray3)", marginLeft: "auto" }}>{item.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Card 3 */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">3</span>
+              <div className="feature-title">Antyl Score</div>
+              <p className="feature-desc">One score from 0–100 that tells the whole story. Carries across every job application on Antyl.</p>
+              <div style={{ display: "flex", gap: "1.25rem", alignItems: "center", marginTop: "1rem" }}>
+                <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0 }}>
+                  <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}><circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="url(#sg3d)" strokeWidth="8" strokeDasharray="206 58" strokeLinecap="round" /><defs><linearGradient id="sg3d" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF6B4D"/><stop offset="100%" stopColor="#FFB347"/></linearGradient></defs></svg>
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 26, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>78</span><span style={{ fontSize: 9, color: "var(--gray3)" }}>/ 100</span></div>
+                </div>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[{ label: "Code quality", value: 82 },{ label: "Architecture", value: 75 },{ label: "Consistency", value: 80 },{ label: "Impact", value: 74 }].map((d) => (
+                    <div key={d.label}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 10, fontWeight: 600, color: "var(--ink)" }}>{d.label}</span><span style={{ fontSize: 10, fontWeight: 700, color: "var(--gray3)" }}>{d.value}%</span></div><div style={{ height: 5, background: "var(--gray2)", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${d.value}%`, background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 3 }} /></div></div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}><span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 50, textTransform: "uppercase" as const, letterSpacing: ".04em" }}>Advanced</span><span style={{ fontSize: 11, color: "var(--coral)", fontWeight: 700 }}>Top 18% of developers</span></div>
+            </div>
+            {/* Card 4 */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">4</span>
+              <div className="feature-title">Application tracking</div>
+              <p className="feature-desc">See every job you&apos;ve been auto-applied to and its live status, in one dashboard.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                {[{ company: "Microsoft", role: "Frontend Engineer", time: "Applied 2h ago", status: "Interview", statusColor: "#8B5CF6", statusBg: "#F3EFFE" },{ company: "Google", role: "SDE II", time: "Applied 5h ago", status: "Offer", statusColor: "#22C55E", statusBg: "#EAFAF0" },{ company: "McKinsey", role: "Full Stack Dev", time: "Applied 8h ago", status: "Applied", statusColor: "var(--amber)", statusBg: "#FFF8ED" }].map((item) => (
+                  <div key={item.company} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}><div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{item.company}</div><div style={{ fontSize: 10, color: "var(--gray3)" }}>{item.role} · {item.time}</div></div><span style={{ fontSize: 10, fontWeight: 700, color: item.statusColor, background: item.statusBg, padding: "3px 10px", borderRadius: 50 }}>{item.status}</span></div>
+                ))}
+              </div>
+            </div>
+            {/* Card 5 */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">5</span>
+              <div className="feature-title">Score improvement tips</div>
+              <p className="feature-desc">Get <strong style={{ color: "var(--coral)" }}>AI-powered</strong> suggestions based on <strong style={{ color: "var(--coral)" }}>current industry demands</strong> and what top companies are hiring for.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem", textAlign: "left" }}>
+                {[{ icon: "🎯", text: "Learn System Design — required by Meta, Google", priority: "High", color: "var(--coral)", bg: "#FFF0ED" },{ icon: "📊", text: "Add AWS/Cloud certs — trending at SAP, Microsoft", priority: "Med", color: "var(--amber)", bg: "#FFF8ED" },{ icon: "🤖", text: "Build AI/ML projects — top demand in industry", priority: "Hot", color: "#22C55E", bg: "#EAFAF0" }].map((tip) => (
+                  <div key={tip.text} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--gray1)", borderRadius: 12 }}><div style={{ width: 28, height: 28, borderRadius: 8, background: tip.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{tip.icon}</div><span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, textAlign: "left" }}>{tip.text}</span><span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: tip.color, flexShrink: 0 }}>{tip.priority}</span></div>
+                ))}
+              </div>
+            </div>
+            {/* Card 6 */}
+            <div className="feature-card stagger-child">
+              <span className="hiw-step-num">6</span>
+              <div className="feature-title">Seen by real recruiters</div>
+              <p className="feature-desc">Verified companies filter candidates by Antyl Score - your profile surfaces to people actively hiring.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                {[{ name: "Priya M.", company: "Google", action: "Viewed your profile", time: "1h ago" },{ name: "Rahul K.", company: "Microsoft", action: "Shortlisted you", time: "3h ago" },{ name: "Anika S.", company: "McKinsey", action: "Sent interview invite", time: "5h ago" }].map((r) => (
+                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}><div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.name.split(" ").map(n => n[0]).join("")}</div><div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name} <span style={{ fontWeight: 400, color: "var(--gray3)" }}>· {r.company}</span></div><div style={{ fontSize: 10, color: "var(--coral)", fontWeight: 500 }}>{r.action}</div></div><span style={{ fontSize: 10, color: "var(--gray3)" }}>{r.time}</span></div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "3rem", fontSize: 13, color: "var(--gray3)" }}>
+            <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+            <span>Your data is secure. We never post on your behalf.</span>
           </div>
         </div>
       </section>
@@ -1194,13 +1116,13 @@ export default function DeveloperLandingPage() {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
               What developers say
             </span>
-            <h2 className="section-title">
+            <h2 className="section-title blur-reveal">
               Real results for <em>real developers</em>
             </h2>
           </div>
           <div className="testimonials-grid">
             {testimonials.map((t) => (
-              <div className="testimonial-card" key={t.name}>
+              <div className="testimonial-card stagger-child" key={t.name}>
                 <div className="quote-mark">&ldquo;</div>
                 <p className="quote-text">{t.quote}</p>
                 <div className="testimonial-footer">
@@ -1283,7 +1205,7 @@ export default function DeveloperLandingPage() {
             </div>
           </div>
           <div className="footer-bottom">
-            <span>© 2026 Antyl. All rights reserved.</span>
+            <span>&copy; 2026 Antyl. All rights reserved.</span>
             <div className="footer-bottom-links">
               <a href="/privacy" className="footer-bottom-link">Privacy</a>
               <a href="/terms" className="footer-bottom-link">Terms</a>
