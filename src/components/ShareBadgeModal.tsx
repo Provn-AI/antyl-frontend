@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import ConfettiBurst from "@/components/ConfettiBurst";
 
+
+
 export interface ShareBadgeData {
   badgeKey: string;
   label: string;
@@ -139,7 +141,7 @@ export function ShareBadgeModal({
         style={{ animation: "modal-pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1)" }}
       >
         <div className="absolute inset-0 z-[200] pointer-events-none">
-          <ConfettiBurst width={420} height={500} cx={210} cy={210} />
+          <ConfettiBurst  />
         </div>
         <div className="relative z-[1]">
           <button

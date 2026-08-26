@@ -8,6 +8,11 @@ import {
   PartyPopper, XCircle, ChevronRight, ChevronLeft, Briefcase,
 } from "lucide-react";
 
+import ConfettiBurst from "@/components/ConfettiBurst";
+
+
+
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -65,10 +70,12 @@ function StageCard({
   match,
   stages,
   onMove,
+  celebrating,
 }: {
   match: Match;
   stages: typeof STAGES;
   onMove: (matchId: string, newStage: string) => Promise<void>;
+  celebrating?: boolean;
 }) {
   const [movingForward, setMovingForward] = useState(false);
   const [movingBack,    setMovingBack]    = useState(false);
@@ -91,7 +98,14 @@ function StageCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 group">
+    
+    <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-3 group overflow-hidden">
+      
+      {celebrating && (
+        <div className="absolute inset-0 z-20 pointer-events-none">
+          <ConfettiBurst />
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center gap-2 mb-2">
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-100">
@@ -160,6 +174,7 @@ export default function PipelinePage() {
   // job_title is confirmed consistent across both, so we join on that.
   const [selectedJobTitle, setSelectedJobTitle] = useState<string>("all");
   const [pendingInterviewMatch, setPendingInterviewMatch] = useState<Match | null>(null);
+  const [celebratingMatchId, setCelebratingMatchId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -212,6 +227,11 @@ export default function PipelinePage() {
     setMatches((prev) =>
       prev.map((m) => m.match_id === matchId ? { ...m, pipeline_stage: newStage } : m)
     );
+
+    if (newStage === "hired") {
+    setCelebratingMatchId(matchId);
+    window.setTimeout(() => setCelebratingMatchId(null), 1300);
+  }
   };
 
   const handleConfirmInterview = async (scheduledAt: string) => {
@@ -325,6 +345,7 @@ export default function PipelinePage() {
                         match={match}
                         stages={STAGES}
                         onMove={handleMove}
+                        celebrating={celebratingMatchId === match.match_id}
                       />
                     ))
                   )}
