@@ -239,10 +239,10 @@ export function ShareBadgeModal({
           {copied ? "Copied" : "Copy link"}
         </button>
 
-          <div className="mt-4 flex items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2">
+          {/* <div className="mt-4 flex items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2">
             <Share2 className="h-4 w-4 text-gray-400" />
             <p className="truncate text-xs text-gray-500">{shareUrl}</p>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
