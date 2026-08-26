@@ -21,6 +21,22 @@ function timeAgo(iso: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+// Picks the conversation with the most recently timestamped message so we
+// know which thread to open automatically on first load. Falls back to the
+// first conversation in the list if nothing has a timestamp we can compare.
+function getMostRecentConversation(convs: Conversation[]): Conversation | null {
+  if (convs.length === 0) return null;
+  return [...convs].sort((a, b) => {
+    const at = a.last_message?.created_at
+      ? new Date(a.last_message.created_at).getTime()
+      : 0;
+    const bt = b.last_message?.created_at
+      ? new Date(b.last_message.created_at).getTime()
+      : 0;
+    return bt - at;
+  })[0];
+}
+
 type NewMessageToast = {
   key: string; // message id, used to dedupe / key the toast
   match_id: string;
@@ -112,6 +128,15 @@ export default function RecruiterMessagesPage() {
         setSelected((prev) =>
           prev ? data.find((c) => c.match_id === prev.match_id) ?? prev : prev
         );
+
+        // On the very first load, open the most recently active conversation
+        // automatically instead of leaving the recruiter on an empty pane.
+        if (isFirstLoad && !selectedMatchIdRef.current && data.length > 0) {
+          const latest = getMostRecentConversation(data);
+          if (latest) {
+            openConversation(latest);
+          }
+        }
       } catch (err) {
         console.error(err);
       } finally {

@@ -379,9 +379,10 @@ export default function RecruiterDashboard() {
           </div>
         ) : (
           <>
-            {/* Stat cards */}
+            {/* Stat cards — outlined in brand orange to stand out from the
+                rest of the page's neutral bordered cards. */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
                     <Briefcase className="w-4.5 h-4.5 text-[#F2754A]" />
@@ -393,7 +394,7 @@ export default function RecruiterDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
                     <TrendingUp className="w-4.5 h-4.5 text-[#F2754A]" />
@@ -405,7 +406,7 @@ export default function RecruiterDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
                     <Users className="w-4.5 h-4.5 text-[#F2754A]" />
@@ -417,7 +418,7 @@ export default function RecruiterDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
                     <PartyPopper className="w-4.5 h-4.5 text-emerald-600" />

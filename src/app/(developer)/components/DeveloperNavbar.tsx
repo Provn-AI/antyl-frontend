@@ -380,8 +380,11 @@ export default function DeveloperNavbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [tourActive, setTourActive] = useState(false);
 
-  // ── Sidebar collapse — persisted so it survives navigation/reloads ──
+  // ── Sidebar collapse — persisted so it survives navigation/reloads.
+  // Now honored on every route (not just the dashboard), so the toggle
+  // works everywhere.
   const [collapsed, setCollapsed] = useState(false);
+  const effectiveCollapsed = collapsed;
 
   // ── Time-of-day gif shown at the bottom of the sidebar ──
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(() => getTimeOfDay());
@@ -576,12 +579,11 @@ export default function DeveloperNavbar() {
       {/* ── Left sidebar (desktop) ── */}
       <aside
         className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white border-r border-gray-100 z-50 px-3 py-6 transition-all duration-200 ease-in-out ${
-          collapsed ? "w-20" : "w-56"
+          effectiveCollapsed ? "w-20" : "w-56"
         }`}
       >
         {/* Toggle handle — pinned to the sidebar's right edge, vertically
-            centered against the logo row, so it stays visible and in the
-            same spot whether the sidebar is expanded or collapsed. */}
+            centered against the logo row. Now shown on every route. */}
         <button
           type="button"
           onClick={toggleCollapsed}
@@ -592,13 +594,13 @@ export default function DeveloperNavbar() {
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
         </button>
 
-        <div className={`flex items-center mb-6 ${collapsed ? "flex-col gap-3" : "justify-between px-1"}`}>
+        <div className={`flex items-center mb-6 ${effectiveCollapsed ? "flex-col gap-3" : "justify-between px-1"}`}>
           <Link href="/feed" className="flex items-center" aria-label="Home">
             <Image
               src="/Antyl.png"
               alt="Antyl logo"
-              width={collapsed ? 30 : 70}
-              height={collapsed ? 30 : 30}
+              width={effectiveCollapsed ? 30 : 70}
+              height={effectiveCollapsed ? 30 : 30}
               className="object-contain"
             />
           </Link>
@@ -621,9 +623,9 @@ export default function DeveloperNavbar() {
                 key={href}
                 href={href}
                 data-tour={tourId}
-                title={collapsed ? label : undefined}
+                title={effectiveCollapsed ? label : undefined}
                 className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
-                  collapsed ? "justify-center px-0" : "gap-3 px-3"
+                  effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
                 } ${
                   active
                     ? "bg-orange-50 text-[#F2754A]"
@@ -638,7 +640,7 @@ export default function DeveloperNavbar() {
                     </span>
                   )}
                 </span>
-                {!collapsed && label}
+                {!effectiveCollapsed && label}
               </Link>
             );
           })}
@@ -647,9 +649,9 @@ export default function DeveloperNavbar() {
             <Link
               href="/admin/weekly-question"
               data-tour="nav-admin"
-              title={collapsed ? "Admin" : undefined}
+              title={effectiveCollapsed ? "Admin" : undefined}
               className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
-                collapsed ? "justify-center px-0" : "gap-3 px-3"
+                effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
               } ${
                 pathname === "/admin/weekly-question"
                   ? "bg-orange-50 text-[#F2754A]"
@@ -661,7 +663,7 @@ export default function DeveloperNavbar() {
                   pathname === "/admin/weekly-question" ? "text-[#F2754A]" : "text-gray-400"
                 }`}
               />
-              {!collapsed && "Admin"}
+              {!effectiveCollapsed && "Admin"}
             </Link>
           )}
         </nav>
@@ -671,8 +673,8 @@ export default function DeveloperNavbar() {
             above the tour/logout buttons at the bottom of the sidebar.
             Square container so the gif is never stretched into an oval.
             Hovering shows a speech-bubble tooltip with a matching message. */}
-        <div className={`flex items-center justify-center mb-3 ${collapsed ? "px-0" : "px-10"}`}>
-          <div className={`group relative block ${collapsed ? "w-auto" : "w-full"}`}>
+        <div className={`flex items-center justify-center mb-3 ${effectiveCollapsed ? "px-0" : "px-10"}`}>
+          <div className={`group relative block ${effectiveCollapsed ? "w-auto" : "w-full"}`}>
             {/* Speech bubble — hidden by default, fades/slides in on hover */}
             <div
               className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px]
@@ -688,7 +690,7 @@ export default function DeveloperNavbar() {
 
             <div
               className={`relative overflow-hidden rounded-2xl bg-gradient-to-b from-orange-50 to-white border border-orange-100/70 cursor-default ${
-                collapsed ? "w-8 h-8" : "w-full aspect-square"
+                effectiveCollapsed ? "w-8 h-8" : "w-full aspect-square"
               }`}
             >
               <Image
@@ -705,25 +707,25 @@ export default function DeveloperNavbar() {
         <button
           type="button"
           onClick={() => setTourActive(true)}
-          title={collapsed ? "Take a tour" : undefined}
+          title={effectiveCollapsed ? "Take a tour" : undefined}
           className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left ${
-            collapsed ? "justify-center px-0" : "gap-3 px-3"
+            effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
           }`}
         >
           <HelpCircle className="w-4 h-4 flex-shrink-0" />
-          {!collapsed && "Take a tour"}
+          {!effectiveCollapsed && "Take a tour"}
         </button>
 
         <button
           type="button"
           onClick={handleLogout}
-          title={collapsed ? "Logout" : undefined}
+          title={effectiveCollapsed ? "Logout" : undefined}
           className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-full text-left ${
-            collapsed ? "justify-center px-0" : "gap-3 px-3"
+            effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
           }`}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
-          {!collapsed && "Logout"}
+          {!effectiveCollapsed && "Logout"}
         </button>
       </aside>
 
@@ -790,7 +792,7 @@ export default function DeveloperNavbar() {
 
       <div
         className={`hidden md:block flex-shrink-0 transition-all duration-200 ease-in-out ${
-          collapsed ? "w-20" : "w-56"
+          effectiveCollapsed ? "w-20" : "w-56"
         }`}
       />
 
@@ -812,7 +814,7 @@ export default function DeveloperNavbar() {
           onOpen={handleMessageToastOpen}
           onClose={() => setMessageToast(null)}
           mobile={typeof window !== "undefined" && window.innerWidth < 768}
-          leftOffsetClass={collapsed ? "left-24" : "left-60"}
+          leftOffsetClass={effectiveCollapsed ? "left-24" : "left-60"}
         />
       )}
 

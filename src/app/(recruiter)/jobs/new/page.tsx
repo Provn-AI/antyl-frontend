@@ -74,6 +74,11 @@ const inputClass =
 const textareaClass =
   "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[140px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
 
+// Backing textarea for the pre-autofill summary modal. Shorter than the
+// main description box since we're only asking for 3-4 lines of context.
+const summaryTextareaClass =
+  "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[110px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
+
 function mapExperienceLevel(years: number): string {
   if (years <= 1) return "entry";
   if (years <= 4) return "mid";
@@ -109,6 +114,15 @@ export default function NewJobPage() {
 
   const [balance, setBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
+
+  // FIX: recruiter testing feedback — auto-fill was firing off the AI call
+  // the moment the button was clicked, using only the job title as context.
+  // That produced pretty generic results. Now we stop and ask the recruiter
+  // for a short 3-4 line summary of the role first, and send that along
+  // with the title so the AI has something real to work with.
+  const [showAutofillModal, setShowAutofillModal] = useState(false);
+  const [autofillSummary, setAutofillSummary] = useState("");
+  const [autofillSummaryError, setAutofillSummaryError] = useState("");
 
   // One-time "how this form works" tour. We check localStorage ourselves
   // (rather than always passing active=true) because OnboardingTour only
@@ -238,15 +252,45 @@ export default function NewJobPage() {
     return isValidCity(city) ? city : "";
   }
 
-  async function handleAutofill() {
+  // Opens the "tell us a bit more" modal instead of calling the AI right
+  // away. Title is still required before we even get here (button stays
+  // disabled without one).
+  function openAutofillModal() {
     if (!form.title.trim()) {
       setError("Enter a job title first so AI knows what to fill.");
       return;
     }
+    setError("");
+    setAutofillSummaryError("");
+    setShowAutofillModal(true);
+  }
+
+  function closeAutofillModal() {
+    setShowAutofillModal(false);
+    setAutofillSummaryError("");
+  }
+
+  // Runs once the recruiter has entered a short summary and confirmed.
+  async function handleAutofill() {
+    const summary = autofillSummary.trim();
+    if (!summary) {
+      setAutofillSummaryError(
+        "Add a quick 3-4 line summary so the AI has something to go on."
+      );
+      return;
+    }
+
     try {
       setAutofilling(true);
       setError("");
-      const result = await autofillJob(form.title);
+      setShowAutofillModal(false);
+
+      // NOTE: autofillJob now takes the recruiter's short summary as
+      // additional context alongside the title. If the service function
+      // hasn't been updated yet to accept a second argument, add it there:
+      //   export async function autofillJob(title: string, context?: string)
+      const result = await autofillJob(form.title, summary);
+
       const years = result.experience_years ?? 0;
       setExperienceYears(years);
       setExperienceYearsInput(years ? String(years) : "");
@@ -264,6 +308,7 @@ export default function NewJobPage() {
         location: normalizeAutofillLocation(result.location),
         is_remote: result.is_remote,
       }));
+      setAutofillSummary("");
     } catch {
       setError("Auto-fill failed. You can fill in the details manually.");
     } finally {
@@ -405,7 +450,7 @@ export default function NewJobPage() {
               <button
                 type="button"
                 data-tour="job-autofill"
-                onClick={handleAutofill}
+                onClick={openAutofillModal}
                 disabled={autofilling || !form.title.trim()}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[#F2754A] text-[#F2754A] hover:bg-orange-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -659,6 +704,80 @@ export default function NewJobPage() {
           </div>
         </div>
       </div>
+
+      {showAutofillModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
+          onClick={closeAutofillModal}
+        >
+          <div
+            className="bg-white rounded-[28px] shadow-2xl w-full max-w-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 p-6 pb-0">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  ✦ Tell us a bit more
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Give a quick 3-4 line summary of the role for{" "}
+                  <span className="font-semibold text-gray-700">
+                    {form.title || "this role"}
+                  </span>
+                  , and AI will fill in the rest.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeAutofillModal}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3">
+              <textarea
+                autoFocus
+                className={summaryTextareaClass}
+                placeholder={
+                  "e.g. Backend-heavy role on our payments team, mostly Node and Postgres. Needs someone comfortable owning services end-to-end. Hybrid, 3 days in office. Ideally 3-5 years experience."
+                }
+                value={autofillSummary}
+                onChange={(e) => {
+                  setAutofillSummary(e.target.value);
+                  if (autofillSummaryError) setAutofillSummaryError("");
+                }}
+              />
+              {autofillSummaryError && (
+                <p className="text-xs text-red-500 font-semibold px-1">
+                  {autofillSummaryError}
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeAutofillModal}
+                  className="flex-1 px-6 py-3 rounded-full font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAutofill}
+                  disabled={autofilling}
+                  className="flex-1 px-6 py-3 rounded-full font-semibold text-white transition-opacity disabled:opacity-50"
+                  style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+                >
+                  {autofilling ? "Filling…" : "Generate"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPreview && (
         <div

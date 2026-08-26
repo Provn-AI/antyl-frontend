@@ -49,8 +49,11 @@ export default function RecruiterLayout({
   const [unreadTotal, setUnreadTotal] = useState(0);
   const [toast, setToast] = useState<NewMessageToast | null>(null);
 
-  // ── Sidebar collapse — persisted so it survives navigation/reloads ──
+  // ── Sidebar collapse — persisted so it survives navigation/reloads.
+  // Now honored on every route (not just the dashboard), so the toggle
+  // works everywhere.
   const [collapsed, setCollapsed] = useState(false);
+  const effectiveCollapsed = collapsed;
 
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
@@ -176,12 +179,11 @@ export default function RecruiterLayout({
       {/* Sidebar */}
       <aside
         className={`relative bg-white border-r border-gray-100 flex flex-col p-6 flex-shrink-0 transition-all duration-200 ease-in-out ${
-          collapsed ? "w-24" : "w-64"
+          effectiveCollapsed ? "w-24" : "w-64"
         }`}
       >
         {/* Toggle handle — pinned to the sidebar's right edge, vertically
-            centered against the logo row, so it stays visible and in the
-            same spot whether the sidebar is expanded or collapsed. */}
+            centered against the logo row. Now shown on every route. */}
         <button
           type="button"
           onClick={toggleCollapsed}
@@ -192,13 +194,13 @@ export default function RecruiterLayout({
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
         </button>
 
-        <div className={`mb-6 flex items-center ${collapsed ? "flex-col gap-3" : "justify-between"}`}>
+        <div className={`mb-6 flex items-center ${effectiveCollapsed ? "flex-col gap-3" : "justify-between"}`}>
           <Link href="/dashboard" className="inline-flex items-center" aria-label="Home">
             <Image
               src="/Antyl.png"
               alt="Antyl logo"
-              width={collapsed ? 30 : 70}
-              height={collapsed ? 30 : 30}
+              width={effectiveCollapsed ? 30 : 70}
+              height={effectiveCollapsed ? 30 : 30}
               className="object-contain"
             />
           </Link>
@@ -215,9 +217,9 @@ export default function RecruiterLayout({
                 key={item.href}
                 href={item.href}
                 data-tour={item.tourId}
-                title={collapsed ? item.label : undefined}
+                title={effectiveCollapsed ? item.label : undefined}
                 className={`relative flex items-center py-3 rounded-2xl text-sm font-semibold transition-colors ${
-                  collapsed ? "justify-center px-0" : "gap-3 px-4"
+                  effectiveCollapsed ? "justify-center px-0" : "gap-3 px-4"
                 } ${
                   active
                     ? "text-white"
@@ -246,7 +248,7 @@ export default function RecruiterLayout({
                     </span>
                   )}
                 </span>
-                {!collapsed && item.label}
+                {!effectiveCollapsed && item.label}
               </Link>
             );
           })}
@@ -255,13 +257,13 @@ export default function RecruiterLayout({
         <button
           type="button"
           onClick={() => setTourActive(true)}
-          title={collapsed ? "Take a tour" : undefined}
+          title={effectiveCollapsed ? "Take a tour" : undefined}
           className={`flex items-center py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors mt-2 ${
-            collapsed ? "justify-center px-0" : "gap-3 px-4"
+            effectiveCollapsed ? "justify-center px-0" : "gap-3 px-4"
           }`}
         >
           <HelpCircle className="w-4.5 h-4.5" />
-          {!collapsed && "Take a tour"}
+          {!effectiveCollapsed && "Take a tour"}
         </button>
 
         <button
@@ -270,13 +272,13 @@ export default function RecruiterLayout({
             localStorage.removeItem("access_token");
             window.location.href = "/";
           }}
-          title={collapsed ? "Log out" : undefined}
+          title={effectiveCollapsed ? "Log out" : undefined}
           className={`flex items-center py-3 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-colors ${
-            collapsed ? "justify-center px-0" : "gap-3 px-4"
+            effectiveCollapsed ? "justify-center px-0" : "gap-3 px-4"
           }`}
         >
           <LogOut className="w-4.5 h-4.5" />
-          {!collapsed && "Log out"}
+          {!effectiveCollapsed && "Log out"}
         </button>
       </aside>
 
@@ -285,7 +287,7 @@ export default function RecruiterLayout({
       {toast && (
         <div
           className={`fixed top-6 z-50 w-80 animate-in fade-in slide-in-from-left-2 ${
-            collapsed ? "left-28" : "left-[17rem]"
+            effectiveCollapsed ? "left-28" : "left-[17rem]"
           }`}
         >
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
