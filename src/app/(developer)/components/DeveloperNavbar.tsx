@@ -67,6 +67,39 @@ const MESSAGE_POLL_INTERVAL_MS = 20000;
 const PANEL_WIDTH = 320;
 const SIDEBAR_COLLAPSE_KEY = "antyl_developer_nav_collapsed";
 
+// Persists which milestone celebration popups have already been shown
+// (or dismissed) in this browser. This is the durable guard — an
+// in-memory ref alone isn't enough because this navbar remounts on
+// every tab/route change (it's rendered per-page, not from a shared
+// layout), which would otherwise wipe the "already shown" set and let
+// a milestone notification pop again, especially if the mark-as-read
+// PATCH from a previous dismissal hasn't committed server-side yet by
+// the time the next mount re-fetches notifications.
+const SHOWN_CELEBRATIONS_KEY = "antyl_shown_celebration_ids";
+const SHOWN_CELEBRATIONS_MAX = 300;
+
+function loadShownCelebrationIds(): Set<string> {
+  try {
+    const stored = localStorage.getItem(SHOWN_CELEBRATIONS_KEY);
+    if (!stored) return new Set();
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? new Set(parsed) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveShownCelebrationIds(ids: Set<string>) {
+  try {
+    // Cap so this can't grow unbounded over months of use.
+    const arr = Array.from(ids).slice(-SHOWN_CELEBRATIONS_MAX);
+    localStorage.setItem(SHOWN_CELEBRATIONS_KEY, JSON.stringify(arr));
+  } catch {
+    // ignore quota/serialization errors — worst case we lose the guard
+    // for this session, we don't want to break notification loading over it
+  }
+}
+
 const MILESTONE_TYPES = ["streak_daily", "streak_week", "streak_month", "podium_finish", "field_leader"];
 
 const MILESTONE_STYLES: Record<string, { icon: typeof Flame; color: string; title: string }> = {
@@ -444,6 +477,17 @@ export default function DeveloperNavbar() {
   }, []);
 
   useEffect(() => {
+    // Restore previously-shown/dismissed milestone celebration ids from
+    // localStorage before the first load(). This is the durable guard —
+    // shownCelebrationIds alone is an in-memory ref, so it resets every
+    // time this component remounts (e.g. on tab/route change, since this
+    // navbar isn't part of a persistent shared layout). Without this,
+    // a milestone notification that's still is_read: false — either
+    // because the user hasn't dismissed it yet, or because the
+    // mark-as-read PATCH from a previous dismissal hasn't committed
+    // server-side yet — would pop the celebration again on every remount.
+    shownCelebrationIds.current = loadShownCelebrationIds();
+
     async function load() {
       try {
         const data: AntylNotification[] = await getNotifications();
@@ -457,6 +501,7 @@ export default function DeveloperNavbar() {
         );
         if (milestone) {
           shownCelebrationIds.current.add(milestone.id);
+          saveShownCelebrationIds(shownCelebrationIds.current);
           setCelebration(milestone);
         }
       } catch (err) {
@@ -552,7 +597,14 @@ export default function DeveloperNavbar() {
   };
 
   const handleCelebrationClose = () => {
-    if (celebration) handleMarkRead(celebration.id);
+    if (celebration) {
+      // Belt-and-suspenders: make sure this id is recorded as shown
+      // even if it somehow wasn't added at fetch-time (e.g. celebration
+      // was set through some other path in the future).
+      shownCelebrationIds.current.add(celebration.id);
+      saveShownCelebrationIds(shownCelebrationIds.current);
+      handleMarkRead(celebration.id);
+    }
     setCelebration(null);
   };
 

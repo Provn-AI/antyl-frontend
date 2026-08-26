@@ -232,11 +232,16 @@ function SkipConfirmModal({
 /* Mascot-driven empty state — used when there are no jobs in the feed */
 /* at all. Fills the card with the mascot instead of a bare icon, and  */
 /* gives the person two concrete next actions instead of a dead end.   */
+/*                                                                      */
+/* NOTE: the shift-right is applied to the INNER content wrapper, not  */
+/* the outer card. The outer card has overflow-hidden, so translating  */
+/* it directly can push it (or parts of it) outside the visible/       */
+/* clipped area and make it appear to "disappear". Shifting the inner  */
+/* flex wrapper instead keeps everything within the card's bounds.     */
 /* ------------------------------------------------------------------ */
 function NoJobsState() {
   return (
     <div className="relative bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden min-h-[62vh] flex items-center justify-center px-8 py-14">
-      {/* glows on both sides so a wide card reads as designed, not decorated in one corner */}
       <div
         className="pointer-events-none absolute -left-20 top-1/3 w-80 h-80 rounded-full bg-orange-50 blur-3xl opacity-60"
         aria-hidden="true"
@@ -246,7 +251,10 @@ function NoJobsState() {
         aria-hidden="true"
       />
 
-      <div className="relative flex flex-col md:flex-row items-center gap-10 md:gap-16 max-w-2xl mx-auto">
+      <div
+        className="relative flex flex-col md:flex-row items-center gap-10 md:gap-16 max-w-2xl mx-auto"
+        style={{ transform: "translateX(40px)" }}
+      >
         <img
           src="/no_jobs_pose.png"
           alt=""
