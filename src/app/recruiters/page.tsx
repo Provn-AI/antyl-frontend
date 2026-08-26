@@ -446,7 +446,7 @@ export default function RecruiterLandingPage() {
 
         body {
           font-family: var(--font);
-          background: var(--white);
+          background: #FFF8ED;
           color: var(--ink);
           -webkit-font-smoothing: antialiased;
           overflow-x: hidden;
@@ -523,7 +523,7 @@ export default function RecruiterLandingPage() {
         /* ---- HERO ---- */
         .hero {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: var(--white);
+          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: #FFF8ED;
         }
         .hero-inner { display: flex; align-items: center; gap: 4rem; max-width: 1200px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
         .hero-content { flex: 1; text-align: left; }
@@ -618,8 +618,9 @@ export default function RecruiterLandingPage() {
 
         /* ---- STATS ---- */
         .stats-strip {
-          border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2);
-          background: linear-gradient(135deg, #fafafa 0%, #fff 100%); padding: 4rem 2rem;
+          // border-top: 1px solid var(--gray2); 
+          // border-bottom: 1px solid var(--gray2);
+          background: #FFF8ED; padding: 4rem 2rem;
         }
         .stats-inner {
           max-width: 1200px; margin: 0 auto; display: flex; gap: 4rem; align-items: center;
@@ -653,8 +654,9 @@ export default function RecruiterLandingPage() {
 
         /* ---- TECH CAROUSEL ---- */
         .tech-carousel-section {
-          padding: 3.5rem 0; overflow: hidden; background: var(--white);
-          border-bottom: 1px solid var(--gray2); margin-top: 2.5rem;
+          padding: 3.5rem 0; overflow: hidden; background: #FFF8ED;
+          // border-bottom: 1px solid var(--gray2); 
+          margin-top: 2.5rem;
         }
         .tech-carousel-label {
           text-align: center; font-size: 11.5px; font-weight: 700;
@@ -683,7 +685,12 @@ export default function RecruiterLandingPage() {
         .tech-pill span { font-size: 13.5px; font-weight: 600; color: var(--ink); letter-spacing: -.01em; }
 
         /* ---- SOCIAL PROOF MARQUEE ---- */
-        .proof-section { padding: 5rem 0; background: var(--gray1); border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2); overflow: hidden; }
+        .proof-section { 
+        padding: 5rem 0; 
+        background: #FFF8ED; 
+        // border-top: 1px solid var(--gray2); 
+        // border-bottom: 1px solid var(--gray2); 
+        overflow: hidden; }
         .proof-header { text-align: center; margin-bottom: 3rem; padding: 0 1.5rem; }
         .proof-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: .875rem; }
         .proof-title { font-family: var(--serif); font-size: clamp(26px, 3vw, 38px); font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.15; }
@@ -750,7 +757,12 @@ export default function RecruiterLandingPage() {
         }
 
         /* ---- ANTYL SCORE SECTION ---- */
-        .score-section { background: var(--gray1); padding: 6rem 1.5rem; border-top: 1px solid var(--gray2); border-bottom: 1px solid var(--gray2); }
+        .score-section { 
+        background: #FFF8ED; 
+        padding: 6rem 1.5rem; 
+        // border-top: 1px solid var(--gray2); 
+        // border-bottom: 1px solid var(--gray2); 
+        }
 
         /* ---- TESTIMONIALS ---- */
         .testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
@@ -765,7 +777,11 @@ export default function RecruiterLandingPage() {
         .t-recruiter-badge { margin-left: auto; flex-shrink: 0; background: var(--gray1); color: var(--gray4); border: 1px solid var(--gray2); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 50px; }
 
         /* ---- DEMO REQUEST ---- */
-        .demo-section { padding: 6rem 1.5rem; background: var(--white); border-top: 1px solid var(--gray2); }
+        .demo-section { 
+        padding: 6rem 1.5rem; 
+        background: #FFF8ED; 
+        // border-top: 1px solid var(--gray2); 
+        }
         .demo-grid { display: grid; grid-template-columns: 1fr 420px; gap: 2.5rem; margin-top: 3rem; align-items: start; }
         .demo-info-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.75rem; }
         .demo-info-item { display: flex; align-items: flex-start; gap: 12px; }
@@ -813,7 +829,11 @@ export default function RecruiterLandingPage() {
         }
 
         /* ---- SINGLE CTA (developer teaser) ---- */
-        .single-cta-section { padding: 6rem 1.5rem; background: var(--white); border-top: 1px solid var(--gray2); }
+        .single-cta-section { 
+        padding: 6rem 1.5rem; 
+        background: #FFF8ED; 
+        // border-top: 1px solid var(--gray2); 
+        }
         .single-cta-card { max-width: 1000px; margin: 0 auto; border-radius: 24px; padding: 3rem; position: relative; overflow: hidden; background: linear-gradient(135deg,#FF6B4D,#FFB347); color: white; text-align: center; }
         .single-cta-title { font-family: var(--serif); font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.2; margin-bottom: .75rem; letter-spacing: -.03em; }
         .single-cta-sub { font-size: 14.5px; opacity: .85; line-height: 1.6; margin-bottom: 2rem; max-width: 440px; margin-left: auto; margin-right: auto; }
@@ -965,7 +985,7 @@ export default function RecruiterLandingPage() {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className={`section lazy-section${lazyHowItWorks.visible ? " visible" : ""}`} id="how-it-works" style={{ borderTop: "1px solid var(--gray2)" }} ref={lazyHowItWorks.ref}>
+      <section className={`section lazy-section${lazyHowItWorks.visible ? " visible" : ""}`} id="how-it-works" ref={lazyHowItWorks.ref}>
         <div className="section-inner">
           <div style={{ maxWidth: 560 }}>
             <span className="section-eyebrow">
@@ -1380,7 +1400,7 @@ export default function RecruiterLandingPage() {
       </section>
 
       {/* ─── TESTIMONIALS ─── */}
-      <section className={`section lazy-section${lazyTestimonials.visible ? " visible" : ""}`} style={{ background: "var(--gray1)", borderTop: "1px solid var(--gray2)" }} ref={lazyTestimonials.ref}>
+      <section className={`section lazy-section${lazyTestimonials.visible ? " visible" : ""}`} style={{ background: "#FFF8ED"}} ref={lazyTestimonials.ref}>
         <div className="section-inner">
           <div style={{ textAlign: "center", maxWidth: 520, margin: "0 auto" }}>
             <span className="section-eyebrow">
