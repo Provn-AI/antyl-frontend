@@ -453,6 +453,14 @@ export default function RecruiterLandingPage() {
           overflow-x: hidden;
         }
 
+        .page-gradient {
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background:
+            radial-gradient(circle at 0% 8%, rgba(255, 107, 77, .055), transparent 30%),
+            radial-gradient(circle at 100% 12%, rgba(255, 216, 77, .065), transparent 28%),
+            radial-gradient(circle at 52% 46%, rgba(255, 179, 71, .04), transparent 25%);
+        }
+
         a:focus-visible, button:focus-visible {
           outline: 2px solid var(--coral);
           outline-offset: 3px;
@@ -479,12 +487,14 @@ export default function RecruiterLandingPage() {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 2.5rem;
+          background: rgba(255, 248, 237, .9);
+          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 1px 0 rgba(222, 214, 204, .7);
           transition: background .25s, box-shadow .25s;
         }
         .navbar.scrolled {
-          background: rgba(255,255,255,0.88);
-          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-          box-shadow: 0 1px 0 var(--gray2);
+          background: rgba(255, 248, 237, .96);
+          box-shadow: 0 1px 0 rgba(222, 214, 204, .8);
         }
         .nav-logo {
           font-family: var(--serif); font-size: 24px; font-weight: 600;
@@ -524,15 +534,14 @@ export default function RecruiterLandingPage() {
         /* ---- HERO ---- */
         .hero {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: #FFF8ED;
+          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: transparent;
         }
         .hero-inner { display: flex; align-items: center; gap: 4rem; max-width: 1200px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
         .hero-content { flex: 1; text-align: left; }
         .hero-image-wrap { flex: 0 0 480px; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
         .hero-image-wrap img { position: relative; z-index: 1; object-fit: cover; border-radius: 0; background: transparent; }
         .hero-bg-blob {
-          position: absolute; border-radius: 50%;
-          filter: blur(80px); opacity: .12; pointer-events: none;
+          display: none;
         }
         .blob-1 { width: 600px; height: 600px; background: var(--coral); top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: var(--lemon); bottom: -100px; right: -150px; }
@@ -661,11 +670,11 @@ export default function RecruiterLandingPage() {
         }
         .stat-icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
         .stat-number {
-          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 700;
+          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 500;
           color: #171b29; line-height: .95; letter-spacing: -.055em; margin-bottom: .7rem;
         }
         .stat-suffix { color: #f16f32; }
-        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 600; line-height: 1.2; }
+        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 500; line-height: 1.2; }
         .stat-chart { position: absolute; right: 0; bottom: 0; width: 62%; height: 78%; opacity: .95; pointer-events: none; }
         .stat-chart path { fill: none; stroke: #ff854b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
         .stat-chart .chart-fill { fill: url(#recruiter-chart-fill); stroke: none; opacity: .55; }
@@ -908,6 +917,8 @@ export default function RecruiterLandingPage() {
           .single-cta-card { padding: 2rem 1.5rem; }
         }
       `}</style>
+
+      <div className="page-gradient" aria-hidden="true" />
 
       {/* ─── NAVBAR ─── */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>

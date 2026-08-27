@@ -350,6 +350,14 @@ export default function DeveloperLandingPage() {
           overflow-x: hidden;
         }
 
+        .page-gradient {
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background:
+            radial-gradient(circle at 0% 8%, rgba(255, 107, 77, .055), transparent 30%),
+            radial-gradient(circle at 100% 12%, rgba(255, 216, 77, .065), transparent 28%),
+            radial-gradient(circle at 52% 46%, rgba(255, 179, 71, .04), transparent 25%);
+        }
+
         a:focus-visible, button:focus-visible {
           outline: 2px solid var(--coral);
           outline-offset: 3px;
@@ -393,12 +401,14 @@ export default function DeveloperLandingPage() {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 2.5rem;
+          background: rgba(255, 248, 237, .9);
+          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 1px 0 rgba(222, 214, 204, .7);
           transition: background .25s, box-shadow .25s;
         }
         .navbar.scrolled {
-          background: rgba(255,255,255,0.88);
-          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-          box-shadow: 0 1px 0 var(--gray2);
+          background: rgba(255, 248, 237, .96);
+          box-shadow: 0 1px 0 rgba(222, 214, 204, .8);
         }
         .nav-links { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 2rem; align-items: center; }
         .nav-link {
@@ -432,11 +442,10 @@ export default function DeveloperLandingPage() {
         /* ---- HERO (split layout) ---- */
         .hero {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; 
+          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: transparent;
         }
         .hero-bg-blob {
-          position: absolute; border-radius: 50%;
-          filter: blur(80px); opacity: .12; pointer-events: none;
+          display: none;
         }
         .blob-1 { width: 600px; height: 600px; background: var(--coral); top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: var(--lemon); bottom: -100px; right: -150px; }
@@ -563,11 +572,11 @@ export default function DeveloperLandingPage() {
         }
         .stat-icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
         .stat-number {
-          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 700;
+          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 500;
           color: #171b29; line-height: .95; letter-spacing: -.055em; margin-bottom: .7rem;
         }
         .stat-suffix { color: #f16f32; }
-        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 600; line-height: 1.2; }
+        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 500; line-height: 1.2; }
         .stat-chart { position: absolute; right: 0; bottom: 0; width: 62%; height: 78%; opacity: .95; pointer-events: none; }
         .stat-chart path { fill: none; stroke: #ff854b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
         .stat-chart .chart-fill { fill: url(#stats-chart-fill); stroke: none; opacity: .55; }
@@ -757,6 +766,8 @@ export default function DeveloperLandingPage() {
         }
       `}</style>
 
+      <div className="page-gradient" aria-hidden="true" />
+
       {/* ─── NAVBAR ─── */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
         <Link href='/' style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
@@ -776,9 +787,9 @@ export default function DeveloperLandingPage() {
 
       {/* ─── HERO (split layout: text left, image right) ─── */}
       <section className={`hero lazy-section${lazyHero.visible ? " visible" : ""}`} ref={lazyHero.ref}>
-        {/* <div className="hero-bg-blob blob-1" />
+        <div className="hero-bg-blob blob-1" />
         <div className="hero-bg-blob blob-2" />
-        <div className="hero-bg-blob blob-3" /> */}
+        <div className="hero-bg-blob blob-3" />
         <div className="hero-inner">
           <div className="hero-content">
             <div className="hero-eyebrow"><span className="eyebrow-dot" />AI verification · Auto-apply built in</div>
