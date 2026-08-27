@@ -453,6 +453,14 @@ export default function RecruiterLandingPage() {
           overflow-x: hidden;
         }
 
+        .page-gradient {
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background:
+            radial-gradient(circle at 0% 8%, rgba(255, 107, 77, .055), transparent 30%),
+            radial-gradient(circle at 100% 12%, rgba(255, 216, 77, .065), transparent 28%),
+            radial-gradient(circle at 52% 46%, rgba(255, 179, 71, .04), transparent 25%);
+        }
+
         a:focus-visible, button:focus-visible {
           outline: 2px solid var(--coral);
           outline-offset: 3px;
@@ -524,15 +532,14 @@ export default function RecruiterLandingPage() {
         /* ---- HERO ---- */
         .hero {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: #FFF8ED;
+          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: transparent;
         }
         .hero-inner { display: flex; align-items: center; gap: 4rem; max-width: 1200px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
         .hero-content { flex: 1; text-align: left; }
         .hero-image-wrap { flex: 0 0 480px; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
         .hero-image-wrap img { position: relative; z-index: 1; object-fit: cover; border-radius: 0; background: transparent; }
         .hero-bg-blob {
-          position: absolute; border-radius: 50%;
-          filter: blur(80px); opacity: .12; pointer-events: none;
+          display: none;
         }
         .blob-1 { width: 600px; height: 600px; background: var(--coral); top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: var(--lemon); bottom: -100px; right: -150px; }
@@ -908,6 +915,8 @@ export default function RecruiterLandingPage() {
           .single-cta-card { padding: 2rem 1.5rem; }
         }
       `}</style>
+
+      <div className="page-gradient" aria-hidden="true" />
 
       {/* ─── NAVBAR ─── */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
