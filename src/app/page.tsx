@@ -401,12 +401,14 @@ export default function DeveloperLandingPage() {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
           height: 64px; display: flex; align-items: center;
           justify-content: space-between; padding: 0 2.5rem;
+          background: rgba(255, 248, 237, .9);
+          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+          box-shadow: 0 1px 0 rgba(222, 214, 204, .7);
           transition: background .25s, box-shadow .25s;
         }
         .navbar.scrolled {
-          background: rgba(255,255,255,0.88);
-          backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-          box-shadow: 0 1px 0 var(--gray2);
+          background: rgba(255, 248, 237, .96);
+          box-shadow: 0 1px 0 rgba(222, 214, 204, .8);
         }
         .nav-links { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 2rem; align-items: center; }
         .nav-link {
@@ -570,11 +572,11 @@ export default function DeveloperLandingPage() {
         }
         .stat-icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
         .stat-number {
-          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 700;
+          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 500;
           color: #171b29; line-height: .95; letter-spacing: -.055em; margin-bottom: .7rem;
         }
         .stat-suffix { color: #f16f32; }
-        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 600; line-height: 1.2; }
+        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 500; line-height: 1.2; }
         .stat-chart { position: absolute; right: 0; bottom: 0; width: 62%; height: 78%; opacity: .95; pointer-events: none; }
         .stat-chart path { fill: none; stroke: #ff854b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
         .stat-chart .chart-fill { fill: url(#stats-chart-fill); stroke: none; opacity: .55; }
