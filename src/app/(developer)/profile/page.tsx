@@ -981,7 +981,11 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/60 bg-white/60">
-                          <BadgeIcon icon={meta.icon || "trophy"} className="h-7 w-7 text-[#F2754A]" />
+                          <img
+                            src={meta.image}
+                            alt={meta.label}
+                            className="h-full w-full object-contain"
+                          />
                         </div>
                         <div className="w-full">
                           <p className="text-xs font-bold text-gray-800">{meta.label}</p>
