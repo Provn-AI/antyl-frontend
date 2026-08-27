@@ -400,7 +400,7 @@ export default function DeveloperLandingPage() {
           backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
           box-shadow: 0 1px 0 var(--gray2);
         }
-        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links { position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 2rem; align-items: center; }
         .nav-link {
           position: relative; font-size: 14px; font-weight: 500; color: var(--gray4);
           text-decoration: none; letter-spacing: -.01em; transition: color .15s; padding-bottom: 2px;
@@ -563,11 +563,11 @@ export default function DeveloperLandingPage() {
         }
         .stat-icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
         .stat-number {
-          position: relative; z-index: 1; font-family: var(--font); font-size: clamp(46px, 3.5vw, 60px); font-weight: 800;
+          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 700;
           color: #171b29; line-height: .95; letter-spacing: -.055em; margin-bottom: .7rem;
         }
         .stat-suffix { color: #f16f32; }
-        .stat-label { position: relative; z-index: 1; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 600; line-height: 1.2; }
+        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 600; line-height: 1.2; }
         .stat-chart { position: absolute; right: 0; bottom: 0; width: 62%; height: 78%; opacity: .95; pointer-events: none; }
         .stat-chart path { fill: none; stroke: #ff854b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
         .stat-chart .chart-fill { fill: url(#stats-chart-fill); stroke: none; opacity: .55; }
