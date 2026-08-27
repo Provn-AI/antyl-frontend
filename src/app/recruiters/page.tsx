@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { submitDemoRequest } from "@/services/demo.request.service";
+import { Building2, Crosshair, UserRoundCheck } from "lucide-react";
 
 
 
@@ -618,39 +619,58 @@ export default function RecruiterLandingPage() {
 
         /* ---- STATS ---- */
         .stats-strip {
-          // border-top: 1px solid var(--gray2); 
-          // border-bottom: 1px solid var(--gray2);
-          background: #FFF8ED; padding: 4rem 2rem;
+          position: relative; overflow: hidden; background: #FFF8ED; padding: 4.75rem 2.4rem;
+        }
+        .stats-strip::before {
+          content: ''; position: absolute; width: 260px; height: 260px; left: -155px; bottom: -145px;
+          border-radius: 50%; background: #FFE7D1; opacity: .65;
+        }
+        .stats-strip::after {
+          content: ''; position: absolute; width: 220px; height: 220px; right: -120px; top: -120px;
+          border-radius: 50%; border: 1px solid rgba(255, 130, 71, .16);
+          box-shadow: 0 0 0 22px rgba(255, 130, 71, .035), 0 0 0 44px rgba(255, 130, 71, .025);
         }
         .stats-inner {
-          max-width: 1200px; margin: 0 auto; display: flex; gap: 4rem; align-items: center;
+          position: relative; z-index: 1; max-width: 1390px; margin: 0 auto;
+          display: flex; gap: clamp(2.75rem, 5vw, 4.75rem); align-items: center;
         }
         .stats-image-container {
-          flex: 0 0 360px; height: 380px; border-radius: 20px; overflow: hidden;
-          background: linear-gradient(135deg, #FFD6E8 0%, #FFE8D6 100%);
-          box-shadow: 0 20px 50px rgba(0,0,0,.08);
+          flex: 0 0 min(32vw, 430px); aspect-ratio: 430 / 450; height: auto;
+          border: 3px solid #fff; border-radius: 32px; overflow: hidden; background: #e9e5df;
+          box-shadow: 0 20px 36px rgba(74, 57, 35, .12), 0 0 0 2px rgba(255, 130, 71, .35), 0 0 24px rgba(255, 130, 71, .35);
         }
         .stats-image-container img {
-          width: 100%; height: 100%; object-fit: cover; display: block;
+          width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;
         }
         .stats-grid-container {
-          flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem;
+          flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem 1rem;
         }
         .stat-item {
-          display: flex; flex-direction: column; text-align: left; padding: 1.25rem;
-          background: var(--white); border: 1px solid var(--gray2); border-radius: 12px;
-          transition: transform .2s, box-shadow .2s;
+          position: relative; display: flex; flex-direction: column; justify-content: center; text-align: left;
+          min-height: 185px; padding: 1.5rem 1.75rem; overflow: hidden;
+          background: rgba(255, 255, 255, .9); border: 1px solid rgba(222, 214, 204, .8); border-radius: 20px;
+          box-shadow: 0 10px 28px rgba(80, 55, 30, .04); transition: transform .2s, box-shadow .2s;
         }
         .stat-item:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
         .stat-item:last-child { grid-column: 1 / -1; }
         .stat-item:not(:last-child)::after { display: none;
         }
-        .stat-number {
-          font-family: var(--serif); font-size: 48px; font-weight: 800;
-          color: var(--ink); line-height: 1; letter-spacing: -.03em; margin-bottom: .5rem;
+        .stat-icon {
+          display: flex; align-items: center; justify-content: center; width: 60px; height: 60px;
+          margin-bottom: 1rem; border-radius: 50%; color: #ef6f2d; background: #FFF0E4;
         }
-        .stat-suffix { background: var(--grad-90); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .stat-label { font-size: 15px; color: var(--ink); font-weight: 700; line-height: 1.2; }
+        .stat-icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
+        .stat-number {
+          position: relative; z-index: 1; font-family: var(--font); font-size: clamp(46px, 3.5vw, 60px); font-weight: 800;
+          color: #171b29; line-height: .95; letter-spacing: -.055em; margin-bottom: .7rem;
+        }
+        .stat-suffix { color: #f16f32; }
+        .stat-label { position: relative; z-index: 1; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 600; line-height: 1.2; }
+        .stat-chart { position: absolute; right: 0; bottom: 0; width: 62%; height: 78%; opacity: .95; pointer-events: none; }
+        .stat-chart path { fill: none; stroke: #ff854b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .stat-chart .chart-fill { fill: url(#recruiter-chart-fill); stroke: none; opacity: .55; }
+        .stat-chart line { stroke: #ffb38a; stroke-width: 1; stroke-dasharray: 5 7; opacity: .45; }
+        .stat-chart circle { fill: #fff; stroke: #ff854b; stroke-width: 3; }
 
         /* ---- TECH CAROUSEL ---- */
         .tech-carousel-section {
@@ -877,9 +897,11 @@ export default function RecruiterLandingPage() {
           .hero { padding: 6rem 1.25rem 3rem; }
           .steps-grid { grid-template-columns: 1fr; }
           .features-grid { grid-template-columns: 1fr; }
-          .stats-inner { flex-direction: column; gap: 2rem; }
-          .stats-image-container { width: 100%; max-width: 360px; height: 320px; flex-basis: auto; }
+          .stats-strip { padding: 3rem 1.25rem; }
+          .stats-inner { flex-direction: column; gap: 1.5rem; }
+          .stats-image-container { width: 100%; max-width: 450px; height: auto; flex-basis: auto; }
           .stats-grid-container { width: 100%; gap: 1rem; }
+          .stat-item { min-height: 185px; padding: 1.25rem; border-radius: 18px; }
           .proof-card { width: min(88vw, 420px); }
           .proof-card-media { width: 135px; }
           .stat-item::after { display: none; }
@@ -1051,10 +1073,11 @@ export default function RecruiterLandingPage() {
       <div className={`stats-strip lazy-section${lazyStats.visible ? " visible" : ""}`} ref={(el) => { (lazyStats.ref as React.MutableRefObject<HTMLDivElement | null>).current = el; statsRef.current = el; }}>
         <div className="stats-inner">
           <div className="stats-image-container">
-            <img src="/Girl.jpeg" alt="Verified developer on Antyl" />
+            <img src="/Boy.jpeg" alt="Developer working on Antyl" />
           </div>
           <div className="stats-grid-container">
             <div className="stat-item">
+              <div className="stat-icon" aria-hidden="true"><UserRoundCheck /></div>
               <div className="stat-number">
                 {counts.devs >= 1000
                   ? `${(counts.devs / 1000).toFixed(counts.devs >= 10000 ? 0 : 1)}k`
@@ -1064,16 +1087,30 @@ export default function RecruiterLandingPage() {
               <div className="stat-label">Verified developers to hire from</div>
             </div>
             <div className="stat-item">
+              <div className="stat-icon" aria-hidden="true"><Building2 /></div>
               <div className="stat-number">
                 {counts.companies}<span className="stat-suffix">+</span>
               </div>
               <div className="stat-label">Companies hiring</div>
             </div>
             <div className="stat-item">
+              <div className="stat-icon" aria-hidden="true"><Crosshair /></div>
               <div className="stat-number">
                 {counts.match}<span className="stat-suffix">%</span>
               </div>
               <div className="stat-label">Match accuracy</div>
+              <svg className="stat-chart" viewBox="0 0 420 180" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="recruiter-chart-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stopColor="#ff9b67" stopOpacity=".35" />
+                    <stop offset="1" stopColor="#ff9b67" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path className="chart-fill" d="M0 180V165C45 153 56 142 91 139C127 136 136 120 163 111C190 102 205 110 229 98C258 83 258 52 295 53C327 55 328 65 357 53C378 44 390 29 420 8V180Z" />
+                <line x1="295" y1="53" x2="295" y2="180" /><line x1="357" y1="53" x2="357" y2="180" /><line x1="420" y1="8" x2="420" y2="180" />
+                <path d="M0 165C45 153 56 142 91 139C127 136 136 120 163 111C190 102 205 110 229 98C258 83 258 52 295 53C327 55 328 65 357 53C378 44 390 29 420 8" />
+                <circle cx="420" cy="8" r="7" />
+              </svg>
             </div>
           </div>
         </div>
