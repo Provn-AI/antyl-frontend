@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   motion,
   AnimatePresence,
@@ -149,12 +150,12 @@ function NotLookingModal({
               >
                 Dismiss
               </button>
-              <a
+              <Link
                 href="/profile"
                 className="flex-1 py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors flex items-center justify-center"
               >
                 Update status
-              </a>
+              </Link>
             </div>
           </motion.div>
         </motion.div>
@@ -230,61 +231,52 @@ function SkipConfirmModal({
 
 /* ------------------------------------------------------------------ */
 /* Mascot-driven empty state — used when there are no jobs in the feed */
-/* at all. Fills the card with the mascot instead of a bare icon, and  */
-/* gives the person two concrete next actions instead of a dead end.   */
-/*                                                                      */
-/* NOTE: the shift-right is applied to the INNER content wrapper, not  */
-/* the outer card. The outer card has overflow-hidden, so translating  */
-/* it directly can push it (or parts of it) outside the visible/       */
-/* clipped area and make it appear to "disappear". Shifting the inner  */
-/* flex wrapper instead keeps everything within the card's bounds.     */
+/* at all. Fully responsive: sizes/spacing/decoration scale down       */
+/* step-by-step from mobile → tablet → desktop.                        */
 /* ------------------------------------------------------------------ */
 function NoJobsState() {
   return (
-    <div className="relative bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden min-h-[62vh] flex items-center justify-center px-8 py-14">
+    <div className="relative bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden min-h-[420px] sm:min-h-[500px] md:min-h-[62vh] flex items-center justify-center px-5 sm:px-8 py-10 sm:py-14">
       <div
-        className="pointer-events-none absolute -left-20 top-1/3 w-80 h-80 rounded-full bg-orange-50 blur-3xl opacity-60"
+        className="pointer-events-none absolute -left-10 sm:-left-20 top-1/3 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 rounded-full bg-orange-50 blur-3xl opacity-60"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute -right-20 bottom-1/4 w-80 h-80 rounded-full bg-orange-50 blur-3xl opacity-60"
+        className="pointer-events-none absolute -right-10 sm:-right-20 bottom-1/4 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 rounded-full bg-orange-50 blur-3xl opacity-60"
         aria-hidden="true"
       />
 
-      <div
-        className="relative flex flex-col md:flex-row items-center gap-10 md:gap-16 max-w-2xl mx-auto"
-        style={{ transform: "translateX(40px)" }}
-      >
+      <div className="relative flex flex-col md:flex-row items-center justify-center gap-6 sm:gap-8 md:gap-10 max-w-3xl w-full mx-auto">
         <img
           src="/no_jobs_pose.png"
           alt=""
-          className="w-60 h-60 md:w-72 md:h-72 object-contain shrink-0 select-none"
+          className="w-32 h-32 sm:w-52 sm:h-52 md:w-64 md:h-64 lg:w-72 lg:h-72 object-contain shrink-0 select-none"
           draggable={false}
         />
 
         <div className="text-center md:text-left">
-          <h2 className="font-sans text-2xl md:text-[28px] font-bold text-gray-900 mb-2">
+          <h2 className="font-sans text-xl sm:text-2xl md:text-[28px] font-bold text-gray-900 mb-2">
             No jobs available right now
           </h2>
-          <p className="font-sans text-gray-400 leading-relaxed mb-7 max-w-md">
+          <p className="font-sans text-sm sm:text-base text-gray-400 leading-relaxed mb-6 sm:mb-7 max-w-md">
             Your feed is empty for the moment. Improve your Antyl score,
             widen your preferences, or check back tomorrow, new roles get
             added every day.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center md:items-start justify-center md:justify-start gap-3">
-            <a
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-center md:justify-start gap-3">
+            <Link
               href="/profile"
               className="font-sans w-full sm:w-auto text-center px-6 py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors"
             >
               Update preferences
-            </a>
-            <a
+            </Link>
+            <Link
               href="/profile#antyl-score"
               className="font-sans w-full sm:w-auto text-center px-6 py-2.5 rounded-full text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
             >
               Improve my score
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -446,306 +438,309 @@ export default function FeedPage() {
   const isEmptyState = !loading && jobs.length === 0;
 
   return (
-    <>
+    <div className="md:flex">
       <DeveloperNavbar />
-      <NotLookingModal
-        open={showNotLookingModal}
-        onDismiss={() => setShowNotLookingModal(false)}
-      />
-      <SkipConfirmModal
-        open={!!pendingSkipJob}
-        jobTitle={pendingSkipJob?.title}
-        onCancel={cancelSkip}
-        onConfirm={confirmSkip}
-      />
 
-      <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-10">
-        <div
-          className={`w-full mx-auto transition-[max-width] duration-200 ${
-            isEmptyState ? "max-w-4xl" : "max-w-2xl"
-          }`}
-        >
-          <AnimatePresence>
-            {toast && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-sm ${
-                  toast === "applied"
-                    ? "bg-green-50 text-green-600"
-                    : toast === "skipped"
-                    ? "bg-red-50 text-red-500"
-                    : "bg-orange-50 text-[#F2754A]"
-                }`}
-              >
-                {toast === "applied" && (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    Applied
-                  </>
-                )}
-                {toast === "skipped" && (
-                  <>
-                    <X className="w-4 h-4" />
-                    Skipped
-                  </>
-                )}
-                {toast === "limit_reached" && (
-                  <>
-                    <Clock className="w-4 h-4" />
-                    Daily apply limit reached
-                  </>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+      <main className="flex-1 min-w-0">
+        <NotLookingModal
+          open={showNotLookingModal}
+          onDismiss={() => setShowNotLookingModal(false)}
+        />
+        <SkipConfirmModal
+          open={!!pendingSkipJob}
+          jobTitle={pendingSkipJob?.title}
+          onCancel={cancelSkip}
+          onConfirm={confirmSkip}
+        />
 
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="font-sans text-3xl font-bold text-gray-900">
-              Find your next role
-            </h1>
+        <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-10">
+          <div
+            className={`w-full mx-auto transition-[max-width] duration-200 ${
+              isEmptyState ? "max-w-4xl" : "max-w-2xl"
+            }`}
+          >
+            <AnimatePresence>
+              {toast && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-sm ${
+                    toast === "applied"
+                      ? "bg-green-50 text-green-600"
+                      : toast === "skipped"
+                      ? "bg-red-50 text-red-500"
+                      : "bg-orange-50 text-[#F2754A]"
+                  }`}
+                >
+                  {toast === "applied" && (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      Applied
+                    </>
+                  )}
+                  {toast === "skipped" && (
+                    <>
+                      <X className="w-4 h-4" />
+                      Skipped
+                    </>
+                  )}
+                  {toast === "limit_reached" && (
+                    <>
+                      <Clock className="w-4 h-4" />
+                      Daily apply limit reached
+                    </>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {statusLoaded && (
-              <span
-                className={`font-sans text-sm font-semibold px-3 py-1.5 rounded-full ${
-                  applyDisabled
-                    ? "bg-gray-100 text-gray-400"
-                    : "bg-orange-50 text-[#F2754A]"
-                }`}
-              >
-                {applyRemaining}/{applyLimit} applies left today
-              </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+              <h1 className="font-sans text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+                Find your next role
+              </h1>
+
+              {statusLoaded && (
+                <span
+                  className={`font-sans text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full self-start sm:self-auto whitespace-nowrap ${
+                    applyDisabled
+                      ? "bg-gray-100 text-gray-400"
+                      : "bg-orange-50 text-[#F2754A]"
+                  }`}
+                >
+                  {applyRemaining}/{applyLimit} applies left today
+                </span>
+              )}
+            </div>
+
+            {loading ? (
+              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm py-24 text-center">
+                <div
+                  className="w-8 h-8 rounded-full border-[3px] border-gray-200 mx-auto animate-spin"
+                  style={{ borderTopColor: "#F2754A" }}
+                />
+                <p className="text-gray-400 text-sm mt-4">Loading jobs...</p>
+              </div>
+            ) : jobs.length === 0 ? (
+              <NoJobsState />
+            ) : hasFinishedFeed ? (
+              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-20 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-5">
+                  <CheckCircle2 className="w-7 h-7 text-[#F2754A]" />
+                </div>
+                <h2 className="font-sans text-2xl font-bold text-gray-900 mb-2">
+                  You are all caught up
+                </h2>
+                <p className="font-sans text-gray-400 max-w-sm mx-auto leading-relaxed">
+                  You have gone through every role we have right now. Check
+                  back soon for new matches.
+                </p>
+                {canGoBack && (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="font-sans mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#F2754A] hover:underline"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Go back to previous roles
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                {applyDisabled && (
+                  <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3 mb-5 flex items-center gap-2 text-sm text-[#F2754A] font-medium">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    You have used all {applyLimit} applies today. You can still
+                    skip through roles - applying resumes at midnight IST.
+                  </div>
+                )}
+
+                {decidedIds.has(currentJob.id) && (
+                  <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 mb-5 text-sm text-gray-500 font-medium text-center">
+                    You already decided on this one - use Next to keep browsing.
+                  </div>
+                )}
+
+                <div className="relative w-full" style={{ minHeight: 420 }}>
+                  <AnimatePresence mode="popLayout">
+                    <SwipeCard
+                      key={currentJob.id}
+                      job={currentJob}
+                      onSwipeRight={handleApply}
+                      onRequestSkip={handleRequestSkip}
+                      applyDisabled={applyDisabled}
+                      exitDirection={exitDirection}
+                    />
+                  </AnimatePresence>
+                </div>
+
+                {/* Back / Next browsing row */}
+                <div className="flex items-center gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    disabled={!canGoBack || swiping}
+                    aria-label="Back"
+                    className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Back
+                  </button>
+                  <span className="text-gray-200">•</span>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={swiping}
+                    aria-label="Next"
+                    className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-5 mt-5">
+                  <button
+                    type="button"
+                    onClick={handleRequestSkip}
+                    disabled={swiping}
+                    aria-label="Skip"
+                    className="butn butn__new butn--small butn--skip"
+                  >
+                    <span>Skip</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleApply}
+                    disabled={swiping || applyDisabled}
+                    aria-label="Apply"
+                    className="butn butn__new butn--small butn--apply"
+                    style={
+                      applyDisabled
+                        ? { opacity: 0.5, cursor: "not-allowed" }
+                        : undefined
+                    }
+                  >
+                    <span>Apply</span>
+                  </button>
+
+                  <style jsx>{`
+                    .butn {
+                      display: inline-flex;
+                      align-items: center;
+                      justify-content: center;
+                      font-size: 0.95rem;
+                      text-transform: none;
+                      text-decoration: none;
+                      padding: 0 16px;
+                      height: 48px;
+                      min-width: 84px;
+                      width: auto;
+                      margin-right: 0;
+                      border-radius: 8px;
+                      border: none;
+                      color: #111827;
+                      position: relative;
+                      overflow: hidden;
+                      transition: all 0.25s ease-in-out;
+                      cursor: pointer;
+                    }
+
+                    .butn span {
+                      z-index: 20;
+                      pointer-events: none;
+                      font-weight: 600;
+                    }
+
+                    .butn::before {
+                      background: #fff;
+                      content: "";
+                      height: 120px;
+                      opacity: 0;
+                      position: absolute;
+                      top: -40px;
+                      transform: rotate(35deg);
+                      width: 60px;
+                      transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
+                      z-index: 10;
+                    }
+
+                    .butn::after {
+                      background: #fff;
+                      content: "";
+                      height: 200px;
+                      opacity: 0;
+                      position: absolute;
+                      top: -60px;
+                      transform: rotate(35deg);
+                      transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
+                      width: 100px;
+                      z-index: 9;
+                    }
+
+                    .butn__new::before {
+                      left: -50%;
+                    }
+
+                    .butn__new::after {
+                      left: -100%;
+                    }
+
+                    .butn:hover,
+                    .butn:active {
+                      transform: translateY(-3px);
+                      color: #fff;
+                      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+                    }
+
+                    .butn__new:hover::before {
+                      left: 120%;
+                      opacity: 0.6;
+                    }
+
+                    .butn__new:hover::after {
+                      left: 220%;
+                      opacity: 0.65;
+                    }
+
+                    .butn--skip {
+                      background: #ffffff;
+                      border: 1px solid #e5e7eb;
+                      color: #6b7280;
+                    }
+
+                    .butn--skip::before,
+                    .butn--skip::after {
+                      background: rgba(0, 0, 0, 0.06);
+                    }
+
+                    .butn--skip:hover {
+                      color: #fff;
+                      background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
+                    }
+
+                    .butn--apply {
+                      background: linear-gradient(90deg, #F2754A 0%, #F8B36B 100%);
+                      color: #ffffff;
+                    }
+
+                    .butn--apply::before,
+                    .butn--apply::after {
+                      background: rgba(255, 255, 255, 0.22);
+                    }
+                  `}</style>
+                </div>
+
+                <p className="text-sm text-gray-400 mt-5">
+                  {jobs.length - currentIndex - 1} more roles after this one
+                </p>
+              </div>
             )}
           </div>
-
-          {loading ? (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm py-24 text-center">
-              <div
-                className="w-8 h-8 rounded-full border-[3px] border-gray-200 mx-auto animate-spin"
-                style={{ borderTopColor: "#F2754A" }}
-              />
-              <p className="text-gray-400 text-sm mt-4">Loading jobs...</p>
-            </div>
-          ) : jobs.length === 0 ? (
-            <NoJobsState />
-          ) : hasFinishedFeed ? (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-20 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-5">
-                <CheckCircle2 className="w-7 h-7 text-[#F2754A]" />
-              </div>
-              <h2 className="font-sans text-2xl font-bold text-gray-900 mb-2">
-                You are all caught up
-              </h2>
-              <p className="font-sans text-gray-400 max-w-sm mx-auto leading-relaxed">
-                You have gone through every role we have right now. Check
-                back soon for new matches.
-              </p>
-              {canGoBack && (
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="font-sans mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#F2754A] hover:underline"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Go back to previous roles
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              {applyDisabled && (
-                <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3 mb-5 flex items-center gap-2 text-sm text-[#F2754A] font-medium">
-                  <Clock className="w-4 h-4 flex-shrink-0" />
-                  You have used all {applyLimit} applies today. You can still
-                  skip through roles - applying resumes at midnight IST.
-                </div>
-              )}
-
-              {decidedIds.has(currentJob.id) && (
-                <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 mb-5 text-sm text-gray-500 font-medium text-center">
-                  You already decided on this one - use Next to keep browsing.
-                </div>
-              )}
-
-              <div className="relative w-full" style={{ minHeight: 420 }}>
-                <AnimatePresence mode="popLayout">
-                  <SwipeCard
-                    key={currentJob.id}
-                    job={currentJob}
-                    onSwipeRight={handleApply}
-                    onRequestSkip={handleRequestSkip}
-                    applyDisabled={applyDisabled}
-                    exitDirection={exitDirection}
-                  />
-                </AnimatePresence>
-              </div>
-
-              {/* Back / Next browsing row */}
-              <div className="flex items-center gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  disabled={!canGoBack || swiping}
-                  aria-label="Back"
-                  className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Back
-                </button>
-                <span className="text-gray-200">•</span>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={swiping}
-                  aria-label="Next"
-                  className="flex items-center gap-1 text-sm font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-5 mt-5">
-                <button
-                  type="button"
-                  onClick={handleRequestSkip}
-                  disabled={swiping}
-                  aria-label="Skip"
-                  className="butn butn__new butn--small butn--skip"
-                >
-                  <span>Skip</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleApply}
-                  disabled={swiping || applyDisabled}
-                  aria-label="Apply"
-                  className="butn butn__new butn--small butn--apply"
-                  style={
-                    applyDisabled
-                      ? { opacity: 0.5, cursor: "not-allowed" }
-                      : undefined
-                  }
-                >
-                  <span>Apply</span>
-                </button>
-
-                <style jsx>{`
-                  .butn {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 0.95rem;
-                    text-transform: none;
-                    text-decoration: none;
-                    padding: 0 16px;
-                    height: 48px;
-                    min-width: 84px;
-                    width: auto;
-                    margin-right: 0;
-                    border-radius: 8px;
-                    border: none;
-                    color: #111827;
-                    position: relative;
-                    overflow: hidden;
-                    transition: all 0.25s ease-in-out;
-                    cursor: pointer;
-                  }
-
-                  .butn span {
-                    z-index: 20;
-                    pointer-events: none;
-                    font-weight: 600;
-                  }
-
-                  .butn::before {
-                    background: #fff;
-                    content: "";
-                    height: 120px;
-                    opacity: 0;
-                    position: absolute;
-                    top: -40px;
-                    transform: rotate(35deg);
-                    width: 60px;
-                    transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
-                    z-index: 10;
-                  }
-
-                  .butn::after {
-                    background: #fff;
-                    content: "";
-                    height: 200px;
-                    opacity: 0;
-                    position: absolute;
-                    top: -60px;
-                    transform: rotate(35deg);
-                    transition: all 600ms cubic-bezier(0.19, 1, 0.22, 1);
-                    width: 100px;
-                    z-index: 9;
-                  }
-
-                  .butn__new::before {
-                    left: -50%;
-                  }
-
-                  .butn__new::after {
-                    left: -100%;
-                  }
-
-                  .butn:hover,
-                  .butn:active {
-                    transform: translateY(-3px);
-                    color: #fff;
-                    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-                  }
-
-                  .butn__new:hover::before {
-                    left: 120%;
-                    opacity: 0.6;
-                  }
-
-                  .butn__new:hover::after {
-                    left: 220%;
-                    opacity: 0.65;
-                  }
-
-                  .butn--skip {
-                    background: #ffffff;
-                    border: 1px solid #e5e7eb;
-                    color: #6b7280;
-                  }
-
-                  .butn--skip::before,
-                  .butn--skip::after {
-                    background: rgba(0, 0, 0, 0.06);
-                  }
-
-                  .butn--skip:hover {
-                    color: #fff;
-                    background: linear-gradient(90deg, #ef4444 0%, #f97316 100%);
-                  }
-
-                  .butn--apply {
-                    background: linear-gradient(90deg, #F2754A 0%, #F8B36B 100%);
-                    color: #ffffff;
-                  }
-
-                  .butn--apply::before,
-                  .butn--apply::after {
-                    background: rgba(255, 255, 255, 0.22);
-                  }
-                `}</style>
-              </div>
-
-              <p className="text-sm text-gray-400 mt-5">
-                {jobs.length - currentIndex - 1} more roles after this one
-              </p>
-            </div>
-          )}
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
 }
