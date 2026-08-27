@@ -350,6 +350,14 @@ export default function DeveloperLandingPage() {
           overflow-x: hidden;
         }
 
+        .page-gradient {
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background:
+            radial-gradient(circle at 0% 8%, rgba(255, 107, 77, .055), transparent 30%),
+            radial-gradient(circle at 100% 12%, rgba(255, 216, 77, .065), transparent 28%),
+            radial-gradient(circle at 52% 46%, rgba(255, 179, 71, .04), transparent 25%);
+        }
+
         a:focus-visible, button:focus-visible {
           outline: 2px solid var(--coral);
           outline-offset: 3px;
@@ -432,11 +440,10 @@ export default function DeveloperLandingPage() {
         /* ---- HERO (split layout) ---- */
         .hero {
           min-height: 100vh; display: flex; align-items: center; justify-content: center;
-          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; 
+          padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: transparent;
         }
         .hero-bg-blob {
-          position: absolute; border-radius: 50%;
-          filter: blur(80px); opacity: .12; pointer-events: none;
+          display: none;
         }
         .blob-1 { width: 600px; height: 600px; background: var(--coral); top: -200px; left: -200px; }
         .blob-2 { width: 500px; height: 500px; background: var(--lemon); bottom: -100px; right: -150px; }
@@ -757,6 +764,8 @@ export default function DeveloperLandingPage() {
         }
       `}</style>
 
+      <div className="page-gradient" aria-hidden="true" />
+
       {/* ─── NAVBAR ─── */}
       <nav className={`navbar${scrolled ? " scrolled" : ""}`}>
         <Link href='/' style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
@@ -776,9 +785,9 @@ export default function DeveloperLandingPage() {
 
       {/* ─── HERO (split layout: text left, image right) ─── */}
       <section className={`hero lazy-section${lazyHero.visible ? " visible" : ""}`} ref={lazyHero.ref}>
-        {/* <div className="hero-bg-blob blob-1" />
+        <div className="hero-bg-blob blob-1" />
         <div className="hero-bg-blob blob-2" />
-        <div className="hero-bg-blob blob-3" /> */}
+        <div className="hero-bg-blob blob-3" />
         <div className="hero-inner">
           <div className="hero-content">
             <div className="hero-eyebrow"><span className="eyebrow-dot" />AI verification · Auto-apply built in</div>
