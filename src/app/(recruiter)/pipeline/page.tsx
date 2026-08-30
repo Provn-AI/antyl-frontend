@@ -6,6 +6,7 @@ import InterviewScheduleModal from "@/components/InterviewScheduleModal";
 import {
   UserCheck, Phone, CalendarDays, BadgeDollarSign,
   PartyPopper, XCircle, ChevronRight, ChevronLeft, Briefcase,
+  AlertTriangle,
 } from "lucide-react";
 
 import ConfettiBurst from "@/components/ConfettiBurst";
@@ -66,15 +67,81 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
+/** Small centered confirmation modal for destructive actions like rejecting a candidate. */
+function ConfirmRejectModal({
+  candidateName,
+  onConfirm,
+  onCancel,
+}: {
+  candidateName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleConfirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await onConfirm();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
+          <h3 className="text-base font-bold text-gray-900">Reject candidate?</h3>
+        </div>
+
+        <p className="text-sm text-gray-500 mb-6">
+          Are you sure you want to reject <span className="font-semibold text-gray-700">{candidateName}</span>?
+          This will move them to the Rejected stage.
+        </p>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-40"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={submitting}
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {submitting ? (
+              <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+            ) : (
+              "Reject"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StageCard({
   match,
   stages,
   onMove,
+  onRejectRequest,
   celebrating,
 }: {
   match: Match;
   stages: typeof STAGES;
   onMove: (matchId: string, newStage: string) => Promise<void>;
+  onRejectRequest: (match: Match) => void;
   celebrating?: boolean;
 }) {
   const [movingForward, setMovingForward] = useState(false);
@@ -82,6 +149,7 @@ function StageCard({
   const currentIdx = stages.findIndex((s) => s.key === match.pipeline_stage);
   const nextStage = stages[currentIdx + 1];
   const prevStage = stages[currentIdx - 1];
+  const isRejected = match.pipeline_stage === "rejected";
 
   const handleMoveForward = async () => {
     if (!nextStage || movingForward) return;
@@ -160,6 +228,18 @@ function StageCard({
           <span>Back to {prevStage.label}</span>
         </button>
       )}
+
+      {/* Reject — available at any stage except when already rejected */}
+      {!isRejected && (
+        <button
+          type="button"
+          onClick={() => onRejectRequest(match)}
+          className="mt-1.5 w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+        >
+          <span>Reject</span>
+          <XCircle className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -174,6 +254,7 @@ export default function PipelinePage() {
   // job_title is confirmed consistent across both, so we join on that.
   const [selectedJobTitle, setSelectedJobTitle] = useState<string>("all");
   const [pendingInterviewMatch, setPendingInterviewMatch] = useState<Match | null>(null);
+  const [pendingRejectMatch, setPendingRejectMatch] = useState<Match | null>(null);
   const [celebratingMatchId, setCelebratingMatchId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -249,6 +330,25 @@ export default function PipelinePage() {
       )
     );
     setPendingInterviewMatch(null);
+  };
+
+  // Reject flow — opens a confirmation modal; only commits the stage
+  // change if the recruiter confirms.
+  const handleRejectRequest = (match: Match) => {
+    setPendingRejectMatch(match);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!pendingRejectMatch) return;
+    const matchId = pendingRejectMatch.match_id;
+
+    await updatePipelineStage(matchId, "rejected");
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.match_id === matchId ? { ...m, pipeline_stage: "rejected" } : m
+      )
+    );
+    setPendingRejectMatch(null);
   };
 
   // Unique job titles, preferring the /recruiter/jobs list (so jobs with
@@ -345,6 +445,7 @@ export default function PipelinePage() {
                         match={match}
                         stages={STAGES}
                         onMove={handleMove}
+                        onRejectRequest={handleRejectRequest}
                         celebrating={celebratingMatchId === match.match_id}
                       />
                     ))
@@ -364,6 +465,16 @@ export default function PipelinePage() {
           candidateName={pendingInterviewMatch.name}
           onConfirm={handleConfirmInterview}
           onCancel={() => setPendingInterviewMatch(null)}
+        />
+      )}
+
+      {/* Reject confirmation modal — blocks the "rejected" stage change
+          until the recruiter explicitly confirms. */}
+      {pendingRejectMatch && (
+        <ConfirmRejectModal
+          candidateName={pendingRejectMatch.name}
+          onConfirm={handleConfirmReject}
+          onCancel={() => setPendingRejectMatch(null)}
         />
       )}
     </div>

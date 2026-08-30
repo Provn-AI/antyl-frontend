@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Zap, Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -18,6 +19,7 @@ const inputCls =
   "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
 
 export default function AutoApplySettingsPage() {
+  const router = useRouter();
   const [prefs, setPrefs] = useState<AutoApplyPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -72,7 +74,7 @@ export default function AutoApplySettingsPage() {
         salary_max: salaryMax,
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      router.push("/profile");
     } catch (error) {
       console.error(error);
     } finally {
