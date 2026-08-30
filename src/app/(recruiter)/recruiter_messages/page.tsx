@@ -372,11 +372,11 @@ export default function RecruiterMessagesPage() {
               className="px-6 py-4 bg-white flex items-center gap-3"
             >
               <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Write a message…"
-                className="flex-1 text-sm px-4 py-2.5 rounded-full border border-gray-200 focus:outline-none focus:border-[#F2754A]"
-              />
+  value={draft}
+  onChange={(e) => setDraft(e.target.value)}
+  placeholder="Write a message…"
+  className="flex-1 text-sm px-4 py-2.5 rounded-full border border-gray-200 text-black focus:outline-none focus:border-[#F2754A]"
+/>
               <button
                 type="submit"
                 disabled={sending || !draft.trim()}

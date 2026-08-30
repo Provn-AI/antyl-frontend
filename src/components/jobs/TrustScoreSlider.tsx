@@ -27,12 +27,11 @@ export default function TrustScoreSlider({
 
       <div>
 
-        <div className="flex justify-between text-sm mb-2">
-          <span>
-            Minimum: {minScore}
-          </span>
-
-        </div>
+        <div className="flex justify-between text-sm mb-2 text-black">
+  <span>
+    Minimum: {minScore}
+  </span>
+</div>
 
         <input
           type="range"
