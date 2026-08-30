@@ -25,6 +25,7 @@ interface Match {
   job_id: string;
   pipeline_stage: string;
   interview_scheduled_at: string | null;
+  meeting_link: string | null;
 }
 
 interface JobOption {
@@ -187,16 +188,28 @@ function StageCard({
 
       <ScoreBar score={match.trust_score} />
 
-      {/* Scheduled interview time, if this match is in the Interview stage */}
+      {/* Scheduled interview time + meeting link, if this match is in the Interview stage */}
       {match.pipeline_stage === "interviewing" && match.interview_scheduled_at && (
-        <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-1 w-fit">
-          <CalendarDays className="w-3 h-3" />
-          {new Date(match.interview_scheduled_at).toLocaleString([], {
-            month: "short",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+        <div className="mt-2 flex flex-col gap-1">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-1 w-fit">
+            <CalendarDays className="w-3 h-3" />
+            {new Date(match.interview_scheduled_at).toLocaleString([], {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+          {match.meeting_link && (
+            
+            <a  href={match.meeting_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-bold text-blue-600 hover:underline w-fit"
+            >
+              Join meeting →
+            </a>
+          )}
         </div>
       )}
 
@@ -278,6 +291,7 @@ export default function PipelinePage() {
           pipeline_stage: m.pipeline_stage ?? m.pipelineStage ?? m.stage ?? "matched",
           interview_scheduled_at:
             m.interview_scheduled_at ?? m.interviewScheduledAt ?? null,
+          meeting_link: m.meeting_link ?? m.meetingLink ?? null,
         }));
         setMatches(normalized);
 
@@ -315,17 +329,22 @@ export default function PipelinePage() {
   }
   };
 
-  const handleConfirmInterview = async (scheduledAt: string) => {
+  const handleConfirmInterview = async (scheduledAt: string, meetingLink: string) => {
     if (!pendingInterviewMatch) return;
     const matchId = pendingInterviewMatch.match_id;
 
     await updatePipelineStage(matchId, "interviewing");
-    await scheduleInterview(matchId, scheduledAt);
+    await scheduleInterview(matchId, scheduledAt, meetingLink);
 
     setMatches((prev) =>
       prev.map((m) =>
         m.match_id === matchId
-          ? { ...m, pipeline_stage: "interviewing", interview_scheduled_at: scheduledAt }
+          ? {
+              ...m,
+              pipeline_stage: "interviewing",
+              interview_scheduled_at: scheduledAt,
+              meeting_link: meetingLink || null,
+            }
           : m
       )
     );
@@ -459,7 +478,7 @@ export default function PipelinePage() {
       </div>
 
       {/* Interview scheduling modal — blocks the "interviewing" stage
-          change until a date/time is confirmed. */}
+          change until a date/time (and optional meeting link) is confirmed. */}
       {pendingInterviewMatch && (
         <InterviewScheduleModal
           candidateName={pendingInterviewMatch.name}

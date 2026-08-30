@@ -55,6 +55,7 @@ interface Match {
   job_id: string;
   pipeline_stage: string;
   interview_scheduled_at: string | null;
+  meeting_link: string | null;
 }
 
 // Brand-ish palette for chart slices/bars.
@@ -496,22 +497,33 @@ export default function RecruiterDashboard() {
                     iconBg="bg-violet-50"
                   >
                     {interviewsToday.map((m) => (
-                      <button
-                        key={m.match_id}
-                        type="button"
-                        onClick={() => router.push("/dashboard/pipeline")}
-                        className="flex-shrink-0 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-violet-50 hover:bg-violet-100 transition-colors whitespace-nowrap"
-                      >
-                        <span className="text-xs font-semibold text-violet-900">
-                          {m.name}
-                        </span>
-                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-violet-600">
-                          {new Date(m.interview_scheduled_at!).toLocaleTimeString(
-                            [],
-                            { hour: "2-digit", minute: "2-digit" }
-                          )}
-                        </span>
-                      </button>
+                      <div key={m.match_id} className="flex-shrink-0 flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => router.push("/dashboard/pipeline")}
+                          className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-violet-50 hover:bg-violet-100 transition-colors whitespace-nowrap"
+                        >
+                          <span className="text-xs font-semibold text-violet-900">
+                            {m.name}
+                          </span>
+                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-violet-600">
+                            {new Date(m.interview_scheduled_at!).toLocaleTimeString(
+                              [],
+                              { hour: "2-digit", minute: "2-digit" }
+                            )}
+                          </span>
+                        </button>
+                        {m.meeting_link && (
+                          
+                           <a href={m.meeting_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-bold text-violet-600 hover:underline whitespace-nowrap"
+                          >
+                            Join
+                          </a>
+                        )}
+                      </div>
                     ))}
                   </ReminderRow>
                 )}

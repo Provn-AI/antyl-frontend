@@ -75,27 +75,44 @@ export async function updatePipelineStage(
 
 export async function scheduleInterview(
   matchId: string,
-  scheduledAt: string
+  scheduledAt: string,
+  meetingLink?: string
 ) {
   const token = localStorage.getItem("access_token");
 
-  const res = await fetch(
-    `${API_URL}/match/${matchId}/interview`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ scheduled_at: scheduledAt }),
-    }
-  );
+  const res = await fetch(`${API_URL}/match/${matchId}/interview`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      scheduled_at: scheduledAt,
+      meeting_link: meetingLink || null,
+    }),
+  });
 
   const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.detail || "Failed to schedule interview");
-  }
-
+  if (!res.ok) throw new Error(data.detail || "Failed to schedule interview");
   return data.match;
+}
+
+export interface DeveloperMatch {
+  match_id: string;
+  job_id: string;
+  job_title: string;
+  pipeline_stage: string;
+  matched_at: string;
+  interview_scheduled_at: string | null;
+  meeting_link: string | null;
+}
+
+export async function getMyInterviews(): Promise<DeveloperMatch[]> {
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(`${API_URL}/match/mine`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to load interviews");
+  return data.matches;
 }

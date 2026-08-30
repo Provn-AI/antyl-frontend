@@ -10,13 +10,14 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Flame, Target, TrendingUp, Zap } from "lucide-react";
+import { Flame, Target, TrendingUp, Zap, CalendarClock } from "lucide-react";
 
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import { getMyStreak, StreakSummary } from "@/services/streak.service";
 import { getMyBadges, Badge } from "@/services/badge.service";
 import { getAutoApplyStatus, AutoApplyStatus } from "@/services/developer.service";
 import { getApplicationDashboard, ApplicationDashboard } from "@/services/dashboard.service";
+import { getMyInterviews, DeveloperMatch } from "@/services/match.service";
 
 type ViewMode = "weekly" | "monthly";
 
@@ -50,23 +51,32 @@ export default function DashboardPage() {
   const [streak, setStreak] = useState<StreakSummary | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
+  const [interviews, setInterviews] = useState<DeveloperMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewMode>("weekly");
 
   useEffect(() => {
     async function load() {
       try {
-        const [dashboardData, streakData, badgeData, autoApplyData] =
+        const [dashboardData, streakData, badgeData, autoApplyData, interviewsData] =
           await Promise.all([
             getApplicationDashboard(),
             getMyStreak(),
             getMyBadges(),
             getAutoApplyStatus(),
+            getMyInterviews(),
           ]);
         setDashboard(dashboardData);
         setStreak(streakData);
         setBadges(badgeData.badges);
         setAutoApply(autoApplyData);
+        setInterviews(
+          interviewsData.filter(
+            (m) =>
+              m.interview_scheduled_at &&
+              new Date(m.interview_scheduled_at) >= new Date()
+          )
+        );
       } catch (error) {
         console.error(error);
       } finally {
@@ -135,6 +145,47 @@ export default function DashboardPage() {
               sublabel={`Best: ${streak?.longest_streak_days ?? 0} days`}
             />
           </div>
+
+          {/* ── Upcoming interviews ── */}
+          {interviews.length > 0 && (
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
+              <div className="flex items-center gap-2 mb-4">
+                <CalendarClock className="w-5 h-5 text-[#F2754A]" />
+                <h2 className="font-bold text-gray-900 text-lg">Upcoming Interviews</h2>
+              </div>
+              <div className="space-y-2">
+                {interviews.map((m) => (
+                  <div
+                    key={m.match_id}
+                    className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 bg-orange-50/40"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">{m.job_title}</p>
+                      <p className="text-sm text-gray-400">
+                        {new Date(m.interview_scheduled_at!).toLocaleString([], {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    {m.meeting_link && (
+                      
+                       <a href={m.meeting_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0"
+                        style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+                      >
+                        Join
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ── Trend chart ── */}
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
@@ -221,8 +272,9 @@ export default function DashboardPage() {
                 <span className="text-3xl font-black text-gray-900">{badges.length}</span>
                 <span className="text-sm text-gray-400 mb-1">total</span>
               </div>
+
               
-                < a href="/profile"
+               <a href="/profile"
                 className="inline-block mt-2 text-xs font-bold text-[#F2754A] hover:underline"
               >
                 View on profile →

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, X } from "lucide-react";
+import { CalendarDays, Link2, X } from "lucide-react";
 
 interface Props {
   candidateName: string;
-  onConfirm: (scheduledAt: string) => Promise<void>;
+  onConfirm: (scheduledAt: string, meetingLink: string) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -16,6 +16,7 @@ export default function InterviewScheduleModal({
 }: Props) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [meetingLink, setMeetingLink] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,11 +25,15 @@ export default function InterviewScheduleModal({
       setError("Please pick both a date and time.");
       return;
     }
+    if (meetingLink && !/^https?:\/\//i.test(meetingLink.trim())) {
+      setError("Meeting link should start with http:// or https://");
+      return;
+    }
     setError("");
     setSubmitting(true);
     try {
       const iso = new Date(`${date}T${time}`).toISOString();
-      await onConfirm(iso);
+      await onConfirm(iso, meetingLink.trim());
     } catch (err) {
       console.error(err);
       setError("Couldn't schedule the interview. Please try again.");
@@ -103,6 +108,25 @@ export default function InterviewScheduleModal({
               style={{ colorScheme: "light" }}
               className="w-full px-4 py-2.5 rounded-2xl border border-gray-200 text-sm text-gray-900 font-semibold outline-none focus:border-[#F2754A] focus:ring-2 focus:ring-orange-100 transition-colors"
             />
+          </div>
+          <div>
+            <label
+              htmlFor="interview-link"
+              className="block text-xs font-semibold text-gray-500 mb-1.5"
+            >
+              Meeting link <span className="text-gray-300 font-normal">(optional)</span>
+            </label>
+            <div className="relative">
+              <Link2 className="w-4 h-4 text-gray-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                id="interview-link"
+                type="url"
+                placeholder="https://meet.google.com/..."
+                value={meetingLink}
+                onChange={(e) => setMeetingLink(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-gray-200 text-sm text-gray-900 font-semibold outline-none focus:border-[#F2754A] focus:ring-2 focus:ring-orange-100 transition-colors"
+              />
+            </div>
           </div>
         </div>
 
