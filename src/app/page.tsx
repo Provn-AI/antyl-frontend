@@ -826,7 +826,7 @@ export default function DeveloperLandingPage() {
           </div>
           {/* Hero image - no blob, no border-radius */}
           <div className="hero-image-wrap">
-            <Image src="/developer_pic.png" alt="Developer using Antyl" width={4460} height={4540} style={{ objectFit: "cover", background: "transparent" }} priority />
+            <Image src="/developer_pic.svg" alt="Developer using Antyl" width={6460} height={6540} style={{ objectFit: "cover", background: "transparent" }} priority />
           </div>
         </div>
       </section>
