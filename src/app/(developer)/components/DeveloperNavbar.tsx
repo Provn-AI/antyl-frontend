@@ -158,6 +158,10 @@ function getNotificationHref(n: AntylNotification): string {
       return "/profile";
     case "message":              
       return "/messages";
+    case "interview":
+    case "interview_scheduled":
+    case "interview_request":
+      return "/developer_dashboard";
     case "streak_daily":
     case "streak_week":
     case "streak_month":
