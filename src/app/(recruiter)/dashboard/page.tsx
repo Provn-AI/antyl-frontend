@@ -219,7 +219,29 @@ export default function RecruiterDashboard() {
 
         const jobsData = await jobsRes.json();
         setJobs(jobsData.jobs || []);
-        setMatches(matchesData || []);
+
+        // BUG-FIX: getMatches() isn't guaranteed to come back in the exact
+        // snake_case shape the Match interface expects — the pipeline page
+        // already accounts for this by normalizing both key styles, but
+        // this page previously assigned the raw response straight into
+        // state. When the API (or a partial update, like editing an
+        // interview's date/link) returned camelCase keys, meeting_link and
+        // interview_scheduled_at silently read as undefined here even
+        // though Pipeline showed the edit correctly. Normalize the same
+        // way Pipeline does so both pages agree on the same data.
+        const normalizedMatches: Match[] = (matchesData || []).map((m: any) => ({
+          match_id: m.match_id ?? m.matchId ?? m.id,
+          name: m.name ?? m.candidate_name ?? m.candidateName ?? "",
+          trust_score: m.trust_score ?? m.trustScore ?? 0,
+          job_title: m.job_title ?? m.jobTitle ?? m.job?.title ?? "",
+          job_id: String(m.job_id ?? m.jobId ?? m.job?.id ?? ""),
+          pipeline_stage: m.pipeline_stage ?? m.pipelineStage ?? m.stage ?? "matched",
+          interview_scheduled_at:
+            m.interview_scheduled_at ?? m.interviewScheduledAt ?? null,
+          meeting_link: m.meeting_link ?? m.meetingLink ?? null,
+        }));
+        setMatches(normalizedMatches);
+
         setAppsToday(appsTodayData || []);
       } catch (err) {
         console.error(err);
