@@ -6,7 +6,7 @@ import InterviewScheduleModal from "@/components/InterviewScheduleModal";
 import {
   UserCheck, Phone, CalendarDays, BadgeDollarSign,
   PartyPopper, XCircle, ChevronRight, ChevronLeft, Briefcase,
-  AlertTriangle,
+  AlertTriangle, Pencil,
 } from "lucide-react";
 
 import ConfettiBurst from "@/components/ConfettiBurst";
@@ -31,6 +31,16 @@ interface Match {
 interface JobOption {
   id: string;
   title: string;
+}
+
+// Drives the interview modal: "schedule" is the original flow (moving a
+// match into the Interview stage for the first time, which also changes
+// pipeline_stage). "edit" reopens the modal pre-filled for a match that's
+// already in the Interview stage, and only updates the date/time/link —
+// it never touches pipeline_stage.
+interface InterviewModalState {
+  match: Match;
+  mode: "schedule" | "edit";
 }
 
 const STAGES: {
@@ -137,12 +147,14 @@ function StageCard({
   stages,
   onMove,
   onRejectRequest,
+  onEditInterviewRequest,
   celebrating,
 }: {
   match: Match;
   stages: typeof STAGES;
   onMove: (matchId: string, newStage: string) => Promise<void>;
   onRejectRequest: (match: Match) => void;
+  onEditInterviewRequest: (match: Match) => void;
   celebrating?: boolean;
 }) {
   const [movingForward, setMovingForward] = useState(false);
@@ -191,14 +203,25 @@ function StageCard({
       {/* Scheduled interview time + meeting link, if this match is in the Interview stage */}
       {match.pipeline_stage === "interviewing" && match.interview_scheduled_at && (
         <div className="mt-2 flex flex-col gap-1">
-          <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-1 w-fit">
-            <CalendarDays className="w-3 h-3" />
-            {new Date(match.interview_scheduled_at).toLocaleString([], {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-1 w-fit">
+              <CalendarDays className="w-3 h-3" />
+              {new Date(match.interview_scheduled_at).toLocaleString([], {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => onEditInterviewRequest(match)}
+              className="flex items-center justify-center w-5 h-5 rounded-full text-amber-500 bg-amber-50 hover:bg-amber-100 transition-colors flex-shrink-0"
+              aria-label="Edit interview time"
+              title="Edit interview time"
+            >
+              <Pencil className="w-2.5 h-2.5" />
+            </button>
           </div>
           {match.meeting_link && (
             
@@ -266,7 +289,7 @@ export default function PipelinePage() {
   // always came up empty and the filter silently no-op'd to "all".
   // job_title is confirmed consistent across both, so we join on that.
   const [selectedJobTitle, setSelectedJobTitle] = useState<string>("all");
-  const [pendingInterviewMatch, setPendingInterviewMatch] = useState<Match | null>(null);
+  const [interviewModalState, setInterviewModalState] = useState<InterviewModalState | null>(null);
   const [pendingRejectMatch, setPendingRejectMatch] = useState<Match | null>(null);
   const [celebratingMatchId, setCelebratingMatchId] = useState<string | null>(null);
 
@@ -314,7 +337,7 @@ export default function PipelinePage() {
     if (newStage === "interviewing") {
       const match = matches.find((m) => m.match_id === matchId);
       if (match) {
-        setPendingInterviewMatch(match);
+        setInterviewModalState({ match, mode: "schedule" });
         return;
       }
     }
@@ -329,11 +352,21 @@ export default function PipelinePage() {
   }
   };
 
-  const handleConfirmInterview = async (scheduledAt: string, meetingLink: string) => {
-    if (!pendingInterviewMatch) return;
-    const matchId = pendingInterviewMatch.match_id;
+  // Opens the interview modal pre-filled for a match that's already in
+  // the Interview stage, so the recruiter can change the date/time/link
+  // without re-triggering the pipeline_stage transition.
+  const handleEditInterviewRequest = (match: Match) => {
+    setInterviewModalState({ match, mode: "edit" });
+  };
 
-    await updatePipelineStage(matchId, "interviewing");
+  const handleConfirmInterview = async (scheduledAt: string, meetingLink: string) => {
+    if (!interviewModalState) return;
+    const { match, mode } = interviewModalState;
+    const matchId = match.match_id;
+
+    if (mode === "schedule") {
+      await updatePipelineStage(matchId, "interviewing");
+    }
     await scheduleInterview(matchId, scheduledAt, meetingLink);
 
     setMatches((prev) =>
@@ -348,7 +381,7 @@ export default function PipelinePage() {
           : m
       )
     );
-    setPendingInterviewMatch(null);
+    setInterviewModalState(null);
   };
 
   // Reject flow — opens a confirmation modal; only commits the stage
@@ -465,6 +498,7 @@ export default function PipelinePage() {
                         stages={STAGES}
                         onMove={handleMove}
                         onRejectRequest={handleRejectRequest}
+                        onEditInterviewRequest={handleEditInterviewRequest}
                         celebrating={celebratingMatchId === match.match_id}
                       />
                     ))
@@ -477,13 +511,25 @@ export default function PipelinePage() {
 
       </div>
 
-      {/* Interview scheduling modal — blocks the "interviewing" stage
-          change until a date/time (and optional meeting link) is confirmed. */}
-      {pendingInterviewMatch && (
+      {/* Interview scheduling / editing modal — "schedule" mode blocks the
+          "interviewing" stage change until a date/time is confirmed;
+          "edit" mode reopens pre-filled for a match already in that stage
+          and only updates the date/time/link. */}
+      {interviewModalState && (
         <InterviewScheduleModal
-          candidateName={pendingInterviewMatch.name}
+          candidateName={interviewModalState.match.name}
+          initialScheduledAt={
+            interviewModalState.mode === "edit"
+              ? interviewModalState.match.interview_scheduled_at ?? undefined
+              : undefined
+          }
+          initialMeetingLink={
+            interviewModalState.mode === "edit"
+              ? interviewModalState.match.meeting_link ?? undefined
+              : undefined
+          }
           onConfirm={handleConfirmInterview}
-          onCancel={() => setPendingInterviewMatch(null)}
+          onCancel={() => setInterviewModalState(null)}
         />
       )}
 
