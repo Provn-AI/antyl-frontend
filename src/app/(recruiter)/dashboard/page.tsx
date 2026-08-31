@@ -549,18 +549,14 @@ export default function RecruiterDashboard() {
                   >
                     {upcomingInterviews.map((m) => (
                       <div key={m.match_id} className="flex-shrink-0 flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => router.push("/dashboard/pipeline")}
-                          className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-violet-50 hover:bg-violet-100 transition-colors whitespace-nowrap"
-                        >
+                        <div className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-violet-50 whitespace-nowrap">
                           <span className="text-xs font-semibold text-violet-900">
                             {m.name}
                           </span>
                           <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-violet-600">
                             {formatInterviewChip(m.interview_scheduled_at!)}
                           </span>
-                        </button>
+                        </div>
                         {m.meeting_link && (
                           
                            <a href={m.meeting_link}
