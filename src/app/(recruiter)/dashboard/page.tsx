@@ -38,6 +38,9 @@ const API_URL =
 // but does see it again on their next session while jobs are still expiring.
 const EXPIRY_MODAL_SEEN_KEY = "antyl_expiry_modal_seen";
 
+// How many days ahead the "Upcoming interviews" widget looks.
+const INTERVIEW_LOOKAHEAD_DAYS = 5;
+
 interface Job {
   id: string;
   title: string;
@@ -295,10 +298,12 @@ export default function RecruiterDashboard() {
     }
   }
 
-  const interviewsToday = useMemo(() => {
+  // Interviews scheduled from right now through the next
+  // INTERVIEW_LOOKAHEAD_DAYS days (was previously "today only").
+  const upcomingInterviews = useMemo(() => {
     const start = new Date();
-    start.setHours(0, 0, 0, 0);
     const end = new Date();
+    end.setDate(end.getDate() + INTERVIEW_LOOKAHEAD_DAYS);
     end.setHours(23, 59, 59, 999);
 
     return matches
@@ -314,8 +319,32 @@ export default function RecruiterDashboard() {
       );
   }, [matches]);
 
+  // Human-friendly date/time label for an interview chip — "Today 3:00 PM",
+  // "Tomorrow 10:30 AM", or "Thu 3:00 PM" for anything further out.
+  function formatInterviewChip(dateStr: string) {
+    const d = new Date(dateStr);
+    const now = new Date();
+
+    const startOfDay = (x: Date) => {
+      const c = new Date(x);
+      c.setHours(0, 0, 0, 0);
+      return c.getTime();
+    };
+
+    const dayDiff = Math.round(
+      (startOfDay(d) - startOfDay(now)) / (1000 * 60 * 60 * 24)
+    );
+
+    const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    if (dayDiff === 0) return `Today · ${time}`;
+    if (dayDiff === 1) return `Tomorrow · ${time}`;
+    const weekday = d.toLocaleDateString([], { weekday: "short" });
+    return `${weekday} · ${time}`;
+  }
+
   const hasReminders =
-    expiringJobs.length > 0 || appsToday.length > 0 || interviewsToday.length > 0;
+    expiringJobs.length > 0 || appsToday.length > 0 || upcomingInterviews.length > 0;
 
   // ── Chart data ──────────────────────────────────────────────────────
 
@@ -454,7 +483,7 @@ export default function RecruiterDashboard() {
               </div>
             </div>
 
-            {/* Reminder rows — expiring jobs, today's applications, today's
+            {/* Reminder rows — expiring jobs, today's applications, upcoming
                 interviews. Each is a full-width row so the layout reads
                 the same whether one, two, or all three have data. */}
             {hasReminders && (
@@ -511,14 +540,14 @@ export default function RecruiterDashboard() {
                   </ReminderRow>
                 )}
 
-                {interviewsToday.length > 0 && (
+                {upcomingInterviews.length > 0 && (
                   <ReminderRow
-                    title="Interviews today"
+                    title="Upcoming interviews"
                     icon={CalendarClock}
                     iconClassName="text-violet-600"
                     iconBg="bg-violet-50"
                   >
-                    {interviewsToday.map((m) => (
+                    {upcomingInterviews.map((m) => (
                       <div key={m.match_id} className="flex-shrink-0 flex items-center gap-1.5">
                         <button
                           type="button"
@@ -529,10 +558,7 @@ export default function RecruiterDashboard() {
                             {m.name}
                           </span>
                           <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-violet-600">
-                            {new Date(m.interview_scheduled_at!).toLocaleTimeString(
-                              [],
-                              { hour: "2-digit", minute: "2-digit" }
-                            )}
+                            {formatInterviewChip(m.interview_scheduled_at!)}
                           </span>
                         </button>
                         {m.meeting_link && (
