@@ -5,20 +5,55 @@ import { CalendarDays, Link2, X } from "lucide-react";
 
 interface Props {
   candidateName: string;
+  /**
+   * Pass these when the interview has already been scheduled and you want
+   * the modal to open in "edit" mode with the fields pre-filled.
+   * `initialScheduledAt` should be an ISO string (e.g. what you previously
+   * passed to onConfirm).
+   */
+  initialScheduledAt?: string;
+  initialMeetingLink?: string;
   onConfirm: (scheduledAt: string, meetingLink: string) => Promise<void>;
   onCancel: () => void;
 }
 
+function splitIsoIntoDateAndTime(iso?: string): { date: string; time: string } {
+  if (!iso) return { date: "", time: "" };
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return { date: "", time: "" };
+
+  // Build local-time date/time strings (yyyy-mm-dd / HH:mm) so the native
+  // <input type="date"/"time"> pickers show the value the user originally
+  // picked, rather than shifting it via toISOString()'s UTC conversion.
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return { date, time };
+}
+
 export default function InterviewScheduleModal({
   candidateName,
+  initialScheduledAt,
+  initialMeetingLink = "",
   onConfirm,
   onCancel,
 }: Props) {
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [meetingLink, setMeetingLink] = useState("");
+  const isEditing = Boolean(initialScheduledAt);
+  const initial = splitIsoIntoDateAndTime(initialScheduledAt);
+
+  const [date, setDate] = useState(initial.date);
+  const [time, setTime] = useState(initial.time);
+  const [meetingLink, setMeetingLink] = useState(initialMeetingLink);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Track whether anything has actually changed so "Update" can be a no-op
+  // guard against accidental submits with no edits, in edit mode only.
+  const hasChanges =
+    !isEditing ||
+    date !== initial.date ||
+    time !== initial.time ||
+    meetingLink.trim() !== (initialMeetingLink || "").trim();
 
   const handleConfirm = async () => {
     if (!date || !time) {
@@ -29,6 +64,10 @@ export default function InterviewScheduleModal({
       setError("Meeting link should start with http:// or https://");
       return;
     }
+    if (isEditing && !hasChanges) {
+      setError("Change the date, time, or link before updating.");
+      return;
+    }
     setError("");
     setSubmitting(true);
     try {
@@ -36,7 +75,11 @@ export default function InterviewScheduleModal({
       await onConfirm(iso, meetingLink.trim());
     } catch (err) {
       console.error(err);
-      setError("Couldn't schedule the interview. Please try again.");
+      setError(
+        isEditing
+          ? "Couldn't update the interview. Please try again."
+          : "Couldn't schedule the interview. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +92,7 @@ export default function InterviewScheduleModal({
           <div className="flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-[#F2754A]" />
             <h2 className="font-bold text-gray-900 text-lg">
-              Schedule Interview
+              {isEditing ? "Edit Interview" : "Schedule Interview"}
             </h2>
           </div>
           <button
@@ -63,7 +106,17 @@ export default function InterviewScheduleModal({
         </div>
 
         <p className="text-sm text-gray-500 mb-5">
-          When is the interview with <strong className="text-gray-700">{candidateName}</strong>?
+          {isEditing ? (
+            <>
+              Update the interview time with{" "}
+              <strong className="text-gray-700">{candidateName}</strong>
+            </>
+          ) : (
+            <>
+              When is the interview with{" "}
+              <strong className="text-gray-700">{candidateName}</strong>?
+            </>
+          )}
         </p>
 
         {/*
@@ -152,7 +205,13 @@ export default function InterviewScheduleModal({
               background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
             }}
           >
-            {submitting ? "Scheduling…" : "Confirm"}
+            {submitting
+              ? isEditing
+                ? "Updating…"
+                : "Scheduling…"
+              : isEditing
+              ? "Update"
+              : "Confirm"}
           </button>
         </div>
       </div>
