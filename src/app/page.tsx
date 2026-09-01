@@ -88,28 +88,28 @@ export default function DeveloperLandingPage() {
     {
       num: "01",
       title: "Connect GitHub",
-      desc: "Link your repos. Antyl's AI reads your actual code - not your resume.",
+      desc: "Link your repos. Antyl's AI reads your actual code and your resume.",
       color: "#FF6B4D",
       bg: "#FFF0ED",
     },
     {
       num: "02",
       title: "Get verified",
-      desc: "Answer 7 questions about your own projects. Takes 30 minutes.",
+      desc: "Answer 7 questions about your own projects. Takes 5 minutes.",
       color: "#FFB347",
       bg: "#FFF8ED",
     },
     {
       num: "03",
       title: "Set preferences",
-      desc: "Choose role, location, salary, and stack. Once. That's it.",
+      desc: "Choose role, location, salary and skills. That's it.",
       color: "#FFD84D",
       bg: "#FFFBEE",
     },
     {
       num: "04",
       title: "Auto-apply runs for you",
-      desc: "Every 6 hours, Antyl applies you to matching jobs automatically. Wake up to real interview requests.",
+      desc: "Every 6 hours, Antyl finds matching jobs and applies for you. Less applying. More interviews.",
       color: "#FF7A8A",
       bg: "#FFF0F2",
     },
@@ -792,21 +792,21 @@ export default function DeveloperLandingPage() {
         <div className="hero-bg-blob blob-3" />
         <div className="hero-inner">
           <div className="hero-content">
-            <div className="hero-eyebrow"><span className="eyebrow-dot" />AI verification · Auto-apply built in</div>
-            <h1 className="hero-title blur-reveal">Jobs that actually match.<br />Skills that actually <em>prove themselves.</em></h1>
-            <p className="hero-sub blur-reveal">Antyl verifies your skills with AI, then <strong>automatically applies you to matching jobs every 6 hours</strong> - no ghosting, no guessing, just your next interview.</p>
+            <div className="hero-eyebrow"><span className="eyebrow-dot" />Built for developers · Auto-apply built in</div>
+            <h1 className="hero-title blur-reveal">Your job search<br />shouldn’t be <br /> <em>another full-time job.</em></h1>
+            <p className="hero-sub blur-reveal">Create your profile once. Antyl verifies your skills and applies to relevant jobs for you.<strong> Swipe when you want. Auto-apply when you don’t.</strong></p>
             <div className="hero-ctas">
               <a href="/signup?role=developer" className="btn-hero-primary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
                 </svg>
-                Start free as a developer
+                Start finding jobs
               </a>
               <a href="#how-it-works" className="btn-hero-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
                 </svg>
-                See how it works
+                See how Antyl works
               </a>
             </div>
             <p className="hero-recruiter-link">Hiring instead? <Link href="/recruiters">Go to the recruiter side →</Link></p>
@@ -1177,7 +1177,7 @@ export default function DeveloperLandingPage() {
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "3rem", fontSize: 13, color: "var(--gray3)" }}>
             <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
-            <span>Your data is secure. We never post on your behalf.</span>
+            <span><b>Your data is secure. We never post on your behalf.</b></span>
           </div>
         </div>
       </section>
