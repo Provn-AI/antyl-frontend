@@ -72,9 +72,9 @@ export default function DeveloperLandingPage() {
       ([entry]) => {
         if (entry.isIntersecting && !counted) {
           setCounted(true);
-          animateCount("devs", 0, 12000, 1400);
-          animateCount("companies", 0, 340, 1200);
-          animateCount("match", 0, 87, 1000);
+          animateCount("devs", 0, 50, 1400);
+          animateCount("companies", 0, 10, 1200);
+          animateCount("match", 0, 92, 1000);
         }
       },
       { threshold: 0, rootMargin: "0px 0px -100px 0px" }
@@ -816,7 +816,7 @@ export default function DeveloperLandingPage() {
                   <div key={a.initials} className="proof-avatar" style={{ background: a.bg, color: a.color }}>{a.initials}</div>
                 ))}
               </div>
-              Join 12,000+ verified developers already on Antyl
+              Join 50+ verified developers already on Antyl
             </div>
             <div className="hero-badge-row" style={{ marginTop: ".75rem" }}>
               <span className="hero-badge"><span className="hero-badge-dot" style={{ background: "#22C55E" }} />No whiteboard tests</span>

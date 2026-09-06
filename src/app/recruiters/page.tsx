@@ -105,9 +105,9 @@ export default function RecruiterLandingPage() {
       ([entry]) => {
         if (entry.isIntersecting && !counted) {
           setCounted(true);
-          animateCount("devs", 0, 12000, 1400);
-          animateCount("companies", 0, 340, 1200);
-          animateCount("match", 0, 87, 1000);
+          animateCount("devs", 0, 50, 1400);
+          animateCount("companies", 0, 10, 1200);
+          animateCount("match", 0, 92, 1000);
         }
       },
       { threshold: 0, rootMargin: "0px 0px -100px 0px" }
@@ -993,7 +993,7 @@ export default function RecruiterLandingPage() {
                   </div>
                 ))}
               </div>
-              Trusted by 340+ companies hiring on Antyl
+              Trusted by 10+ companies hiring on Antyl
             </div>
 
             <div className="hero-badge-row" style={{ marginTop: "1rem" }}>
