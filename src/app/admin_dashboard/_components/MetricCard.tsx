@@ -13,16 +13,21 @@ interface MetricCardProps {
 
 export default function MetricCard({ label, today, total, trend, funnel }: MetricCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState<{ x: number; y: number; date: string; count: number } | null>(null);
 
   const max = Math.max(...trend.map((t) => t.count), 1);
-  const buildPoints = (w: number, h: number) =>
-    trend
-      .map((t, i) => {
-        const x = (i / (trend.length - 1)) * w;
-        const y = h - (t.count / max) * (h - 4);
-        return `${x},${y}`;
-      })
-      .join(" ");
+
+  const buildCoords = (w: number, h: number) =>
+    trend.map((t, i) => {
+      const x = (i / (trend.length - 1)) * w;
+      const y = h - (t.count / max) * (h - 4);
+      return { x, y, date: t.date, count: t.count };
+    });
+
+  const smallCoords = buildCoords(100, 40);
+  const bigCoords = buildCoords(300, 110);
+  const bigW = 300;
+  const bigH = 120;
 
   return (
     <div
@@ -37,16 +42,61 @@ export default function MetricCard({ label, today, total, trend, funnel }: Metri
         </div>
         {!expanded && (
           <svg width="100" height="40" viewBox="0 0 100 40" className="text-indigo-500">
-            <polyline points={buildPoints(100, 40)} fill="none" stroke="currentColor" strokeWidth="2" />
+            <polyline
+              points={smallCoords.map((c) => `${c.x},${c.y}`).join(" ")}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
           </svg>
         )}
       </div>
 
       {expanded && (
-        <div className="mt-4 border-t border-gray-100 pt-4" onClick={(e) => e.stopPropagation()}>
+        <div className="mt-4 border-t border-gray-100 pt-4 relative" onClick={(e) => e.stopPropagation()}>
           <p className="text-xs font-medium text-gray-400 mb-2">Last 7 days</p>
+
+          {hovered && (
+            <div
+              className="absolute z-10 rounded-md bg-gray-900 px-2 py-1 text-xs text-white pointer-events-none -translate-x-1/2 -translate-y-full"
+              style={{
+                left: `${(hovered.x / bigW) * 100}%`,
+                top: `${(hovered.y / bigH) * 100 * (120 / bigH) + 20}%`,
+              }}
+            >
+              {hovered.date}: {hovered.count}
+            </div>
+          )}
+
           <svg width="100%" height="120" viewBox="0 0 300 120" className="text-indigo-500 mb-3">
-            <polyline points={buildPoints(300, 110)} fill="none" stroke="currentColor" strokeWidth="2" />
+            <polyline
+              points={bigCoords.map((c) => `${c.x},${c.y}`).join(" ")}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            {bigCoords.map((c) => (
+              <circle
+                key={c.date}
+                cx={c.x}
+                cy={c.y}
+                r={9}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHovered(c)}
+                onMouseLeave={() => setHovered(null)}
+              />
+            ))}
+            {bigCoords.map((c) => (
+              <circle
+                key={`dot-${c.date}`}
+                cx={c.x}
+                cy={c.y}
+                r={hovered?.date === c.date ? 4.5 : 3}
+                fill="currentColor"
+                pointerEvents="none"
+              />
+            ))}
           </svg>
           <div className="flex justify-between text-xs text-gray-400 mb-4">
             {trend.map((t) => (
