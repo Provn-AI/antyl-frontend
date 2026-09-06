@@ -16,12 +16,45 @@ export interface RecruiterFunnel {
   hire_rate: number;
 }
 
+export interface MonthlyPoint {
+  month: string;
+  count: number;
+}
+
+export interface CompanyCount {
+  company: string;
+  count: number;
+}
+
+export interface TopRole {
+  role: string;
+  count: number;
+}
+
+export interface CandidateMetrics {
+  applications_today: number;
+  applications_total: number;
+  shortlist_rate: number;
+  interview_rate: number;
+  interviews_scheduled: number;
+  next_interview_date: string | null;
+  offers_received: number;
+  avg_skill_match_score: number;
+  top_matched_roles: TopRole[];
+  weekly_trend: { this_week: number; last_week: number };
+}
+
 export interface DashboardMetrics {
   developers: MetricBlock;
   recruiters: MetricBlock;
   jobs: MetricBlock;
   matches: MetricBlock;
   recruiter_funnel: RecruiterFunnel;
+  recruiter_monthly_users: MonthlyPoint[];
+  jobs_monthly: MonthlyPoint[];
+  live_jobs: number;
+  jobs_per_company: CompanyCount[];
+  candidate_metrics: CandidateMetrics;
 }
 
 export async function adminLogin(username: string, password: string): Promise<boolean> {
