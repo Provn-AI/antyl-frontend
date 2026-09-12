@@ -19,6 +19,7 @@ import {
   Medal,
   Crown,
   X,
+  Menu,
   BookOpen,
   ShieldCheck,
   LayoutDashboard,
@@ -65,6 +66,7 @@ const TABS = [
 const POLL_INTERVAL_MS = 25000;
 const MESSAGE_POLL_INTERVAL_MS = 20000;
 const PANEL_WIDTH = 320;
+const PANEL_MARGIN = 8;
 const SIDEBAR_COLLAPSE_KEY = "antyl_developer_nav_collapsed";
 
 // Persists which milestone celebration popups have already been shown
@@ -201,7 +203,7 @@ function MilestoneCelebration({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-white rounded-[24px] shadow-2xl p-7 text-center">
+      <div className="relative w-full max-w-sm bg-white rounded-[24px] shadow-2xl p-6 sm:p-7 text-center max-h-[85vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
@@ -247,6 +249,8 @@ function NewMessagePopup({
   return (
     <div
       className={`fixed z-[90] w-80 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-left-2 ${
+        // top-16 (4rem) clears the mobile top bar (h-12) with a small gap,
+        // so the toast never overlaps the sticky mobile header.
         mobile ? "top-16 left-4 right-4 w-auto" : `${leftOffsetClass} top-6`
       }`}
     >
@@ -339,20 +343,30 @@ function NotificationPanel({
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  // Shrink the panel to fit narrow phones (e.g. 320-360px wide) instead
+  // of assuming the full 320px PANEL_WIDTH always fits with margin on
+  // both sides — on a 320px-wide viewport the fixed width alone would
+  // force the clamp below into a negative "max", which used to push
+  // the panel left of the screen edge.
+  const effectiveWidth = Math.min(PANEL_WIDTH, window.innerWidth - PANEL_MARGIN * 2);
+
   // Anchor to the bell's right edge, but clamp so the panel never runs
   // off either side of the viewport.
-  const rawLeft = anchorRect.right - PANEL_WIDTH;
+  const rawLeft = anchorRect.right - effectiveWidth;
   const left = Math.min(
-    Math.max(rawLeft, 8),
-    window.innerWidth - PANEL_WIDTH - 8
+    Math.max(rawLeft, PANEL_MARGIN),
+    window.innerWidth - effectiveWidth - PANEL_MARGIN
   );
   const top = anchorRect.bottom + 8;
+  // Also cap the panel's height so it can't run off the bottom of a
+  // short viewport (e.g. a phone in landscape).
+  const maxHeight = Math.min(420, window.innerHeight - top - PANEL_MARGIN);
 
   return (
     <div
       ref={panelRef}
-      style={{ position: "fixed", top, left, width: PANEL_WIDTH }}
-      className="max-h-[420px] bg-white rounded-[20px] border border-gray-100 shadow-xl overflow-hidden flex flex-col z-[80]"
+      style={{ position: "fixed", top, left, width: effectiveWidth, maxHeight }}
+      className="bg-white rounded-[20px] border border-gray-100 shadow-xl overflow-hidden flex flex-col z-[80]"
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 flex-shrink-0">
         <p className="text-sm font-bold text-gray-900">Notifications</p>
@@ -403,6 +417,93 @@ function NotificationPanel({
   );
 }
 
+// ── Mobile nav menu — replaces the old horizontally-scrolling tab strip.
+// Opens as a full-width dropdown sheet right below the sticky mobile
+// header so every tab is reachable with a single tap, no side-scrolling.
+function MobileNavMenu({
+  isAdmin,
+  pathname,
+  unreadMessagesTotal,
+  onNavigate,
+  onClose,
+}: {
+  isAdmin: boolean;
+  pathname: string;
+  unreadMessagesTotal: number;
+  onNavigate: () => void;
+  onClose: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose]);
+
+  return (
+    <>
+      {/* Dim the page behind the menu so it reads as a dropdown, not
+          just more page content. */}
+      <div className="fixed inset-0 bg-black/20 z-40 md:hidden" />
+      <div
+        ref={menuRef}
+        className="absolute left-0 right-0 top-full bg-white border-b border-gray-100 shadow-lg z-50 md:hidden max-h-[75vh] overflow-y-auto"
+      >
+        <nav className="flex flex-col py-2">
+          {TABS.map(({ label, href, icon: Icon }) => {
+            const active = pathname === href;
+            const isMessages = href === "/messages";
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={onNavigate}
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors ${
+                  active ? "bg-orange-50 text-[#F2754A]" : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="relative inline-flex">
+                  <Icon className={`w-4 h-4 flex-shrink-0 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
+                  {isMessages && unreadMessagesTotal > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#F2754A] text-white text-[9px] font-bold flex items-center justify-center">
+                      {unreadMessagesTotal > 9 ? "9+" : unreadMessagesTotal}
+                    </span>
+                  )}
+                </span>
+                {label}
+              </Link>
+            );
+          })}
+
+          {isAdmin && (
+            <Link
+              href="/admin/weekly-question"
+              onClick={onNavigate}
+              className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors ${
+                pathname === "/admin/weekly-question"
+                  ? "bg-orange-50 text-[#F2754A]"
+                  : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              <ShieldCheck
+                className={`w-4 h-4 flex-shrink-0 ${
+                  pathname === "/admin/weekly-question" ? "text-[#F2754A]" : "text-gray-400"
+                }`}
+              />
+              Admin
+            </Link>
+          )}
+        </nav>
+      </div>
+    </>
+  );
+}
+
 export default function DeveloperNavbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -416,6 +517,8 @@ export default function DeveloperNavbar() {
   const shownCelebrationIds = useRef<Set<string>>(new Set());
   const [isAdmin, setIsAdmin] = useState(false);
   const [tourActive, setTourActive] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Sidebar collapse — persisted so it survives navigation/reloads.
   // Now honored on every route (not just the dashboard), so the toggle
@@ -440,6 +543,21 @@ export default function DeveloperNavbar() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored === "1") setCollapsed(true);
   }, []);
+
+  // Tracks whether we're below the md breakpoint so mobile-only UI (the
+  // new-message toast placement) can react to viewport/orientation
+  // changes instead of only checking window.innerWidth once at render.
+  useEffect(() => {
+    const check = () => setIsMobileViewport(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Close the mobile nav menu on route change.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -786,13 +904,35 @@ export default function DeveloperNavbar() {
       </aside>
 
       {/* ── Top bar (mobile) ── */}
-      <header className="md:hidden bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="px-4 h-14 flex items-center justify-between">
-          <Link href="/feed" className="flex items-center" aria-label="Home">
-            <Image src="/Antyl.png" alt="Antyl logo" width={90} height={26} />
-          </Link>
+      <header className="md:hidden bg-white border-b border-gray-100 sticky top-0 z-50 relative">
+        <div className="px-2.5 sm:px-3 h-12 flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+            {/* Hamburger menu — replaces the old horizontally-scrolling
+                tab strip. Opens a full-width dropdown listing every tab
+                vertically so nothing requires side-scrolling to reach. */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
+                mobileMenuOpen ? "bg-orange-50 text-[#F2754A]" : "hover:bg-gray-50 text-gray-500"
+              }`}
+            >
+              {mobileMenuOpen ? <X className="w-[18px] h-[18px]" /> : <Menu className="w-[18px] h-[18px]" />}
+            </button>
+            <Link href="/feed" className="flex items-center flex-shrink-0 min-w-0" aria-label="Home">
+              <Image
+                src="/Antyl.png"
+                alt="Antyl logo"
+                width={62}
+                height={18}
+                className="object-contain h-[18px] w-auto"
+              />
+            </Link>
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <BellButton
               mobile
               buttonRef={mobileBellRef}
@@ -803,7 +943,7 @@ export default function DeveloperNavbar() {
             {isAdmin && (
               <Link
                 href="/admin/weekly-question"
-                className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center flex-shrink-0"
+                className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center flex-shrink-0"
               >
                 <ShieldCheck className="w-4 h-4 text-gray-500" />
               </Link>
@@ -811,39 +951,23 @@ export default function DeveloperNavbar() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 px-3 py-1.5 rounded-full transition-colors"
+              aria-label="Logout"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              Logout
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex border-t border-gray-100">
-          {TABS.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href;
-            const isMessages = href === "/messages";
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`relative flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition-colors ${
-                  active ? "text-[#F2754A]" : "text-gray-400"
-                }`}
-              >
-                <span className="relative inline-flex">
-                  <Icon className={`w-4 h-4 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
-                  {isMessages && unreadMessagesTotal > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-[#F2754A] text-white text-[8px] font-bold flex items-center justify-center">
-                      {unreadMessagesTotal > 9 ? "9+" : unreadMessagesTotal}
-                    </span>
-                  )}
-                </span>
-                {label}
-              </Link>
-            );
-          })}
-        </div>
+        {mobileMenuOpen && (
+          <MobileNavMenu
+            isAdmin={isAdmin}
+            pathname={pathname}
+            unreadMessagesTotal={unreadMessagesTotal}
+            onNavigate={() => setMobileMenuOpen(false)}
+            onClose={() => setMobileMenuOpen(false)}
+          />
+        )}
       </header>
 
       <div
@@ -869,7 +993,7 @@ export default function DeveloperNavbar() {
           toast={messageToast}
           onOpen={handleMessageToastOpen}
           onClose={() => setMessageToast(null)}
-          mobile={typeof window !== "undefined" && window.innerWidth < 768}
+          mobile={isMobileViewport}
           leftOffsetClass={effectiveCollapsed ? "left-24" : "left-60"}
         />
       )}

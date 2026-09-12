@@ -59,9 +59,10 @@ function SwipeCard({
 
   return (
     <motion.div
-      style={{ x, rotate }}
+      style={{ x, rotate, touchAction: "pan-y" }}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.7}
       whileDrag={{ scale: 1.03 }}
       onDragEnd={(_, info) => {
         if (info.offset.x > 120 && !applyDisabled) onSwipeRight();
@@ -80,7 +81,7 @@ function SwipeCard({
       {!applyDisabled && (
         <motion.div
           style={{ opacity: applyOpacity }}
-          className="absolute top-6 left-6 z-10 rotate-[-12deg] border-3 border-green-500 text-green-500 font-extrabold text-2xl px-4 py-1 rounded-xl pointer-events-none"
+          className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10 rotate-[-12deg] border-2 sm:border-3 border-green-500 text-green-500 font-extrabold text-lg sm:text-2xl px-3 sm:px-4 py-1 rounded-xl pointer-events-none"
         >
           APPLY
         </motion.div>
@@ -88,7 +89,7 @@ function SwipeCard({
 
       <motion.div
         style={{ opacity: skipOpacity }}
-        className="absolute top-6 right-6 z-10 rotate-[12deg] border-3 border-red-500 text-red-500 font-extrabold text-2xl px-4 py-1 rounded-xl pointer-events-none"
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 rotate-[12deg] border-2 sm:border-3 border-red-500 text-red-500 font-extrabold text-lg sm:text-2xl px-3 sm:px-4 py-1 rounded-xl pointer-events-none"
       >
         SKIP
       </motion.div>
@@ -127,7 +128,7 @@ function NotLookingModal({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6 text-center"
+            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-5 sm:p-6 text-center max-h-[90vh] overflow-y-auto"
           >
             <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
               <EyeOff className="w-6 h-6 text-[#F2754A]" />
@@ -142,7 +143,7 @@ function NotLookingModal({
                 Edit Profile
               </span>.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={onDismiss}
@@ -192,7 +193,7 @@ function SkipConfirmModal({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6 text-center"
+            className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-5 sm:p-6 text-center max-h-[90vh] overflow-y-auto"
           >
             <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-6 h-6 text-red-500" />
@@ -206,7 +207,7 @@ function SkipConfirmModal({
               undone. If you just want to look at other jobs first, use{" "}
               <span className="text-gray-600 font-medium">Next</span> instead.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={onCancel}
@@ -453,7 +454,7 @@ export default function FeedPage() {
           onConfirm={confirmSkip}
         />
 
-        <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-10">
+        <div className="min-h-screen w-full bg-[#FAF8F5] px-4 py-6 sm:py-10">
           <div
             className={`w-full mx-auto transition-[max-width] duration-200 ${
               isEmptyState ? "max-w-4xl" : "max-w-2xl"
@@ -465,7 +466,7 @@ export default function FeedPage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-sm ${
+                  className={`fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 z-50 flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full font-semibold text-xs sm:text-sm shadow-sm whitespace-nowrap max-w-[92vw] ${
                     toast === "applied"
                       ? "bg-green-50 text-green-600"
                       : toast === "skipped"
@@ -475,19 +476,19 @@ export default function FeedPage() {
                 >
                   {toast === "applied" && (
                     <>
-                      <CheckCircle2 className="w-4 h-4" />
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
                       Applied
                     </>
                   )}
                   {toast === "skipped" && (
                     <>
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4 shrink-0" />
                       Skipped
                     </>
                   )}
                   {toast === "limit_reached" && (
                     <>
-                      <Clock className="w-4 h-4" />
+                      <Clock className="w-4 h-4 shrink-0" />
                       Daily apply limit reached
                     </>
                   )}
@@ -495,8 +496,8 @@ export default function FeedPage() {
               )}
             </AnimatePresence>
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
-              <h1 className="font-sans text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
+              <h1 className="font-sans text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">
                 Find your next role
               </h1>
 
@@ -514,7 +515,7 @@ export default function FeedPage() {
             </div>
 
             {loading ? (
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm py-24 text-center">
+              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm py-16 sm:py-24 text-center">
                 <div
                   className="w-8 h-8 rounded-full border-[3px] border-gray-200 mx-auto animate-spin"
                   style={{ borderTopColor: "#F2754A" }}
@@ -524,11 +525,11 @@ export default function FeedPage() {
             ) : jobs.length === 0 ? (
               <NoJobsState />
             ) : hasFinishedFeed ? (
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-20 text-center">
+              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-5 sm:px-8 py-14 sm:py-20 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-5">
                   <CheckCircle2 className="w-7 h-7 text-[#F2754A]" />
                 </div>
-                <h2 className="font-sans text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="font-sans text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                   You are all caught up
                 </h2>
                 <p className="font-sans text-gray-400 max-w-sm mx-auto leading-relaxed">
@@ -549,15 +550,15 @@ export default function FeedPage() {
             ) : (
               <div className="flex flex-col items-center">
                 {applyDisabled && (
-                  <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl px-5 py-3 mb-5 flex items-center gap-2 text-sm text-[#F2754A] font-medium">
-                    <Clock className="w-4 h-4 flex-shrink-0" />
+                  <div className="w-full bg-orange-50 border border-orange-100 rounded-2xl px-4 sm:px-5 py-3 mb-5 flex items-start sm:items-center gap-2 text-xs sm:text-sm text-[#F2754A] font-medium">
+                    <Clock className="w-4 h-4 flex-shrink-0 mt-0.5 sm:mt-0" />
                     You have used all {applyLimit} applies today. You can still
                     skip through roles - applying resumes at midnight IST.
                   </div>
                 )}
 
                 {decidedIds.has(currentJob.id) && (
-                  <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3 mb-5 text-sm text-gray-500 font-medium text-center">
+                  <div className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-4 sm:px-5 py-3 mb-5 text-xs sm:text-sm text-gray-500 font-medium text-center">
                     You already decided on this one - use Next to keep browsing.
                   </div>
                 )}
@@ -576,7 +577,7 @@ export default function FeedPage() {
                 </div>
 
                 {/* Back / Next browsing row */}
-                <div className="flex items-center gap-3 mt-6">
+                <div className="flex items-center justify-center flex-wrap gap-3 mt-6">
                   <button
                     type="button"
                     onClick={handleBack}
@@ -600,7 +601,7 @@ export default function FeedPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-5 mt-5">
+                <div className="flex items-center justify-center flex-wrap gap-4 sm:gap-5 mt-5 w-full">
                   <button
                     type="button"
                     onClick={handleRequestSkip}
@@ -634,9 +635,9 @@ export default function FeedPage() {
                       font-size: 0.95rem;
                       text-transform: none;
                       text-decoration: none;
-                      padding: 0 16px;
+                      padding: 0 20px;
                       height: 48px;
-                      min-width: 84px;
+                      min-width: 104px;
                       width: auto;
                       margin-right: 0;
                       border-radius: 8px;
@@ -646,6 +647,14 @@ export default function FeedPage() {
                       overflow: hidden;
                       transition: all 0.25s ease-in-out;
                       cursor: pointer;
+                      touch-action: manipulation;
+                    }
+
+                    @media (max-width: 400px) {
+                      .butn {
+                        flex: 1 1 0;
+                        min-width: 0;
+                      }
                     }
 
                     .butn span {
@@ -733,7 +742,7 @@ export default function FeedPage() {
                   `}</style>
                 </div>
 
-                <p className="text-sm text-gray-400 mt-5">
+                <p className="text-xs sm:text-sm text-gray-400 mt-5 text-center px-4">
                   {jobs.length - currentIndex - 1} more roles after this one
                 </p>
               </div>

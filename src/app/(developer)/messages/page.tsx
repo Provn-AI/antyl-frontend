@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, MessageCircle, Clock } from "lucide-react";
+import { Send, MessageCircle, Clock, ChevronLeft } from "lucide-react";
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import {
   getConversations,
@@ -136,13 +136,19 @@ export default function DeveloperMessagesPage() {
     <div className="h-screen w-full bg-[#FAF6F0] overflow-hidden">
       <DeveloperNavbar />
 
-<div className="h-full md:ml-56 flex overflow-hidden">        {/* Conversation list */}
+      {/* h-[calc(100vh-3rem)] accounts for the mobile header (h-12 / 3rem)
+          sitting in normal flow above this pane — using h-full alone left
+          the bottom of the chat clipped by the outer overflow-hidden on
+          mobile. From md: up the desktop sidebar is fixed/out-of-flow, so
+          this reverts to the full viewport height. */}
+      <div className="h-[calc(100vh-3rem)] md:h-full md:ml-56 flex overflow-hidden">
+        {/* Conversation list */}
         <div
           className={`w-full md:w-80 flex-shrink-0 border-r border-gray-100 bg-white flex flex-col ${
             selected ? "hidden md:flex" : "flex"
           }`}
         >
-          <div className="px-6 py-5 border-b border-gray-50">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-50 flex-shrink-0">
             <h1 className="text-lg font-bold text-gray-900">Messages</h1>
           </div>
 
@@ -163,7 +169,7 @@ export default function DeveloperMessagesPage() {
                   key={conv.match_id}
                   type="button"
                   onClick={() => openConversation(conv)}
-                  className={`w-full text-left px-6 py-4 border-b border-gray-50 transition-colors ${
+                  className={`w-full text-left px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-50 transition-colors ${
                     selected?.match_id === conv.match_id
                       ? "bg-orange-50"
                       : "hover:bg-gray-50"
@@ -195,7 +201,7 @@ export default function DeveloperMessagesPage() {
 
         {/* Chat pane */}
         <div
-          className={`w-full md:flex-1 bg-white flex flex-col ${
+          className={`w-full md:flex-1 bg-white flex flex-col min-h-0 ${
             selected ? "flex" : "hidden md:flex"
           }`}
         >
@@ -207,13 +213,14 @@ export default function DeveloperMessagesPage() {
             </div>
           ) : (
             <>
-              <div className="px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-white border-b border-gray-100 flex items-center gap-2 flex-shrink-0">
                 <button
                   type="button"
-                  className="md:hidden text-xs font-bold text-gray-400 mr-3"
+                  aria-label="Back to conversations"
+                  className="md:hidden w-7 h-7 -ml-1 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-50 flex-shrink-0"
                   onClick={() => setSelected(null)}
                 >
-                  ← Back
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-gray-900 truncate">
@@ -225,7 +232,7 @@ export default function DeveloperMessagesPage() {
                 </div>
               </div>
 
-              <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 flex flex-col justify-end gap-3">
+              <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 flex flex-col justify-end gap-3">
                 {messages.length === 0 ? (
                   <div className="text-center mt-10">
                     <Clock className="w-5 h-5 text-gray-200 mx-auto mb-2" />
@@ -237,7 +244,7 @@ export default function DeveloperMessagesPage() {
                   messages.map((m) => (
                     <div
                       key={m.id}
-                      className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-snug ${
+                      className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-snug ${
                         m.sender_role === "developer"
                           ? "self-end text-white"
                           : "self-start bg-white text-gray-800 border border-gray-100"
@@ -271,19 +278,19 @@ export default function DeveloperMessagesPage() {
                   e.preventDefault();
                   handleSend();
                 }}
-                className="px-6 py-4 bg-white flex items-center gap-3"
+                className="px-3 sm:px-6 py-3 sm:py-4 bg-white border-t border-gray-50 flex items-center gap-2 sm:gap-3 flex-shrink-0"
               >
                 <input
-  value={draft}
-  onChange={(e) => setDraft(e.target.value)}
-  disabled={!selected.can_send}
-  placeholder={
-    selected.can_send
-      ? "Write a message…"
-      : "Waiting for the recruiter to message first…"
-  }
-  className="flex-1 text-sm px-4 py-2.5 rounded-full border border-gray-200 text-black focus:outline-none focus:border-[#F2754A] disabled:bg-gray-50 disabled:text-gray-400"
-/>
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  disabled={!selected.can_send}
+                  placeholder={
+                    selected.can_send
+                      ? "Write a message…"
+                      : "Waiting for the recruiter to message first…"
+                  }
+                  className="flex-1 min-w-0 text-sm px-4 py-2.5 rounded-full border border-gray-200 text-black focus:outline-none focus:border-[#F2754A] disabled:bg-gray-50 disabled:text-gray-400"
+                />
                 <button
                   type="submit"
                   disabled={sending || !draft.trim() || !selected.can_send}

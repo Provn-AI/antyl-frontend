@@ -85,15 +85,15 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank <= 3) {
     return (
       <div
-        className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${MEDAL_STYLES[rank]}`}
+        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0 ${MEDAL_STYLES[rank]}`}
       >
-        <Medal className="w-4 h-4" />
+        <Medal className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
       </div>
     );
   }
 
   return (
-    <div className="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
+    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
       <span className="text-xs font-bold text-gray-400">{rank}</span>
     </div>
   );
@@ -153,7 +153,7 @@ function FieldSelector({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between gap-3 w-full sm:w-72 px-4 py-2.5 rounded-2xl bg-white border border-gray-100 text-sm font-bold text-gray-800 hover:bg-gray-50 transition-colors"
+        className="flex items-center justify-between gap-3 w-full sm:w-72 px-3.5 sm:px-4 py-2.5 rounded-2xl bg-white border border-gray-100 text-sm font-bold text-gray-800 hover:bg-gray-50 transition-colors"
       >
         <span className="flex items-center gap-2 min-w-0">
           <Filter className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -279,17 +279,17 @@ export default function LeaderboardPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] flex">
+    <div className="min-h-screen bg-[#FAF6F0] flex flex-col md:flex-row">
       <DeveloperNavbar />
       <ShareBadgeModal badge={sharedBadge} isOpen={Boolean(sharedBadge)} onClose={() => setSharedBadge(null)} />
 
-      <main className="flex-1 px-4 md:px-8 py-6 md:py-10 max-w-3xl mx-auto w-full">
+      <main className="flex-1 min-w-0 px-3 sm:px-4 md:px-8 py-4 sm:py-6 md:py-10 max-w-3xl mx-auto w-full">
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
-          <div className="flex items-center gap-2.5">
-            <Trophy className="w-5 h-5 text-[#F2754A]" />
+        <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <Trophy className="w-5 h-5 text-[#F2754A] flex-shrink-0" />
             <h1
-              className="text-2xl font-bold text-gray-900"
+              className="text-xl sm:text-2xl font-bold text-gray-900 truncate"
               style={{ fontFamily: "var(--font-fraunces, serif)" }}
             >
               Leaderboard
@@ -297,24 +297,24 @@ export default function LeaderboardPage() {
           </div>
           <WeekTimer />
         </div>
-        <p className="text-sm text-gray-400 mb-6">
+        <p className="text-xs sm:text-sm text-gray-400 mb-5 sm:mb-6">
           Ranked by Antyl Score within each field. Recalculated daily, movement resets weekly.
         </p>
 
         {/* Your rank card */}
         {myRank && myRank.rank && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <div className="bg-white rounded-2xl border border-gray-100 p-3.5 sm:p-4 mb-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                 <RankBadge rank={myRank.rank} />
-                <div>
-                  <p className="text-sm font-bold text-gray-900">Your rank</p>
-                  <p className="text-xs text-gray-400">{myRank.field_label}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-900 truncate">Your rank</p>
+                  <p className="text-xs text-gray-400 truncate">{myRank.field_label}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5 sm:gap-4 flex-shrink-0">
                 <div className="text-right">
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className="text-base sm:text-lg font-bold text-gray-900">
                     {myRank.score}
                   </p>
                   <p className="text-[10px] text-gray-400 uppercase tracking-wide">
@@ -329,7 +329,7 @@ export default function LeaderboardPage() {
             </div>
 
             {badges.length > 0 && (
-              <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
+              <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50 overflow-x-auto">
                 {badges.slice(0, 6).map((b, index) => {
                   const meta = badgeCatalog[b.badge_key];
                   if (!meta) return null;
@@ -354,7 +354,7 @@ export default function LeaderboardPage() {
                           fieldLabel,
                         })
                       }
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-100 bg-white transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-100 bg-white transition-transform hover:-translate-y-0.5 hover:shadow-sm flex-shrink-0"
                       style={{ backgroundColor: `${meta.color}14` }}
                     >
                       <img
@@ -371,7 +371,7 @@ export default function LeaderboardPage() {
         )}
 
         {myRank && !myRank.rank && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-5">
+          <div className="bg-white rounded-2xl border border-gray-100 p-3.5 sm:p-4 mb-5">
             <p className="text-sm font-semibold text-gray-700">
               You are not ranked yet
             </p>
@@ -418,13 +418,13 @@ export default function LeaderboardPage() {
               return (
                 <div
                   key={entry.user_id}
-                  className={`flex items-center gap-3 px-4 py-3.5 border-b border-gray-50 last:border-0 ${
+                  className={`flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-3 sm:py-3.5 border-b border-gray-50 last:border-0 ${
                     isMe ? "bg-orange-50/50" : ""
                   }`}
                 >
                   <RankBadge rank={entry.rank} />
 
-                  <div className="w-9 h-9 rounded-full bg-gray-50 flex-shrink-0 overflow-hidden">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-50 flex-shrink-0 overflow-hidden">
                     {entry.developer_profiles.avatar_url ? (
                       <img
                         src={entry.developer_profiles.avatar_url}
@@ -458,7 +458,7 @@ export default function LeaderboardPage() {
                     </p>
                   </div>
 
-                  <div className="w-10 flex-shrink-0 flex justify-end">
+                  <div className="w-8 sm:w-10 flex-shrink-0 flex justify-end">
                     <MovementBadge
                       rank={entry.rank}
                       previousRank={entry.previous_rank}
