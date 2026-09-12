@@ -36,6 +36,7 @@ export default function RecruiterLandingPage() {
   const [counted, setCounted] = useState(false);
   const [counts, setCounts] = useState({ devs: 0, companies: 0, match: 0 });
   const statsRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const lazyHero = useLazySection();
   const lazyHowItWorks = useLazySection();
@@ -83,6 +84,22 @@ export default function RecruiterLandingPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Close mobile menu on resize back to desktop, and lock body scroll while open
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 900) setMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   const animateCount = (
     key: "devs" | "companies" | "match",
@@ -453,6 +470,8 @@ export default function RecruiterLandingPage() {
           overflow-x: hidden;
         }
 
+        img, svg { max-width: 100%; }
+
         .page-gradient {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
           background:
@@ -521,6 +540,7 @@ export default function RecruiterLandingPage() {
           border-radius: 50px; font-size: 13.5px; font-weight: 600; cursor: pointer;
           font-family: var(--font); transition: border-color .15s, background .15s;
           text-decoration: none; display: inline-flex; align-items: center;
+          white-space: nowrap;
         }
         .btn-ghost-nav:hover { border-color: var(--coral); color: var(--coral); }
         .btn-primary-nav {
@@ -528,8 +548,52 @@ export default function RecruiterLandingPage() {
           border-radius: 50px; font-size: 13.5px; font-weight: 700; cursor: pointer;
           font-family: var(--font); transition: background .15s, transform .1s, box-shadow .15s;
           text-decoration: none; display: inline-flex; align-items: center; letter-spacing: -.01em;
+          white-space: nowrap;
         }
         .btn-primary-nav:hover { background: #E5542F; box-shadow: 0 4px 16px rgba(255,107,77,.3); }
+
+        /* ---- MOBILE NAV (hamburger + slide panel) ---- */
+        .nav-hamburger {
+          display: none;
+          width: 38px; height: 38px; border-radius: 10px;
+          border: 1.5px solid var(--gray2); background: var(--white);
+          align-items: center; justify-content: center; cursor: pointer;
+          flex-shrink: 0; padding: 0;
+        }
+        .nav-hamburger span {
+          display: block; width: 16px; height: 2px; background: var(--ink);
+          position: relative; transition: transform .2s ease, opacity .2s ease;
+        }
+        .nav-hamburger span::before, .nav-hamburger span::after {
+          content: ''; position: absolute; left: 0; width: 16px; height: 2px; background: var(--ink);
+          transition: transform .2s ease, opacity .2s ease;
+        }
+        .nav-hamburger span::before { top: -5px; }
+        .nav-hamburger span::after { top: 5px; }
+        .nav-hamburger.open span { background: transparent; }
+        .nav-hamburger.open span::before { transform: translateY(5px) rotate(45deg); }
+        .nav-hamburger.open span::after { transform: translateY(-5px) rotate(-45deg); }
+
+        .mobile-menu-panel {
+          position: fixed; top: 64px; left: 0; right: 0; z-index: 99;
+          background: var(--white); border-bottom: 1px solid var(--gray2);
+          box-shadow: 0 16px 32px rgba(0,0,0,.08);
+          padding: 1.25rem 1.5rem 1.75rem;
+          display: flex; flex-direction: column; gap: .25rem;
+          transform: translateY(-8px); opacity: 0; pointer-events: none;
+          transition: transform .2s ease, opacity .2s ease;
+        }
+        .mobile-menu-panel.open {
+          transform: translateY(0); opacity: 1; pointer-events: auto;
+        }
+        .mobile-menu-link {
+          font-size: 15.5px; font-weight: 600; color: var(--ink); text-decoration: none;
+          padding: .875rem .25rem; border-bottom: 1px solid var(--gray1);
+        }
+        .mobile-menu-actions { display: flex; flex-direction: column; gap: .625rem; margin-top: 1rem; }
+        .mobile-menu-actions .btn-ghost-nav, .mobile-menu-actions .btn-primary-nav {
+          justify-content: center; padding: 12px 20px; font-size: 14px; width: 100%;
+        }
 
         /* ---- HERO ---- */
         .hero {
@@ -537,9 +601,9 @@ export default function RecruiterLandingPage() {
           padding: 7rem 2.5rem 4rem; position: relative; overflow: hidden; background: transparent;
         }
         .hero-inner { display: flex; align-items: center; gap: 4rem; max-width: 1200px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
-        .hero-content { flex: 1; text-align: left; }
-        .hero-image-wrap { flex: 0 0 480px; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
-        .hero-image-wrap img { position: relative; z-index: 1; object-fit: cover; border-radius: 0; background: transparent; }
+        .hero-content { flex: 1; text-align: left; min-width: 0; }
+        .hero-image-wrap { flex: 0 0 480px; max-width: 100%; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
+        .hero-image-wrap img { position: relative; z-index: 1; object-fit: cover; border-radius: 0; background: transparent; max-width: 100%; height: auto; }
         .hero-bg-blob {
           display: none;
         }
@@ -562,8 +626,8 @@ export default function RecruiterLandingPage() {
           50% { opacity: .5; transform: scale(.7); }
         }
         .hero-title {
-          font-family: var(--serif); font-size: clamp(38px, 5.5vw, 60px);
-          font-weight: 600; line-height: 1.1; color: var(--ink);
+          font-family: var(--serif); font-size: clamp(32px, 5.5vw, 60px);
+          font-weight: 600; line-height: 1.15; color: var(--ink);
           max-width: 780px; letter-spacing: -.03em; margin-bottom: 1.25rem;
           animation: fadeUp .7s .1s ease both;
         }
@@ -602,7 +666,7 @@ export default function RecruiterLandingPage() {
         .hero-dev-link a:hover { text-decoration: underline; }
         .hero-social-proof {
           display: flex; align-items: center; gap: .625rem; font-size: 13px;
-          color: var(--gray3); animation: fadeUp .7s .45s ease both; margin-bottom: .75rem;
+          color: var(--gray3); animation: fadeUp .7s .45s ease both; margin-bottom: .75rem; flex-wrap: wrap;
         }
         .proof-avatars { display: flex; }
         .proof-avatar {
@@ -670,11 +734,11 @@ export default function RecruiterLandingPage() {
         }
         .stat-icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
         .stat-number {
-          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 500;
+          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(38px, 3.5vw, 60px); font-weight: 500;
           color: #171b29; line-height: .95; letter-spacing: -.055em; margin-bottom: .7rem;
         }
         .stat-suffix { color: #f16f32; }
-        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 500; line-height: 1.2; }
+        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(14px, 1.2vw, 18px); color: #252938; font-weight: 500; line-height: 1.2; }
         .stat-chart { position: absolute; right: 0; bottom: 0; width: 62%; height: 78%; opacity: .95; pointer-events: none; }
         .stat-chart path { fill: none; stroke: #ff854b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
         .stat-chart .chart-fill { fill: url(#recruiter-chart-fill); stroke: none; opacity: .55; }
@@ -722,7 +786,7 @@ export default function RecruiterLandingPage() {
         overflow: hidden; }
         .proof-header { text-align: center; margin-bottom: 3rem; padding: 0 1.5rem; }
         .proof-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: .875rem; }
-        .proof-title { font-family: var(--serif); font-size: clamp(26px, 3vw, 38px); font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.15; }
+        .proof-title { font-family: var(--serif); font-size: clamp(24px, 3vw, 38px); font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.15; }
         .proof-title em { font-style: italic; color: var(--coral); }
         .proof-marquee-wrap { position: relative; overflow: hidden; }
         .proof-marquee-wrap::before, .proof-marquee-wrap::after { content: ''; position: absolute; top: 0; bottom: 0; width: 140px; z-index: 2; pointer-events: none; }
@@ -753,7 +817,7 @@ export default function RecruiterLandingPage() {
         .section { padding: 6rem 1.5rem; }
         .section-inner { max-width: 1100px; margin: 0 auto; }
         .section-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: 1rem; }
-        .section-title { font-family: var(--serif); font-size: clamp(28px, 3.5vw, 42px); font-weight: 600; color: var(--ink); line-height: 1.15; letter-spacing: -.03em; margin-bottom: 1rem; }
+        .section-title { font-family: var(--serif); font-size: clamp(26px, 3.5vw, 42px); font-weight: 600; color: var(--ink); line-height: 1.2; letter-spacing: -.03em; margin-bottom: 1rem; }
         .section-title em { font-style: italic; color: var(--coral); }
         .section-sub { font-size: 16px; color: var(--gray4); line-height: 1.65; max-width: 500px; }
 
@@ -776,6 +840,8 @@ export default function RecruiterLandingPage() {
         .feature-card:hover::before { opacity: 1; }
         .feature-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: .625rem; letter-spacing: -.02em; }
         .feature-desc { font-size: 14px; color: var(--gray4); line-height: 1.7; }
+        .feature-score-row { display: flex; gap: 1.25rem; align-items: center; margin-top: 1rem; }
+        .feature-kanban-row { display: flex; gap: 6px; margin-top: 1rem; flex-wrap: wrap; }
 
         @keyframes scoreRingFill {
           from { stroke-dasharray: 0 264; }
@@ -792,6 +858,12 @@ export default function RecruiterLandingPage() {
         // border-top: 1px solid var(--gray2); 
         // border-bottom: 1px solid var(--gray2); 
         }
+        .score-main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; margin-top: 3rem; }
+        .score-main-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2rem; }
+        .score-detail-flex { display: flex; gap: 2.5rem; align-items: flex-start; flex-wrap: wrap; }
+        .score-ring-col { flex-shrink: 0; width: 200px; max-width: 100%; margin: 0 auto; }
+        .score-breakdown-col { flex: 1; min-width: 220px; }
+        .score-side-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2rem; height: fit-content; }
 
         /* ---- TESTIMONIALS ---- */
         .testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
@@ -799,7 +871,7 @@ export default function RecruiterLandingPage() {
         .testimonial-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06); }
         .quote-mark { font-family: var(--serif); font-size: 48px; line-height: .8; color: var(--beige); margin-bottom: .5rem; font-style: italic; }
         .quote-text { font-size: 14.5px; color: var(--ink); line-height: 1.65; margin-bottom: 1.25rem; }
-        .testimonial-footer { display: flex; align-items: center; gap: .75rem; }
+        .testimonial-footer { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
         .t-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--cream); border: 2px solid var(--beige); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--coral); flex-shrink: 0; }
         .t-name { font-size: 13px; font-weight: 700; color: var(--ink); }
         .t-role { font-size: 11px; color: var(--gray3); margin-top: 2px; }
@@ -864,7 +936,7 @@ export default function RecruiterLandingPage() {
         // border-top: 1px solid var(--gray2); 
         }
         .single-cta-card { max-width: 1000px; margin: 0 auto; border-radius: 24px; padding: 3rem; position: relative; overflow: hidden; background: linear-gradient(135deg,#FF6B4D,#FFB347); color: white; text-align: center; }
-        .single-cta-title { font-family: var(--serif); font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.2; margin-bottom: .75rem; letter-spacing: -.03em; }
+        .single-cta-title { font-family: var(--serif); font-size: clamp(22px, 3vw, 32px); font-weight: 600; line-height: 1.25; margin-bottom: .75rem; letter-spacing: -.03em; }
         .single-cta-sub { font-size: 14.5px; opacity: .85; line-height: 1.6; margin-bottom: 2rem; max-width: 440px; margin-left: auto; margin-right: auto; }
         .btn-cta-white { background: white; color: var(--coral); border: none; padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); letter-spacing: -.01em; transition: transform .15s, box-shadow .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
         .btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
@@ -890,6 +962,7 @@ export default function RecruiterLandingPage() {
         @media (max-width: 900px) {
           .nav-links { display: none; }
           .nav-demo-btn { display: none; }
+          .nav-hamburger { display: inline-flex; }
           .steps-grid { grid-template-columns: repeat(2,1fr); }
           .features-grid { grid-template-columns: repeat(2,1fr); }
           .testimonials-grid { grid-template-columns: 1fr; }
@@ -900,21 +973,40 @@ export default function RecruiterLandingPage() {
           .hero-ctas { justify-content: center; }
           .hero-badge-row { justify-content: center; }
           .hero-social-proof { justify-content: center; }
+          .score-main-grid { grid-template-columns: 1fr; }
+          .navbar { padding: 0 1.5rem; }
+        }
+        @media (max-width: 640px) {
+          .score-detail-flex { flex-direction: column; align-items: center; text-align: center; }
+          .score-breakdown-col { width: 100%; }
+          .feature-score-row { flex-direction: column; align-items: stretch; text-align: left; }
         }
         @media (max-width: 600px) {
           .navbar { padding: 0 1.25rem; }
+          .nav-actions { gap: .4rem; }
+          .btn-ghost-nav { padding: 7px 14px; font-size: 12.5px; }
+          .btn-primary-nav { padding: 8px 15px; font-size: 12.5px; }
           .hero { padding: 6rem 1.25rem 3rem; }
+          .hero-image-wrap { width: 100%; max-width: 300px; }
           .steps-grid { grid-template-columns: 1fr; }
           .features-grid { grid-template-columns: 1fr; }
+          .section { padding: 4rem 1.25rem; }
           .stats-strip { padding: 3rem 1.25rem; }
           .stats-inner { flex-direction: column; gap: 1.5rem; }
           .stats-image-container { width: 100%; max-width: 450px; height: auto; flex-basis: auto; }
-          .stats-grid-container { width: 100%; gap: 1rem; }
-          .stat-item { min-height: 185px; padding: 1.25rem; border-radius: 18px; }
-          .proof-card { width: min(88vw, 420px); }
-          .proof-card-media { width: 135px; }
-          .stat-item::after { display: none; }
+          .stats-grid-container { width: 100%; gap: 1rem; grid-template-columns: 1fr; }
+          .stat-item { min-height: unset; padding: 1.25rem; border-radius: 18px; }
+          .proof-card { width: min(88vw, 420px); flex-direction: column; }
+          .proof-card-media { width: 100%; height: 160px; min-height: unset; }
+          .tech-marquee-wrap::before, .tech-marquee-wrap::after { width: 48px; }
+          .proof-marquee-wrap::before, .proof-marquee-wrap::after { width: 48px; }
           .single-cta-card { padding: 2rem 1.5rem; }
+          .score-main-card, .score-side-card { padding: 1.25rem; }
+          .demo-form-card { padding: 1.25rem; }
+        }
+        @media (max-width: 420px) {
+          .hero-badge-row { flex-direction: column; align-items: center; }
+          .hero-badge { width: fit-content; }
         }
       `}</style>
 
@@ -935,8 +1027,30 @@ export default function RecruiterLandingPage() {
           <a href="/login" className="btn-ghost-nav">Log in</a>
           <a href="#request-demo" className="btn-ghost-nav nav-demo-btn">Request a demo</a>
           <a href="/signup?role=recruiter" className="btn-primary-nav">Post a job</a>
+          <button
+            type="button"
+            className={`nav-hamburger${mobileMenuOpen ? " open" : ""}`}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((v) => !v)}
+          >
+            <span />
+          </button>
         </div>
       </nav>
+
+      {/* ─── MOBILE MENU PANEL ─── */}
+      <div className={`mobile-menu-panel${mobileMenuOpen ? " open" : ""}`}>
+        <a href="#how-it-works" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>How it works</a>
+        <a href="#features" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
+        <a href="#antyl-score" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Antyl Score</a>
+        <a href="#request-demo" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Request a demo</a>
+        <Link href="/" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>For developers</Link>
+        <div className="mobile-menu-actions">
+          <a href="/login" className="btn-ghost-nav">Log in</a>
+          <a href="/signup?role=recruiter" className="btn-primary-nav">Post a job</a>
+        </div>
+      </div>
 
       {/* ─── HERO ─── */}
       <section className={`hero lazy-section${lazyHero.visible ? " visible" : ""}`} ref={lazyHero.ref}>
@@ -1012,7 +1126,7 @@ export default function RecruiterLandingPage() {
             </div>
           </div>
           <div className="hero-image-wrap">
-            <Image src="/recruiters_pic.png" alt="Recruiter using Antyl" width={4460} height={4540} style={{ objectFit: "cover", background: "transparent" }} priority />
+            <Image src="/recruiters_pic.png" alt="Recruiter using Antyl" width={4460} height={4540} style={{ objectFit: "cover", background: "transparent", width: "100%", height: "auto" }} priority />
           </div>
         </div>
       </section>
@@ -1202,9 +1316,9 @@ export default function RecruiterLandingPage() {
           </div>
 
           {/* Main Score Content */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", marginTop: "3rem" }}>
+          <div className="score-main-grid">
             {/* Left - Score Card */}
-            <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem" }}>
+            <div className="score-main-card">
               {/* Verified profile badge */}
               <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--coral)", fontSize: 13, fontWeight: 600, marginBottom: "1.25rem" }}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1216,9 +1330,9 @@ export default function RecruiterLandingPage() {
               <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Their Antyl Score</h3>
               <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>A complete view of their verified capabilities.</p>
 
-              <div style={{ display: "flex", gap: "2.5rem", alignItems: "flex-start" }}>
+              <div className="score-detail-flex">
                 {/* Phone Mockup */}
-                <div style={{ flexShrink: 0, width: 200 }}>
+                <div className="score-ring-col">
                   <div style={{ background: "#1a1a1a", borderRadius: 36, padding: 10, boxShadow: "0 12px 40px rgba(0,0,0,.15)" }}>
                     <div style={{ background: "white", borderRadius: 28, padding: "1.25rem", minHeight: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 12 }}>
@@ -1259,7 +1373,7 @@ export default function RecruiterLandingPage() {
                 </div>
 
                 {/* Dimension Breakdown */}
-                <div style={{ flex: 1 }}>
+                <div className="score-breakdown-col">
                   <div style={{ marginBottom: 4 }}>
                     <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)" }}>Dimension breakdown</h4>
                   </div>
@@ -1293,7 +1407,7 @@ export default function RecruiterLandingPage() {
             </div>
 
             {/* Right - Filter by Score */}
-            <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem", height: "fit-content" }}>
+            <div className="score-side-card">
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>Set your own bar</h3>
               <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem", lineHeight: 1.6 }}>
                 Pick a minimum Antyl Score for your role, and only qualifying candidates make it into your feed.
@@ -1340,7 +1454,7 @@ export default function RecruiterLandingPage() {
               <p className="feature-desc">Describe the role once. Antyl auto-matches portfolio-verified candidates whose skills fit.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
                 {[{ role: "React Frontend", match: "92% match", color: "#22C55E" },{ role: "Node.js Backend", match: "87% match", color: "var(--coral)" },{ role: "Full Stack Python", match: "81% match", color: "var(--amber)" }].map((item) => (
-                  <div key={item.role} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}>
+                  <div key={item.role} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", flex: 1, textAlign: "left" }}>{item.role}</span>
                     <span style={{ fontSize: 10, fontWeight: 700, color: item.color }}>{item.match}</span>
                   </div>
@@ -1353,17 +1467,17 @@ export default function RecruiterLandingPage() {
               <span className="hiw-step-num">2</span>
               <div className="feature-title">Kanban pipeline</div>
               <p className="feature-desc">Move candidates through stages — applied, screening, interview, offer — in one view.</p>
-              <div style={{ display: "flex", gap: 6, marginTop: "1rem" }}>
-                <div style={{ flex: 1, minWidth: 0, background: "var(--gray1)", borderRadius: 12, padding: "10px 6px" }}>
+              <div className="feature-kanban-row">
+                <div style={{ flex: 1, minWidth: 80, background: "var(--gray1)", borderRadius: 12, padding: "10px 6px" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "var(--gray3)", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Applied</div>
                   <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. A</div>
                   <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. B</div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0, background: "#FFF6EE", borderRadius: 12, padding: "10px 6px" }}>
+                <div style={{ flex: 1, minWidth: 80, background: "#FFF6EE", borderRadius: 12, padding: "10px 6px" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "var(--coral)", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Interview</div>
                   <div style={{ background: "var(--white)", border: "1px solid var(--beige)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. C</div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0, background: "#EAFAF0", borderRadius: 12, padding: "10px 6px" }}>
+                <div style={{ flex: 1, minWidth: 80, background: "#EAFAF0", borderRadius: 12, padding: "10px 6px" }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: "#22C55E", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Offer</div>
                   <div style={{ background: "var(--white)", border: "1px solid #BBF7D0", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 700, color: "#22C55E", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. D</div>
                 </div>
@@ -1375,8 +1489,8 @@ export default function RecruiterLandingPage() {
               <span className="hiw-step-num">3</span>
               <div className="feature-title">Filter by Antyl Score</div>
               <p className="feature-desc">Set a minimum score and only qualified candidates appear in your feed.</p>
-              <div style={{ display: "flex", gap: "1.25rem", alignItems: "center", marginTop: "1rem" }}>
-                <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0 }}>
+              <div className="feature-score-row">
+                <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0, margin: "0 auto" }}>
                   <svg width="80" height="80" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}><circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="url(#sgR3)" strokeWidth="8" strokeDasharray="185 79" strokeLinecap="round" /><defs><linearGradient id="sgR3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF6B4D"/><stop offset="100%" stopColor="#FFB347"/></linearGradient></defs></svg>
                   <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 22, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>70+</span></div>
                 </div>
@@ -1391,8 +1505,8 @@ export default function RecruiterLandingPage() {
               <p className="feature-desc">Every candidate is questioned by AI about their resume before they reach your feed.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
                 {[{ q: "Explain your project architecture decisions" },{ q: "Why did you choose this tech stack?" },{ q: "Walk through your key achievements" }].map((item) => (
-                  <div key={item.q} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}>
-                    <span style={{ fontSize: 11, color: "var(--ink)", fontWeight: 500, flex: 1, textAlign: "left" }}>{item.q}</span>
+                  <div key={item.q} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 11, color: "var(--ink)", fontWeight: 500, flex: 1, textAlign: "left", minWidth: 140 }}>{item.q}</span>
                     <span style={{ fontSize: 10, fontWeight: 700, color: "#22C55E" }}>✓ Verified</span>
                   </div>
                 ))}
@@ -1427,9 +1541,9 @@ export default function RecruiterLandingPage() {
               <p className="feature-desc">See candidates land in your pipeline the moment auto-apply matches them to your open role.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
                 {[{ initials: "PS", name: "Priya S.", detail: "Frontend Engineer · Score: 88", time: "Just now", timeColor: "#22C55E" },{ initials: "RM", name: "Rahul M.", detail: "Backend Dev · Score: 91", time: "2m ago", timeColor: "var(--coral)" },{ initials: "DP", name: "Dev P.", detail: "Full Stack · Score: 79", time: "8m ago", timeColor: "var(--amber)" }].map((r) => (
-                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}>
+                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.initials}</div>
-                    <div style={{ flex: 1, textAlign: "left" }}>
+                    <div style={{ flex: 1, textAlign: "left", minWidth: 120 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name}</div>
                       <div style={{ fontSize: 10, color: "var(--gray3)" }}>{r.detail}</div>
                     </div>
@@ -1440,7 +1554,7 @@ export default function RecruiterLandingPage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "3rem", fontSize: 13, color: "var(--gray3)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "3rem", fontSize: 13, color: "var(--gray3)", flexWrap: "wrap", textAlign: "center" }}>
             <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
             <span>Candidate data is secure. We never share without consent.</span>
           </div>

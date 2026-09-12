@@ -33,6 +33,7 @@ export default function DeveloperLandingPage() {
   const [counted, setCounted] = useState(false);
   const [counts, setCounts] = useState({ devs: 0, companies: 0, match: 0 });
   const statsRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const lazyHero = useLazySection();
   const lazyHowItWorks = useLazySection();
@@ -50,6 +51,22 @@ export default function DeveloperLandingPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Close mobile menu on resize back to desktop, and lock body scroll while open
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 900) setMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   const animateCount = (
     key: "devs" | "companies" | "match",
@@ -350,6 +367,8 @@ export default function DeveloperLandingPage() {
           overflow-x: hidden;
         }
 
+        img, svg { max-width: 100%; }
+
         .page-gradient {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
           background:
@@ -436,8 +455,55 @@ export default function DeveloperLandingPage() {
           border-radius: 50px; font-size: 13.5px; font-weight: 700; cursor: pointer;
           font-family: var(--font); transition: background .15s, transform .1s, box-shadow .15s;
           text-decoration: none; display: inline-flex; align-items: center; letter-spacing: -.01em;
+          white-space: nowrap;
         }
         .btn-primary-nav:hover { background: #E5542F; box-shadow: 0 4px 16px rgba(255,107,77,.3); }
+
+        /* ---- MOBILE NAV (hamburger + slide panel) ---- */
+        .nav-hamburger {
+          display: none;
+          width: 38px; height: 38px; border-radius: 10px;
+          border: 1.5px solid var(--gray2); background: var(--white);
+          align-items: center; justify-content: center; cursor: pointer;
+          flex-shrink: 0; padding: 0;
+        }
+        .nav-hamburger span {
+          display: block; width: 16px; height: 2px; background: var(--ink);
+          position: relative; transition: transform .2s ease, opacity .2s ease;
+        }
+        .nav-hamburger span::before, .nav-hamburger span::after {
+          content: ''; position: absolute; left: 0; width: 16px; height: 2px; background: var(--ink);
+          transition: transform .2s ease, opacity .2s ease;
+        }
+        .nav-hamburger span::before { top: -5px; }
+        .nav-hamburger span::after { top: 5px; }
+        .nav-hamburger.open span { background: transparent; }
+        .nav-hamburger.open span::before { transform: translateY(5px) rotate(45deg); }
+        .nav-hamburger.open span::after { transform: translateY(-5px) rotate(-45deg); }
+
+        .mobile-menu-overlay {
+          display: none;
+        }
+        .mobile-menu-panel {
+          position: fixed; top: 64px; left: 0; right: 0; z-index: 99;
+          background: var(--white); border-bottom: 1px solid var(--gray2);
+          box-shadow: 0 16px 32px rgba(0,0,0,.08);
+          padding: 1.25rem 1.5rem 1.75rem;
+          display: flex; flex-direction: column; gap: .25rem;
+          transform: translateY(-8px); opacity: 0; pointer-events: none;
+          transition: transform .2s ease, opacity .2s ease;
+        }
+        .mobile-menu-panel.open {
+          transform: translateY(0); opacity: 1; pointer-events: auto;
+        }
+        .mobile-menu-link {
+          font-size: 15.5px; font-weight: 600; color: var(--ink); text-decoration: none;
+          padding: .875rem .25rem; border-bottom: 1px solid var(--gray1);
+        }
+        .mobile-menu-actions { display: flex; gap: .625rem; margin-top: 1rem; }
+        .mobile-menu-actions .btn-ghost-nav, .mobile-menu-actions .btn-primary-nav {
+          flex: 1; justify-content: center; padding: 12px 20px; font-size: 14px;
+        }
 
         /* ---- HERO (split layout) ---- */
         .hero {
@@ -451,9 +517,9 @@ export default function DeveloperLandingPage() {
         .blob-2 { width: 500px; height: 500px; background: var(--lemon); bottom: -100px; right: -150px; }
         .blob-3 { width: 300px; height: 300px; background: var(--amber); top: 40%; left: 50%; transform: translate(-50%,-50%); }
         .hero-inner { display: flex; align-items: center; gap: 4rem; max-width: 1200px; margin: 0 auto; width: 100%; position: relative; z-index: 1; }
-        .hero-content { flex: 1; text-align: left; }
-        .hero-image-wrap { flex: 0 0 480px; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
-        .hero-image-wrap img { position: relative; z-index: 1; object-fit: cover; border-radius: 0; background: transparent; }
+        .hero-content { flex: 1; text-align: left; min-width: 0; }
+        .hero-image-wrap { flex: 0 0 480px; max-width: 100%; position: relative; display: flex; align-items: center; justify-content: center; background: transparent; }
+        .hero-image-wrap img { position: relative; z-index: 1; object-fit: cover; border-radius: 0; background: transparent; max-width: 100%; height: auto; }
         .hero-eyebrow {
           display: inline-flex; align-items: center; gap: 7px;
           background: var(--cream); border: 1px solid var(--beige);
@@ -469,8 +535,8 @@ export default function DeveloperLandingPage() {
           50% { opacity: .5; transform: scale(.7); }
         }
         .hero-title {
-          font-family: var(--serif); font-size: clamp(34px, 4.5vw, 54px);
-          font-weight: 600; line-height: 1.1; color: var(--ink);
+          font-family: var(--serif); font-size: clamp(30px, 4.5vw, 54px);
+          font-weight: 600; line-height: 1.15; color: var(--ink);
           max-width: 580px; letter-spacing: -.03em; margin-bottom: 1.25rem;
         }
         .hero-title em { font-style: italic; color: var(--coral); }
@@ -504,7 +570,7 @@ export default function DeveloperLandingPage() {
         .hero-recruiter-link a:hover { text-decoration: underline; }
         .hero-social-proof {
           display: flex; align-items: center; gap: .625rem; font-size: 13px;
-          color: var(--gray3); margin-bottom: .75rem;
+          color: var(--gray3); margin-bottom: .75rem; flex-wrap: wrap;
         }
         .proof-avatars { display: flex; }
         .proof-avatar {
@@ -572,11 +638,11 @@ export default function DeveloperLandingPage() {
         }
         .stat-icon svg { width: 28px; height: 28px; stroke-width: 1.8; }
         .stat-number {
-          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(46px, 3.5vw, 60px); font-weight: 500;
+          position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(38px, 3.5vw, 60px); font-weight: 500;
           color: #171b29; line-height: .95; letter-spacing: -.055em; margin-bottom: .7rem;
         }
         .stat-suffix { color: #f16f32; }
-        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(15px, 1.2vw, 18px); color: #252938; font-weight: 500; line-height: 1.2; }
+        .stat-label { position: relative; z-index: 1; font-family: 'DM Sans', sans-serif !important; font-size: clamp(14px, 1.2vw, 18px); color: #252938; font-weight: 500; line-height: 1.2; }
         .stat-chart { position: absolute; right: 0; bottom: 0; width: 62%; height: 78%; opacity: .95; pointer-events: none; }
         .stat-chart path { fill: none; stroke: #ff854b; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
         .stat-chart .chart-fill { fill: url(#stats-chart-fill); stroke: none; opacity: .55; }
@@ -626,7 +692,7 @@ export default function DeveloperLandingPage() {
         overflow: hidden; }
         .proof-header { text-align: center; margin-bottom: 3rem; padding: 0 1.5rem; }
         .proof-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: .875rem; }
-        .proof-title { font-family: var(--serif); font-size: clamp(26px, 3vw, 38px); font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.15; }
+        .proof-title { font-family: var(--serif); font-size: clamp(24px, 3vw, 38px); font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.15; }
         .proof-title em { font-style: italic; color: var(--coral); }
         .proof-marquee-wrap { position: relative; overflow: hidden; }
         .proof-marquee-wrap::before, .proof-marquee-wrap::after { content: ''; position: absolute; top: 0; bottom: 0; width: 140px; z-index: 2; pointer-events: none; }
@@ -657,7 +723,7 @@ export default function DeveloperLandingPage() {
         .section { padding: 6rem 1.5rem; }
         .section-inner { max-width: 1100px; margin: 0 auto; }
         .section-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--coral); margin-bottom: 1rem; }
-        .section-title { font-family: var(--serif); font-size: clamp(28px, 3.5vw, 42px); font-weight: 600; color: var(--ink); line-height: 1.15; letter-spacing: -.03em; margin-bottom: 1rem; }
+        .section-title { font-family: var(--serif); font-size: clamp(26px, 3.5vw, 42px); font-weight: 600; color: var(--ink); line-height: 1.2; letter-spacing: -.03em; margin-bottom: 1rem; }
         .section-title em { font-style: italic; color: var(--coral); }
         .section-sub { font-size: 16px; color: var(--gray4); line-height: 1.65; max-width: 500px; }
 
@@ -680,6 +746,8 @@ export default function DeveloperLandingPage() {
         .feature-card:hover::before { opacity: 1; }
         .feature-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: .625rem; letter-spacing: -.02em; }
         .feature-desc { font-size: 14px; color: var(--gray4); line-height: 1.7; }
+        .feature-connect-row { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+        .feature-score-row { display: flex; gap: 1.25rem; align-items: center; margin-top: 1rem; }
 
         @keyframes scoreRingFill {
           from { stroke-dasharray: 0 264; }
@@ -696,6 +764,12 @@ export default function DeveloperLandingPage() {
         // border-top: 1px solid var(--gray2); 
         // border-bottom: 1px solid var(--gray2); 
         }
+        .score-main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; margin-top: 3rem; }
+        .score-main-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2rem; }
+        .score-detail-flex { display: flex; gap: 2.5rem; align-items: flex-start; flex-wrap: wrap; }
+        .score-ring-col { flex-shrink: 0; width: 200px; max-width: 100%; margin: 0 auto; }
+        .score-breakdown-col { flex: 1; min-width: 220px; }
+        .score-side-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2rem; height: fit-content; }
 
         /* ---- TESTIMONIALS ---- */
         .testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
@@ -703,7 +777,7 @@ export default function DeveloperLandingPage() {
         .testimonial-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,.06); }
         .quote-mark { font-family: var(--serif); font-size: 48px; line-height: .8; color: var(--beige); margin-bottom: .5rem; font-style: italic; }
         .quote-text { font-size: 14.5px; color: var(--ink); line-height: 1.65; margin-bottom: 1.25rem; }
-        .testimonial-footer { display: flex; align-items: center; gap: .75rem; }
+        .testimonial-footer { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
         .t-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--cream); border: 2px solid var(--beige); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--coral); flex-shrink: 0; }
         .t-name { font-size: 13px; font-weight: 700; color: var(--ink); }
         .t-role { font-size: 11px; color: var(--gray3); margin-top: 2px; }
@@ -715,7 +789,7 @@ export default function DeveloperLandingPage() {
         // background: var(--white); 
         }
         .single-cta-card { max-width: 1000px; margin: 0 auto; border-radius: 24px; padding: 3rem; position: relative; overflow: hidden; background: var(--ink); color: white; text-align: center; }
-        .single-cta-title { font-family: var(--serif); font-size: clamp(24px, 3vw, 32px); font-weight: 600; line-height: 1.2; margin-bottom: .75rem; letter-spacing: -.03em; }
+        .single-cta-title { font-family: var(--serif); font-size: clamp(22px, 3vw, 32px); font-weight: 600; line-height: 1.25; margin-bottom: .75rem; letter-spacing: -.03em; }
         .single-cta-sub { font-size: 14.5px; opacity: .75; line-height: 1.6; margin-bottom: 2rem; max-width: 440px; margin-left: auto; margin-right: auto; }
         .btn-cta-white { background: white; color: var(--coral); border: none; padding: 12px 28px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); letter-spacing: -.01em; transition: transform .15s, box-shadow .15s; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; }
         .btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.15); }
@@ -739,6 +813,7 @@ export default function DeveloperLandingPage() {
         /* ---- RESPONSIVE ---- */
         @media (max-width: 900px) {
           .nav-links { display: none; }
+          .nav-hamburger { display: inline-flex; }
           .hero-inner { flex-direction: column; text-align: center; }
           .hero-content { text-align: center; }
           .hero-image-wrap { flex: none; width: 360px; }
@@ -749,20 +824,39 @@ export default function DeveloperLandingPage() {
           .features-grid { grid-template-columns: repeat(2,1fr); }
           .testimonials-grid { grid-template-columns: 1fr; }
           .step-connector { display: none; }
+          .score-main-grid { grid-template-columns: 1fr; }
+          .navbar { padding: 0 1.5rem; }
+        }
+        @media (max-width: 640px) {
+          .score-detail-flex { flex-direction: column; align-items: center; text-align: center; }
+          .score-breakdown-col { width: 100%; }
+          .feature-score-row { flex-direction: column; align-items: stretch; text-align: left; }
         }
         @media (max-width: 600px) {
           .navbar { padding: 0 1.25rem; }
+          .nav-actions { gap: .4rem; }
+          .btn-ghost-nav { padding: 7px 14px; font-size: 12.5px; }
+          .btn-primary-nav { padding: 8px 15px; font-size: 12.5px; }
           .hero { padding: 6rem 1.25rem 3rem; }
+          .hero-image-wrap { width: 100%; max-width: 300px; }
           .steps-grid { grid-template-columns: 1fr; }
           .features-grid { grid-template-columns: 1fr; }
+          .section { padding: 4rem 1.25rem; }
           .stats-strip { padding: 3rem 1.25rem; }
           .stats-inner { flex-direction: column; gap: 1.5rem; }
           .stats-image-container { width: 100%; max-width: 450px; height: auto; flex-basis: auto; }
-          .stats-grid-container { width: 100%; gap: 1rem; }
-          .stat-item { min-height: 185px; padding: 1.25rem; border-radius: 18px; }
-          .proof-card { width: min(88vw, 420px); }
-          .proof-card-media { width: 135px; }
+          .stats-grid-container { width: 100%; gap: 1rem; grid-template-columns: 1fr; }
+          .stat-item { min-height: unset; padding: 1.25rem; border-radius: 18px; }
+          .proof-card { width: min(88vw, 420px); flex-direction: column; }
+          .proof-card-media { width: 100%; height: 160px; min-height: unset; }
+          .tech-marquee-wrap::before, .tech-marquee-wrap::after { width: 48px; }
+          .proof-marquee-wrap::before, .proof-marquee-wrap::after { width: 48px; }
           .single-cta-card { padding: 2rem 1.5rem; }
+          .score-main-card, .score-side-card { padding: 1.25rem; }
+        }
+        @media (max-width: 420px) {
+          .hero-badge-row { flex-direction: column; align-items: center; }
+          .hero-badge { width: fit-content; }
         }
       `}</style>
 
@@ -782,8 +876,29 @@ export default function DeveloperLandingPage() {
         <div className="nav-actions">
           <a href="/login" className="btn-ghost-nav">Log in</a>
           <a href="/signup?role=developer" className="btn-primary-nav">Get started free</a>
+          <button
+            type="button"
+            className={`nav-hamburger${mobileMenuOpen ? " open" : ""}`}
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((v) => !v)}
+          >
+            <span />
+          </button>
         </div>
       </nav>
+
+      {/* ─── MOBILE MENU PANEL ─── */}
+      <div className={`mobile-menu-panel${mobileMenuOpen ? " open" : ""}`}>
+        <a href="#how-it-works" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>How it works</a>
+        <a href="#features" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
+        <a href="#antyl-score" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Antyl Score</a>
+        <Link href="/recruiters" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>For recruiters</Link>
+        <div className="mobile-menu-actions">
+          <a href="/login" className="btn-ghost-nav">Log in</a>
+          <a href="/signup?role=developer" className="btn-primary-nav">Get started free</a>
+        </div>
+      </div>
 
       {/* ─── HERO (split layout: text left, image right) ─── */}
       <section className={`hero lazy-section${lazyHero.visible ? " visible" : ""}`} ref={lazyHero.ref}>
@@ -826,7 +941,7 @@ export default function DeveloperLandingPage() {
           </div>
           {/* Hero image - no blob, no border-radius */}
           <div className="hero-image-wrap">
-            <Image src="/developer_pic.svg" alt="Developer using Antyl" width={6460} height={6540} style={{ objectFit: "cover", background: "transparent" }} priority />
+            <Image src="/developer_pic.svg" alt="Developer using Antyl" width={6460} height={6540} style={{ objectFit: "cover", background: "transparent", width: "100%", height: "auto" }} priority />
           </div>
         </div>
       </section>
@@ -983,16 +1098,16 @@ export default function DeveloperLandingPage() {
               After verification, you get a score from 0–100 across 4 dimensions. It lives on your profile and updates with every session.
             </p>
           </div>
-          <div className="scale-up" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.5rem", marginTop: "3rem" }}>
-            <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem" }}>
+          <div className="scale-up score-main-grid">
+            <div className="score-main-card">
               <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--coral)", fontSize: 13, fontWeight: 600, marginBottom: "1.25rem" }}>
                 <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Your verified developer profile
               </div>
               <h3 style={{ fontSize: 20, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Your Antyl Score</h3>
               <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>A complete view of your verified capabilities.</p>
-              <div style={{ display: "flex", gap: "2.5rem", alignItems: "flex-start" }}>
-                <div style={{ flexShrink: 0, width: 200 }}>
+              <div className="score-detail-flex">
+                <div className="score-ring-col">
                   <div style={{ background: "#1a1a1a", borderRadius: 36, padding: 10, boxShadow: "0 12px 40px rgba(0,0,0,.15)" }}>
                     <div style={{ background: "white", borderRadius: 28, padding: "1.25rem", minHeight: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 12 }}>
@@ -1025,7 +1140,7 @@ export default function DeveloperLandingPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div className="score-breakdown-col">
                   <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>Dimension breakdown</h4>
                   <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>See how your verified skills contribute to the score.</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -1050,7 +1165,7 @@ export default function DeveloperLandingPage() {
                 </div>
               </div>
             </div>
-            <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 24, padding: "2rem", height: "fit-content" }}>
+            <div className="score-side-card">
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>Keep improving your score</h3>
               <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem", lineHeight: 1.6 }}>A small improvement can make your profile stand out to more relevant employers.</p>
               <div style={{ background: "var(--gray1)", border: "1px solid var(--gray2)", borderRadius: 16, padding: "1.25rem" }}>
@@ -1094,12 +1209,12 @@ export default function DeveloperLandingPage() {
                   </div>
                   <span style={{ fontSize: 11, color: "var(--gray3)", fontWeight: 500 }}>Secure connection</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div className="feature-connect-row">
                   <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                     <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Portfolio</span>
                   </div>
-                  <svg viewBox="0 0 32 14" fill="none" style={{ width: 32, height: 14 }}><path d="M2 7h24m0 0l-5-5m5 5l-5 5" stroke="url(#ca2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="ca2" x1="0" y1="7" x2="32" y2="7"><stop stopColor="#FF6B4D"/><stop offset="1" stopColor="#FFB347"/></linearGradient></defs></svg>
+                  <svg viewBox="0 0 32 14" fill="none" style={{ width: 32, height: 14, flexShrink: 0 }}><path d="M2 7h24m0 0l-5-5m5 5l-5 5" stroke="url(#ca2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="ca2" x1="0" y1="7" x2="32" y2="7"><stop stopColor="#FF6B4D"/><stop offset="1" stopColor="#FFB347"/></linearGradient></defs></svg>
                   <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
                     <Image src="/Antyl.png" alt="Antyl" width={36} height={36} style={{ objectFit: "contain" }} />
                     <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Antyl</span>
@@ -1114,7 +1229,7 @@ export default function DeveloperLandingPage() {
               <p className="feature-desc">Every 6 hours, Antyl applies you to matching jobs automatically.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
                 {[{ text: "Applied to Frontend @ Microsoft", time: "2h ago" },{ text: "Applied to SDE II @ Meta", time: "4h ago" },{ text: "Applied to Full Stack @ SAP", time: "6h ago" }].map((item) => (
-                  <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}>
+                  <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--coral)", flexShrink: 0 }} />
                     <span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>{item.text}</span>
                     <span style={{ fontSize: 10, color: "var(--gray3)", marginLeft: "auto" }}>{item.time}</span>
@@ -1127,18 +1242,18 @@ export default function DeveloperLandingPage() {
               <span className="hiw-step-num">3</span>
               <div className="feature-title">Antyl Score</div>
               <p className="feature-desc">One score from 0–100 that tells the whole story. Carries across every job application on Antyl.</p>
-              <div style={{ display: "flex", gap: "1.25rem", alignItems: "center", marginTop: "1rem" }}>
-                <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0 }}>
+              <div className="feature-score-row">
+                <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0, margin: "0 auto" }}>
                   <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}><circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="url(#sg3d)" strokeWidth="8" strokeDasharray="206 58" strokeLinecap="round" /><defs><linearGradient id="sg3d" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF6B4D"/><stop offset="100%" stopColor="#FFB347"/></linearGradient></defs></svg>
                   <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 26, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>78</span><span style={{ fontSize: 9, color: "var(--gray3)" }}>/ 100</span></div>
                 </div>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
                   {[{ label: "Code quality", value: 82 },{ label: "Architecture", value: 75 },{ label: "Consistency", value: 80 },{ label: "Impact", value: 74 }].map((d) => (
                     <div key={d.label}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 10, fontWeight: 600, color: "var(--ink)" }}>{d.label}</span><span style={{ fontSize: 10, fontWeight: 700, color: "var(--gray3)" }}>{d.value}%</span></div><div style={{ height: 5, background: "var(--gray2)", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${d.value}%`, background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 3 }} /></div></div>
                   ))}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}><span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 50, textTransform: "uppercase" as const, letterSpacing: ".04em" }}>Advanced</span><span style={{ fontSize: 11, color: "var(--coral)", fontWeight: 700 }}>Top 18% of developers</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, flexWrap: "wrap" }}><span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 50, textTransform: "uppercase" as const, letterSpacing: ".04em" }}>Advanced</span><span style={{ fontSize: 11, color: "var(--coral)", fontWeight: 700 }}>Top 18% of developers</span></div>
             </div>
             {/* Card 4 */}
             <div className="feature-card stagger-child">
@@ -1147,7 +1262,7 @@ export default function DeveloperLandingPage() {
               <p className="feature-desc">See every job you&apos;ve been auto-applied to and its live status, in one dashboard.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
                 {[{ company: "Microsoft", role: "Frontend Engineer", time: "Applied 2h ago", status: "Interview", statusColor: "#8B5CF6", statusBg: "#F3EFFE" },{ company: "Google", role: "SDE II", time: "Applied 5h ago", status: "Offer", statusColor: "#22C55E", statusBg: "#EAFAF0" },{ company: "McKinsey", role: "Full Stack Dev", time: "Applied 8h ago", status: "Applied", statusColor: "var(--amber)", statusBg: "#FFF8ED" }].map((item) => (
-                  <div key={item.company} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}><div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{item.company}</div><div style={{ fontSize: 10, color: "var(--gray3)" }}>{item.role} · {item.time}</div></div><span style={{ fontSize: 10, fontWeight: 700, color: item.statusColor, background: item.statusBg, padding: "3px 10px", borderRadius: 50 }}>{item.status}</span></div>
+                  <div key={item.company} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}><div style={{ flex: 1, minWidth: 120 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{item.company}</div><div style={{ fontSize: 10, color: "var(--gray3)" }}>{item.role} · {item.time}</div></div><span style={{ fontSize: 10, fontWeight: 700, color: item.statusColor, background: item.statusBg, padding: "3px 10px", borderRadius: 50 }}>{item.status}</span></div>
                 ))}
               </div>
             </div>
@@ -1158,7 +1273,7 @@ export default function DeveloperLandingPage() {
               <p className="feature-desc">Get <strong style={{ color: "var(--coral)" }}>AI-powered</strong> suggestions based on <strong style={{ color: "var(--coral)" }}>current industry demands</strong> and what top companies are hiring for.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem", textAlign: "left" }}>
                 {[{ icon: "🎯", text: "Learn System Design — required by Meta, Google", priority: "High", color: "var(--coral)", bg: "#FFF0ED" },{ icon: "📊", text: "Add AWS/Cloud certs — trending at SAP, Microsoft", priority: "Med", color: "var(--amber)", bg: "#FFF8ED" },{ icon: "🤖", text: "Build AI/ML projects — top demand in industry", priority: "Hot", color: "#22C55E", bg: "#EAFAF0" }].map((tip) => (
-                  <div key={tip.text} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--gray1)", borderRadius: 12 }}><div style={{ width: 28, height: 28, borderRadius: 8, background: tip.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{tip.icon}</div><span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, textAlign: "left" }}>{tip.text}</span><span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: tip.color, flexShrink: 0 }}>{tip.priority}</span></div>
+                  <div key={tip.text} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--gray1)", borderRadius: 12, flexWrap: "wrap" }}><div style={{ width: 28, height: 28, borderRadius: 8, background: tip.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{tip.icon}</div><span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, textAlign: "left", flex: 1, minWidth: 140 }}>{tip.text}</span><span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: tip.color, flexShrink: 0 }}>{tip.priority}</span></div>
                 ))}
               </div>
             </div>
@@ -1169,13 +1284,13 @@ export default function DeveloperLandingPage() {
               <p className="feature-desc">Verified companies filter candidates by Antyl Score - your profile surfaces to people actively hiring.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
                 {[{ name: "Priya M.", company: "Google", action: "Viewed your profile", time: "1h ago" },{ name: "Rahul K.", company: "Microsoft", action: "Shortlisted you", time: "3h ago" },{ name: "Anika S.", company: "McKinsey", action: "Sent interview invite", time: "5h ago" }].map((r) => (
-                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px" }}><div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.name.split(" ").map(n => n[0]).join("")}</div><div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name} <span style={{ fontWeight: 400, color: "var(--gray3)" }}>· {r.company}</span></div><div style={{ fontSize: 10, color: "var(--coral)", fontWeight: 500 }}>{r.action}</div></div><span style={{ fontSize: 10, color: "var(--gray3)" }}>{r.time}</span></div>
+                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}><div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.name.split(" ").map(n => n[0]).join("")}</div><div style={{ flex: 1, minWidth: 120 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name} <span style={{ fontWeight: 400, color: "var(--gray3)" }}>· {r.company}</span></div><div style={{ fontSize: 10, color: "var(--coral)", fontWeight: 500 }}>{r.action}</div></div><span style={{ fontSize: 10, color: "var(--gray3)" }}>{r.time}</span></div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "3rem", fontSize: 13, color: "var(--gray3)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginTop: "3rem", fontSize: 13, color: "var(--gray3)", flexWrap: "wrap", textAlign: "center" }}>
             <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--cream)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="12" height="12" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
             <span><b>Your data is secure. We never post on your behalf.</b></span>
           </div>
