@@ -88,9 +88,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0]">
+      <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#FAF6F0]">
         <DeveloperNavbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <div className="flex-1 flex items-center justify-center min-h-screen">
           <div className="w-8 h-8 rounded-full border-2 border-[#F2754A] border-t-transparent animate-spin" />
         </div>
       </div>
@@ -99,9 +99,9 @@ export default function DashboardPage() {
 
   if (!dashboard) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0]">
+      <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#FAF6F0]">
         <DeveloperNavbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <div className="flex-1 flex items-center justify-center min-h-screen">
           <p className="text-gray-400 font-medium">Could not load your dashboard.</p>
         </div>
       </div>
@@ -111,10 +111,17 @@ export default function DashboardPage() {
   const chartData = view === "weekly" ? dashboard.weekly_trend : dashboard.monthly_trend;
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF6F0]">
+    // flex-col on mobile so the navbar's mobile <header> (an in-flow
+    // sibling returned alongside the fixed sidebar) stacks ABOVE this
+    // content instead of sitting beside it in a row. md:flex-row switches
+    // to a side-by-side layout once the navbar's desktop sidebar +
+    // spacer div take over — the spacer (rendered inside DeveloperNavbar)
+    // is what reserves the correct horizontal space there, so this
+    // container just needs to be a flex row and let it do its job.
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#FAF6F0]">
       <DeveloperNavbar />
 
-      <div className="px-4 py-12">
+      <div className="flex-1 min-w-0 px-4 py-12">
         <div className="w-full max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Your progress</h1>
 
@@ -171,8 +178,8 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     {m.meeting_link && (
-                      
-                       <a href={m.meeting_link}
+                      <a
+                        href={m.meeting_link}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs font-bold px-4 py-2 rounded-full text-white flex-shrink-0"
@@ -273,8 +280,8 @@ export default function DashboardPage() {
                 <span className="text-sm text-gray-400 mb-1">total</span>
               </div>
 
-              
-               <a href="/profile"
+              <a
+                href="/profile"
                 className="inline-block mt-2 text-xs font-bold text-[#F2754A] hover:underline"
               >
                 View on profile →
