@@ -751,25 +751,36 @@ export default function DeveloperNavbar() {
 
   return (
     <>
+      {/* Toggle handle — pinned to the sidebar's right edge, vertically
+          centered against the logo row. Rendered as its own fixed element
+          (not a child of <aside>) and positioned by inline style tracking
+          the sidebar's current width, because <aside> now has
+          overflow-y-auto: once a container scrolls on one axis, browsers
+          clip overflow on both, so this button — which is meant to sit
+          half outside the sidebar's right edge — was getting sliced in
+          half when it lived inside <aside>. */}
+      <button
+        type="button"
+        onClick={toggleCollapsed}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        style={{ left: effectiveCollapsed ? "82px" : "242px" }}
+        className="hidden md:flex fixed top-9 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-sm items-center justify-center text-gray-400 hover:text-[#F2754A] hover:border-[#F2754A] transition-all duration-200 ease-in-out z-[60]"
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+      </button>
+
       {/* ── Left sidebar (desktop) ── */}
       <aside
-        className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white border-r border-gray-100 z-50 px-4 py-7 transition-all duration-200 ease-in-out ${
+        className={`hidden md:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-50 px-4 py-6 overflow-y-auto transition-all duration-200 ease-in-out ${
           effectiveCollapsed ? "w-24" : "w-64"
         }`}
       >
-        {/* Toggle handle — pinned to the sidebar's right edge, vertically
-            centered against the logo row. Now shown on every route. */}
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="absolute -right-3.5 top-9 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-[#F2754A] hover:border-[#F2754A] transition-colors z-10"
+        <div
+          className={`flex items-center mb-6 flex-shrink-0 ${
+            effectiveCollapsed ? "flex-col gap-4" : "justify-between px-1"
+          }`}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
-
-        <div className={`flex items-center mb-8 ${effectiveCollapsed ? "flex-col gap-4" : "justify-between px-1"}`}>
           <Link href="/feed" className="flex items-center" aria-label="Home">
             <Image
               src="/Antyl.png"
@@ -789,7 +800,12 @@ export default function DeveloperNavbar() {
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1.5 flex-1">
+        {/* Plain flow — no independent scroll/shrink on the nav itself.
+            The whole <aside> scrolls as one unit (see overflow-y-auto up
+            top) only as a last-resort backstop; the vh-based gif sizing
+            below is what actually keeps this from being needed on normal
+            screens. */}
+        <nav className="flex flex-col gap-1">
           {TABS.map(({ label, href, icon: Icon, tourId }) => {
             const active = pathname === href;
             const isMessages = href === "/messages";
@@ -799,7 +815,7 @@ export default function DeveloperNavbar() {
                 href={href}
                 data-tour={tourId}
                 title={effectiveCollapsed ? label : undefined}
-                className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold transition-colors ${
+                className={`flex items-center py-2.5 rounded-2xl text-[15px] font-semibold transition-colors ${
                   effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
                 } ${
                   active
@@ -825,7 +841,7 @@ export default function DeveloperNavbar() {
               href="/admin/weekly-question"
               data-tour="nav-admin"
               title={effectiveCollapsed ? "Admin" : undefined}
-              className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold transition-colors ${
+              className={`flex items-center py-2.5 rounded-2xl text-[15px] font-semibold transition-colors ${
                 effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
               } ${
                 pathname === "/admin/weekly-question"
@@ -843,13 +859,21 @@ export default function DeveloperNavbar() {
           )}
         </nav>
 
-        {/* ── Time-of-day gif ── swaps between morning/afternoon/evening
-            based on the current local hour (8-hour blocks). Lives just
-            above the tour/logout buttons at the bottom of the sidebar.
-            Square container so the gif is never stretched into an oval.
-            Hovering shows a speech-bubble tooltip with a matching message. */}
-        <div className={`flex items-center justify-center mb-4 ${effectiveCollapsed ? "px-0" : "px-8"}`}>
-          <div className={`group relative block ${effectiveCollapsed ? "w-auto" : "w-full"}`}>
+        {/* ── Time-of-day gif ── sized off VIEWPORT HEIGHT (clamped between
+            64px and 168px) instead of sidebar width. Previously this was
+            "w-full aspect-square", which sized itself off the sidebar's
+            WIDTH — a value that never changes — while the thing that
+            actually varies between laptops is HEIGHT. So on a short
+            screen the gif stayed exactly as big as on a tall one and
+            pushed Logout out of view every time, no matter how much
+            padding got trimmed elsewhere. Sizing it by vh instead means
+            it automatically scales down on short screens and stays at
+            its original ~168px size on anything reasonably tall — this
+            is the actual fix, not the padding trims above (those just
+            buy a bit of extra headroom). Lives just above the tour/
+            logout buttons. Hovering shows a speech-bubble tooltip. */}
+        <div className="flex items-center justify-center mb-3 flex-shrink-0">
+          <div className="group relative block">
             {/* Speech bubble — hidden by default, fades/slides in on hover */}
             <div
               className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-max max-w-[190px]
@@ -865,7 +889,9 @@ export default function DeveloperNavbar() {
 
             <div
               className={`relative overflow-hidden rounded-2xl bg-gradient-to-b from-orange-50 to-white border border-orange-100/70 cursor-default ${
-                effectiveCollapsed ? "w-10 h-10" : "w-full aspect-square"
+                effectiveCollapsed
+                  ? "w-10 h-10"
+                  : "w-[clamp(64px,16vh,168px)] h-[clamp(64px,16vh,168px)]"
               }`}
             >
               <Image
@@ -883,7 +909,7 @@ export default function DeveloperNavbar() {
           type="button"
           onClick={() => setTourActive(true)}
           title={effectiveCollapsed ? "Take a tour" : undefined}
-          className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left ${
+          className={`flex items-center py-2.5 rounded-2xl text-[15px] font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left flex-shrink-0 ${
             effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
           }`}
         >
@@ -895,7 +921,7 @@ export default function DeveloperNavbar() {
           type="button"
           onClick={handleLogout}
           title={effectiveCollapsed ? "Logout" : undefined}
-          className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-full text-left ${
+          className={`flex items-center py-2.5 rounded-2xl text-[15px] font-semibold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-full text-left flex-shrink-0 ${
             effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
           }`}
         >
