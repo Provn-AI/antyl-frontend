@@ -75,7 +75,7 @@ function ChartCard({
 }) {
   return (
     <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8">
-      <div className="flex items-center gap-2 mb-5">
+      <div className="flex items-center gap-2.5 mb-5">
         <Icon className="w-5 h-5 text-[#F2754A]" />
         <h2 className="font-bold text-gray-900 text-lg">{title}</h2>
       </div>
@@ -99,9 +99,9 @@ function ReminderRow({
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
-      <div className="flex items-center gap-2.5 flex-shrink-0 sm:w-52">
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-          <Icon className={`w-4 h-4 ${iconClassName}`} />
+      <div className="flex items-center gap-3 flex-shrink-0 sm:w-52">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+          <Icon className={`w-[18px] h-[18px] ${iconClassName}`} />
         </div>
         <span className="font-bold text-gray-900 text-sm">{title}</span>
       </div>
@@ -379,17 +379,17 @@ export default function RecruiterDashboard() {
   }, [matches]);
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-10">
+    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 sm:px-6 py-8 sm:py-10">
       <div className="w-full max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Dashboard
           </h1>
 
           <button
             type="button"
             onClick={() => router.push("/jobs/new")}
-            className="flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full text-white"
+            className="flex items-center justify-center gap-2 text-sm font-semibold px-5 py-3 sm:py-2.5 rounded-full text-white w-full sm:w-auto"
             style={{
               background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
             }}
@@ -433,51 +433,51 @@ export default function RecruiterDashboard() {
           <>
             {/* Stat cards — outlined in brand orange to stand out from the
                 rest of the page's neutral bordered cards. */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                    <Briefcase className="w-4.5 h-4.5 text-[#F2754A]" />
+                    <Briefcase className="w-[18px] h-[18px] text-[#F2754A]" />
                   </div>
                   <span className="text-sm text-gray-400">Total Jobs</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {jobs.length}
                 </div>
               </div>
 
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                    <TrendingUp className="w-4.5 h-4.5 text-[#F2754A]" />
+                    <TrendingUp className="w-[18px] h-[18px] text-[#F2754A]" />
                   </div>
                   <span className="text-sm text-gray-400">Active Jobs</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {activeJobs}
                 </div>
               </div>
 
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                    <Users className="w-4.5 h-4.5 text-[#F2754A]" />
+                    <Users className="w-[18px] h-[18px] text-[#F2754A]" />
                   </div>
                   <span className="text-sm text-gray-400">Applicants</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {totalApplicants}
                 </div>
               </div>
 
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-6 transition-colors hover:border-[#F2754A]/60">
+              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                    <PartyPopper className="w-4.5 h-4.5 text-emerald-600" />
+                    <PartyPopper className="w-[18px] h-[18px] text-emerald-600" />
                   </div>
                   <span className="text-sm text-gray-400">Hires</span>
                 </div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {hiredCount}
                 </div>
               </div>
@@ -577,7 +577,7 @@ export default function RecruiterDashboard() {
             {/* Recently Hired */}
             {hiredCount > 0 && (
               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-6">
-                <div className="flex items-center gap-2 mb-5">
+                <div className="flex items-center gap-2.5 mb-5">
                   <PartyPopper className="w-5 h-5 text-emerald-600" />
                   <h2 className="font-bold text-gray-900 text-lg">
                     Recently Hired

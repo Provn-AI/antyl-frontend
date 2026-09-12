@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, MessageCircle, X } from "lucide-react";
+import { Send, MessageCircle, X, ChevronLeft } from "lucide-react";
 import {
   getConversations,
   getMessages,
@@ -189,10 +189,17 @@ export default function RecruiterMessagesPage() {
   }
 
   return (
-    <div className="h-screen flex relative">
-      {/* New-message popup */}
+    // Height accounts for the 68px sticky mobile top bar rendered by the
+    // recruiter layout above this page — plain h-screen here would make
+    // the page taller than the visible viewport on mobile and push the
+    // message composer off-screen. Desktop has no such bar, so h-screen
+    // is correct from md up. dvh (not vh) so mobile browser chrome
+    // resizing doesn't clip the composer either.
+    <div className="flex flex-col h-[calc(100dvh-68px)] md:h-screen relative">
+      {/* New-message popup — sits below the mobile top bar on phones,
+          top-right on desktop where there's no bar to clear. */}
       {toast && (
-        <div className="fixed top-5 right-5 z-50 w-80 animate-in fade-in slide-in-from-top-2">
+        <div className="fixed z-50 w-80 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-top-2 top-[4.5rem] left-4 right-4 md:left-auto md:right-5 md:top-5 md:w-80">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
@@ -226,171 +233,174 @@ export default function RecruiterMessagesPage() {
         </div>
       )}
 
-      {/* Conversation list */}
-      <div
-        className={`w-full md:w-80 flex-shrink-0 border-r border-gray-100 bg-white flex flex-col ${
-          selected ? "hidden md:flex" : "flex"
-        }`}
-      >
-        <div className="px-6 py-5 border-b border-gray-50">
-          <h1 className="text-lg font-bold text-gray-900">Messages</h1>
+      <div className="flex-1 flex min-h-0">
+        {/* Conversation list */}
+        <div
+          className={`w-full md:w-80 flex-shrink-0 border-r border-gray-100 bg-white flex flex-col min-h-0 ${
+            selected ? "hidden md:flex" : "flex"
+          }`}
+        >
+          <div className="px-5 sm:px-6 py-4 sm:py-5 border-b border-gray-50 flex-shrink-0">
+            <h1 className="text-lg font-bold text-gray-900">Messages</h1>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {loadingList ? (
+              <p className="text-xs text-gray-400 text-center py-10">Loading…</p>
+            ) : conversations.length === 0 ? (
+              <div className="py-16 text-center px-6">
+                <MessageCircle className="w-6 h-6 text-gray-200 mx-auto mb-2" />
+                <p className="text-xs text-gray-400 font-medium">
+                  No conversations yet. Match with a candidate to start one.
+                </p>
+              </div>
+            ) : (
+              conversations.map((conv) => (
+                <button
+                  key={conv.match_id}
+                  type="button"
+                  onClick={() => openConversation(conv)}
+                  className={`w-full text-left px-5 sm:px-6 py-4 border-b border-gray-50 transition-colors ${
+                    selected?.match_id === conv.match_id
+                      ? "bg-orange-50"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-gray-900 truncate">
+                      {conv.other_party.name || "Candidate"}
+                    </p>
+                    {conv.unread_count > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#F2754A] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                        {conv.unread_count}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
+                    {conv.job_title || "Job"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate mt-1.5">
+                    {conv.last_message
+                      ? conv.last_message.content
+                      : "No messages yet — say hi"}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {loadingList ? (
-            <p className="text-xs text-gray-400 text-center py-10">Loading…</p>
-          ) : conversations.length === 0 ? (
-            <div className="py-16 text-center px-6">
-              <MessageCircle className="w-6 h-6 text-gray-200 mx-auto mb-2" />
-              <p className="text-xs text-gray-400 font-medium">
-                No conversations yet. Match with a candidate to start one.
+        {/* Chat pane */}
+        <div className={`flex-1 flex flex-col min-h-0 bg-[#FAF6F0] ${selected ? "flex" : "hidden md:flex"}`}>
+          {!selected ? (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-sm text-gray-400 font-medium">
+                Select a conversation to start messaging
               </p>
             </div>
           ) : (
-            conversations.map((conv) => (
-              <button
-                key={conv.match_id}
-                type="button"
-                onClick={() => openConversation(conv)}
-                className={`w-full text-left px-6 py-4 border-b border-gray-50 transition-colors ${
-                  selected?.match_id === conv.match_id
-                    ? "bg-orange-50"
-                    : "hover:bg-gray-50"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
+            <>
+              <div className="px-4 sm:px-6 py-3 sm:py-4 bg-white border-b border-gray-100 flex items-center gap-1 flex-shrink-0">
+                <button
+                  type="button"
+                  className="md:hidden w-10 h-10 -ml-1.5 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors flex-shrink-0"
+                  onClick={() => setSelected(null)}
+                  aria-label="Back to conversations"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="min-w-0">
                   <p className="text-sm font-bold text-gray-900 truncate">
-                    {conv.other_party.name || "Candidate"}
+                    {selected.other_party.name || "Candidate"}
                   </p>
-                  {conv.unread_count > 0 && (
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#F2754A] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                      {conv.unread_count}
-                    </span>
-                  )}
+                  <p className="text-[11px] text-gray-400 font-medium truncate">
+                    {selected.job_title || "Job"}
+                  </p>
                 </div>
-                <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
-                  {conv.job_title || "Job"}
-                </p>
-                <p className="text-xs text-gray-500 truncate mt-1.5">
-                  {conv.last_message
-                    ? conv.last_message.content
-                    : "No messages yet — say hi"}
-                </p>
-              </button>
-            ))
+              </div>
+
+              <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 flex flex-col gap-3 min-h-0">
+                {messages.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center mt-10">
+                    Start the conversation - the candidate cannot reply until
+                    you send the first message.
+                  </p>
+                ) : (
+                  messages.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-snug ${
+                        m.sender_role === "recruiter"
+                          ? "self-end text-white"
+                          : "self-start bg-white text-gray-800 border border-gray-100"
+                      }`}
+                      style={
+                        m.sender_role === "recruiter"
+                          ? {
+                              background:
+                                "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
+                            }
+                          : undefined
+                      }
+                    >
+                      <p>{m.content}</p>
+                      <p
+                        className={`text-[10px] mt-1 ${
+                          m.sender_role === "recruiter"
+                            ? "text-white/70"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        {timeAgo(m.created_at)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Quick-reply chips - recruiter only, taps send instantly */}
+              <div className="px-4 sm:px-6 pt-3 flex gap-2 flex-wrap bg-white border-t border-gray-50 flex-shrink-0">
+                {RECRUITER_QUICK_REPLIES.map((q) => (
+                  <button
+                    key={q.label}
+                    type="button"
+                    disabled={sending}
+                    onClick={() => handleSend(q.text)}
+                    className="text-xs font-bold text-[#F2754A] bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend(draft);
+                }}
+                className="px-4 sm:px-6 py-3 sm:py-4 bg-white flex items-center gap-3 flex-shrink-0"
+              >
+                <input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="Write a message…"
+                  className="flex-1 text-sm px-4 py-2.5 rounded-full border border-gray-200 text-black focus:outline-none focus:border-[#F2754A]"
+                />
+                <button
+                  type="submit"
+                  disabled={sending || !draft.trim()}
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-white disabled:opacity-40 flex-shrink-0"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
+                  }}
+                >
+                  <Send className="w-[18px] h-[18px]" />
+                </button>
+              </form>
+            </>
           )}
         </div>
-      </div>
-
-      {/* Chat pane */}
-      <div className={`flex-1 flex flex-col bg-[#FAF6F0] ${selected ? "flex" : "hidden md:flex"}`}>
-        {!selected ? (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-sm text-gray-400 font-medium">
-              Select a conversation to start messaging
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className="px-6 py-4 bg-white border-b border-gray-100 flex items-center justify-between">
-              <button
-                type="button"
-                className="md:hidden text-xs font-bold text-gray-400 mr-3"
-                onClick={() => setSelected(null)}
-              >
-                ← Back
-              </button>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-gray-900 truncate">
-                  {selected.other_party.name || "Candidate"}
-                </p>
-                <p className="text-[11px] text-gray-400 font-medium truncate">
-                  {selected.job_title || "Job"}
-                </p>
-              </div>
-            </div>
-
-            <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-3">
-              {messages.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center mt-10">
-                  Start the conversation - the candidate cannot reply until
-                  you send the first message.
-                </p>
-              ) : (
-                messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-snug ${
-                      m.sender_role === "recruiter"
-                        ? "self-end text-white"
-                        : "self-start bg-white text-gray-800 border border-gray-100"
-                    }`}
-                    style={
-                      m.sender_role === "recruiter"
-                        ? {
-                            background:
-                              "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-                          }
-                        : undefined
-                    }
-                  >
-                    <p>{m.content}</p>
-                    <p
-                      className={`text-[10px] mt-1 ${
-                        m.sender_role === "recruiter"
-                          ? "text-white/70"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      {timeAgo(m.created_at)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Quick-reply chips - recruiter only, taps send instantly */}
-            <div className="px-6 pt-3 flex gap-2 flex-wrap bg-white border-t border-gray-50">
-              {RECRUITER_QUICK_REPLIES.map((q) => (
-                <button
-                  key={q.label}
-                  type="button"
-                  disabled={sending}
-                  onClick={() => handleSend(q.text)}
-                  className="text-xs font-bold text-[#F2754A] bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
-                >
-                  {q.label}
-                </button>
-              ))}
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend(draft);
-              }}
-              className="px-6 py-4 bg-white flex items-center gap-3"
-            >
-              <input
-  value={draft}
-  onChange={(e) => setDraft(e.target.value)}
-  placeholder="Write a message…"
-  className="flex-1 text-sm px-4 py-2.5 rounded-full border border-gray-200 text-black focus:outline-none focus:border-[#F2754A]"
-/>
-              <button
-                type="submit"
-                disabled={sending || !draft.trim()}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white disabled:opacity-40 flex-shrink-0"
-                style={{
-                  background:
-                    "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-                }}
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </>
-        )}
       </div>
     </div>
   );

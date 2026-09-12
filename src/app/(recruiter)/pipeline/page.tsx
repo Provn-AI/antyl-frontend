@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getMatches, updatePipelineStage, scheduleInterview } from "@/services/match.service";
 import InterviewScheduleModal from "@/components/InterviewScheduleModal";
 import {
@@ -149,6 +149,7 @@ function StageCard({
   onRejectRequest,
   onEditInterviewRequest,
   celebrating,
+  size = "compact",
 }: {
   match: Match;
   stages: typeof STAGES;
@@ -156,6 +157,7 @@ function StageCard({
   onRejectRequest: (match: Match) => void;
   onEditInterviewRequest: (match: Match) => void;
   celebrating?: boolean;
+  size?: "compact" | "comfortable";
 }) {
   const [movingForward, setMovingForward] = useState(false);
   const [movingBack,    setMovingBack]    = useState(false);
@@ -163,6 +165,7 @@ function StageCard({
   const nextStage = stages[currentIdx + 1];
   const prevStage = stages[currentIdx - 1];
   const isRejected = match.pipeline_stage === "rejected";
+  const comfy = size === "comfortable";
 
   const handleMoveForward = async () => {
     if (!nextStage || movingForward) return;
@@ -180,7 +183,7 @@ function StageCard({
 
   return (
     
-    <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-3 group overflow-hidden">
+    <div className={`relative bg-white rounded-2xl border border-gray-100 shadow-sm group overflow-hidden ${comfy ? "p-4" : "p-3"}`}>
       
       {celebrating && (
         <div className="absolute inset-0 z-20 pointer-events-none">
@@ -188,13 +191,13 @@ function StageCard({
         </div>
       )}
       {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-100">
-          <span className="text-white font-black text-[10px]">{getInitials(match.name)}</span>
+      <div className={`flex items-center gap-2 ${comfy ? "mb-2.5" : "mb-2"}`}>
+        <div className={`rounded-xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-100 ${comfy ? "w-10 h-10" : "w-8 h-8"}`}>
+          <span className={`text-white font-black ${comfy ? "text-xs" : "text-[10px]"}`}>{getInitials(match.name)}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-gray-900 truncate">{match.name}</p>
-          <p className="text-[10px] text-gray-400 truncate">{match.job_title}</p>
+          <p className={`font-bold text-gray-900 truncate ${comfy ? "text-sm" : "text-xs"}`}>{match.name}</p>
+          <p className={`text-gray-400 truncate ${comfy ? "text-xs" : "text-[10px]"}`}>{match.job_title}</p>
         </div>
       </div>
 
@@ -204,7 +207,7 @@ function StageCard({
       {match.pipeline_stage === "interviewing" && match.interview_scheduled_at && (
         <div className="mt-2 flex flex-col gap-1">
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-1 w-fit">
+            <div className={`flex items-center gap-1 font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-1 w-fit ${comfy ? "text-xs" : "text-[10px]"}`}>
               <CalendarDays className="w-3 h-3" />
               {new Date(match.interview_scheduled_at).toLocaleString([], {
                 month: "short",
@@ -216,11 +219,11 @@ function StageCard({
             <button
               type="button"
               onClick={() => onEditInterviewRequest(match)}
-              className="flex items-center justify-center w-5 h-5 rounded-full text-amber-500 bg-amber-50 hover:bg-amber-100 transition-colors flex-shrink-0"
+              className={`flex items-center justify-center rounded-full text-amber-500 bg-amber-50 hover:bg-amber-100 transition-colors flex-shrink-0 ${comfy ? "w-7 h-7" : "w-6 h-6"}`}
               aria-label="Edit interview time"
               title="Edit interview time"
             >
-              <Pencil className="w-2.5 h-2.5" />
+              <Pencil className="w-3 h-3" />
             </button>
           </div>
           {match.meeting_link && (
@@ -228,7 +231,7 @@ function StageCard({
             <a  href={match.meeting_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] font-bold text-blue-600 hover:underline w-fit"
+              className={`font-bold text-blue-600 hover:underline w-fit ${comfy ? "text-xs" : "text-[10px]"}`}
             >
               Join meeting →
             </a>
@@ -242,12 +245,12 @@ function StageCard({
           type="button"
           onClick={handleMoveForward}
           disabled={movingForward}
-          className={`mt-2.5 w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-colors disabled:opacity-40 ${nextStage.bg} ${nextStage.color}`}
+          className={`mt-2.5 w-full flex items-center justify-between rounded-xl font-bold transition-colors disabled:opacity-40 ${nextStage.bg} ${nextStage.color} ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
         >
           <span>Move to {nextStage.label}</span>
           {movingForward
             ? <div className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-            : <ChevronRight className="w-3 h-3" />
+            : <ChevronRight className="w-3.5 h-3.5" />
           }
         </button>
       )}
@@ -258,9 +261,9 @@ function StageCard({
           type="button"
           onClick={handleMoveBack}
           disabled={movingBack}
-          className="mt-1.5 w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-gray-400 bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-40"
+          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-gray-400 bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-40 ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
         >
-          <ChevronLeft className="w-3 h-3" />
+          <ChevronLeft className="w-3.5 h-3.5" />
           <span>Back to {prevStage.label}</span>
         </button>
       )}
@@ -270,10 +273,10 @@ function StageCard({
         <button
           type="button"
           onClick={() => onRejectRequest(match)}
-          className="mt-1.5 w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-red-500 bg-red-50 hover:bg-red-100 transition-colors ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
         >
           <span>Reject</span>
-          <XCircle className="w-3 h-3" />
+          <XCircle className="w-3.5 h-3.5" />
         </button>
       )}
     </div>
@@ -292,6 +295,11 @@ export default function PipelinePage() {
   const [interviewModalState, setInterviewModalState] = useState<InterviewModalState | null>(null);
   const [pendingRejectMatch, setPendingRejectMatch] = useState<Match | null>(null);
   const [celebratingMatchId, setCelebratingMatchId] = useState<string | null>(null);
+  // Which single stage is shown on mobile — the six-column board doesn't
+  // fit a phone screen, so mobile shows one stage at a time with
+  // left/right paging (arrows, quick-jump tabs, and swipe) instead.
+  const [mobileStageIndex, setMobileStageIndex] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -424,6 +432,24 @@ export default function PipelinePage() {
       ? matches
       : matches.filter((m) => m.job_title === selectedJobTitle);
 
+  const activeStage = STAGES[mobileStageIndex];
+  const activeStageMatches = visibleMatches.filter((m) => m.pipeline_stage === activeStage.key);
+
+  const goPrevStage = () => setMobileStageIndex((i) => Math.max(0, i - 1));
+  const goNextStage = () => setMobileStageIndex((i) => Math.min(STAGES.length - 1, i + 1));
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartXRef.current;
+    const SWIPE_THRESHOLD = 45;
+    if (diff > SWIPE_THRESHOLD) goPrevStage();
+    else if (diff < -SWIPE_THRESHOLD) goNextStage();
+    touchStartXRef.current = null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
@@ -436,13 +462,13 @@ export default function PipelinePage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-12">
+    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 sm:px-6 py-8 sm:py-12">
       <div className="w-full max-w-[1200px] mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Pipeline</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Pipeline</h2>
             <p className="text-sm text-gray-400 mt-1">
               {visibleMatches.length} candidate{visibleMatches.length !== 1 ? "s" : ""}
               {selectedJobTitle === "all"
@@ -453,12 +479,12 @@ export default function PipelinePage() {
 
           {/* Job filter */}
           {jobs.length > 0 && (
-            <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-full pl-4 pr-1.5 py-1.5 shadow-sm">
+            <div className="flex items-center gap-2 bg-white border border-gray-100 rounded-full pl-4 pr-1.5 py-1.5 shadow-sm w-full sm:w-auto">
               <Briefcase className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
               <select
                 value={selectedJobTitle}
                 onChange={(e) => setSelectedJobTitle(e.target.value)}
-                className="text-sm font-semibold text-gray-700 bg-transparent outline-none pr-2 py-1.5 cursor-pointer"
+                className="text-sm font-semibold text-gray-700 bg-transparent outline-none pr-2 py-1.5 cursor-pointer w-full sm:w-auto"
               >
                 <option value="all">All jobs</option>
                 {jobs.map((job) => (
@@ -471,8 +497,8 @@ export default function PipelinePage() {
           )}
         </div>
 
-        {/* Kanban columns */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Kanban columns — full six-across grid from lg up. */}
+        <div className="hidden lg:grid lg:grid-cols-6 gap-3">
           {STAGES.map(({ key, label, Icon, bg, border, color }) => {
             const cols = visibleMatches.filter((m) => m.pipeline_stage === key);
             return (
@@ -507,6 +533,90 @@ export default function PipelinePage() {
               </div>
             );
           })}
+        </div>
+
+        {/* Mobile pipeline — one stage on screen at a time. Six columns
+            never fit a phone width without turning into unreadable
+            slivers, so instead: quick-jump stage tabs, big left/right
+            arrows, and swipe left/right on the card list itself. */}
+        <div className="lg:hidden">
+          {/* Quick-jump stage tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-3 -mx-4 px-4">
+            {STAGES.map((s, i) => {
+              const count = visibleMatches.filter((m) => m.pipeline_stage === s.key).length;
+              const active = i === mobileStageIndex;
+              const TabIcon = s.Icon;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setMobileStageIndex(i)}
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition-colors whitespace-nowrap ${
+                    active ? `${s.bg} ${s.color} ${s.border}` : "bg-white text-gray-400 border-gray-100"
+                  }`}
+                >
+                  <TabIcon className="w-3.5 h-3.5" />
+                  {s.label}
+                  <span className="text-[10px] font-black tabular-nums">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Stage header with left/right paging arrows */}
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              type="button"
+              onClick={goPrevStage}
+              disabled={mobileStageIndex === 0}
+              aria-label="Previous stage"
+              className="w-11 h-11 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center text-gray-400 disabled:opacity-30 disabled:pointer-events-none hover:text-[#F2754A] hover:border-[#F2754A] transition-colors flex-shrink-0"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <div className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border ${activeStage.bg} ${activeStage.border}`}>
+              <activeStage.Icon className={`w-4 h-4 ${activeStage.color}`} />
+              <span className={`text-sm font-bold ${activeStage.color}`}>{activeStage.label}</span>
+              <span className={`text-xs font-black tabular-nums ${activeStage.color}`}>{activeStageMatches.length}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={goNextStage}
+              disabled={mobileStageIndex === STAGES.length - 1}
+              aria-label="Next stage"
+              className="w-11 h-11 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center text-gray-400 disabled:opacity-30 disabled:pointer-events-none hover:text-[#F2754A] hover:border-[#F2754A] transition-colors flex-shrink-0"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Card list for the active stage — full width, swipeable left/right to change stage */}
+          <div
+            className="flex flex-col gap-2.5 min-h-[220px]"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {activeStageMatches.length === 0 ? (
+              <div className={`flex items-center justify-center rounded-2xl border border-dashed ${activeStage.border} bg-white/70 py-16`}>
+                <p className={`text-sm font-semibold ${activeStage.color}`}>No candidates here yet</p>
+              </div>
+            ) : (
+              activeStageMatches.map((match) => (
+                <StageCard
+                  key={match.match_id}
+                  match={match}
+                  stages={STAGES}
+                  onMove={handleMove}
+                  onRejectRequest={handleRejectRequest}
+                  onEditInterviewRequest={handleEditInterviewRequest}
+                  celebrating={celebratingMatchId === match.match_id}
+                  size="comfortable"
+                />
+              ))
+            )}
+          </div>
         </div>
 
       </div>
