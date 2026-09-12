@@ -65,7 +65,7 @@ const TABS = [
 
 const POLL_INTERVAL_MS = 25000;
 const MESSAGE_POLL_INTERVAL_MS = 20000;
-const PANEL_WIDTH = 320;
+const PANEL_WIDTH = 344;
 const PANEL_MARGIN = 8;
 const SIDEBAR_COLLAPSE_KEY = "antyl_developer_nav_collapsed";
 
@@ -176,15 +176,15 @@ function getNotificationHref(n: AntylNotification): string {
 }
 
 function NotifIcon({ type }: { type: string }) {
-  if (type === "match") return <Sparkles className="w-3.5 h-3.5 text-emerald-500" />;
-  if (type === "profile_viewed") return <Eye className="w-3.5 h-3.5 text-blue-500" />;
-  if (type === "message") return <MessageCircle className="w-3.5 h-3.5 text-[#F2754A]" />; 
-  if (type === "streak_daily") return <Flame className="w-3.5 h-3.5 text-[#F2754A]" />;
-  if (type === "streak_week") return <Flame className="w-3.5 h-3.5 text-[#F2754A]" />;
-  if (type === "streak_month") return <Trophy className="w-3.5 h-3.5 text-[#FFB347]" />;
-  if (type === "podium_finish") return <Medal className="w-3.5 h-3.5 text-[#E3B27B]" />;
-  if (type === "field_leader") return <Crown className="w-3.5 h-3.5 text-[#FFD37A]" />;
-  return <Bell className="w-3.5 h-3.5 text-gray-400" />;
+  if (type === "match") return <Sparkles className="w-4 h-4 text-emerald-500" />;
+  if (type === "profile_viewed") return <Eye className="w-4 h-4 text-blue-500" />;
+  if (type === "message") return <MessageCircle className="w-4 h-4 text-[#F2754A]" />; 
+  if (type === "streak_daily") return <Flame className="w-4 h-4 text-[#F2754A]" />;
+  if (type === "streak_week") return <Flame className="w-4 h-4 text-[#F2754A]" />;
+  if (type === "streak_month") return <Trophy className="w-4 h-4 text-[#FFB347]" />;
+  if (type === "podium_finish") return <Medal className="w-4 h-4 text-[#E3B27B]" />;
+  if (type === "field_leader") return <Crown className="w-4 h-4 text-[#FFD37A]" />;
+  return <Bell className="w-4 h-4 text-gray-400" />;
 }
 
 // ── Milestone celebration popup ──
@@ -203,26 +203,26 @@ function MilestoneCelebration({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-sm bg-white rounded-[24px] shadow-2xl p-6 sm:p-7 text-center max-h-[85vh] overflow-y-auto">
+      <div className="relative w-full max-w-sm bg-white rounded-[24px] shadow-2xl p-7 sm:p-8 text-center max-h-[85vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 w-7 h-7 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors"
         >
-          <X className="w-3.5 h-3.5 text-gray-400" />
+          <X className="w-4 h-4 text-gray-400" />
         </button>
         <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+          className="w-[72px] h-[72px] rounded-full flex items-center justify-center mx-auto mb-5 shadow-md"
           style={{ background: `linear-gradient(135deg, ${style.color}, #FFB347)` }}
         >
-          <Icon className="w-7 h-7 text-white" />
+          <Icon className="w-8 h-8 text-white" />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 mb-1">{style.title}</h3>
-        <p className="text-sm text-gray-500">{notification.message}</p>
+        <h3 className="text-xl font-bold text-gray-900 mb-1.5">{style.title}</h3>
+        <p className="text-sm text-gray-500 leading-relaxed">{notification.message}</p>
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full py-2.5 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors"
+          className="mt-7 w-full py-3 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-sm"
         >
           Nice!
         </button>
@@ -248,29 +248,29 @@ function NewMessagePopup({
 }) {
   return (
     <div
-      className={`fixed z-[90] w-80 max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-left-2 ${
-        // top-16 (4rem) clears the mobile top bar (h-12) with a small gap,
+      className={`fixed z-[90] w-[340px] max-w-[calc(100vw-2rem)] animate-in fade-in slide-in-from-left-2 ${
+        // top-16 (4rem) clears the mobile top bar (h-14) with a small gap,
         // so the toast never overlaps the sticky mobile header.
-        mobile ? "top-16 left-4 right-4 w-auto" : `${leftOffsetClass} top-6`
+        mobile ? "top-[5.25rem] left-4 right-4 w-auto" : `${leftOffsetClass} top-6`
       }`}
     >
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 flex gap-3 items-start">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4 flex gap-3.5 items-start">
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-sm"
           style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
         >
-          <MessageCircle className="w-4 h-4" />
+          <MessageCircle className="w-[18px] h-[18px]" />
         </div>
         <button type="button" onClick={onOpen} className="flex-1 text-left min-w-0">
           <p className="text-sm font-bold text-gray-900 truncate">
             New message from {toast.name}
           </p>
-          <p className="text-xs text-gray-500 truncate mt-0.5">{toast.text}</p>
+          <p className="text-[13px] text-gray-500 truncate mt-0.5">{toast.text}</p>
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="text-gray-300 hover:text-gray-500 flex-shrink-0"
+          className="text-gray-300 hover:text-gray-500 flex-shrink-0 transition-colors"
           aria-label="Dismiss"
         >
           <X className="w-4 h-4" />
@@ -298,15 +298,16 @@ function BellButton({
       ref={buttonRef}
       type="button"
       onClick={onClick}
-      className={`relative flex items-center justify-center rounded-full transition-colors ${
+      aria-label="Notifications"
+      className={`relative flex items-center justify-center rounded-xl transition-colors ${
         mobile
-          ? "w-8 h-8 bg-gray-50 hover:bg-gray-100"
-          : "w-9 h-9 hover:bg-gray-50"
+          ? "w-11 h-11 bg-gray-50 hover:bg-gray-100"
+          : "w-10 h-10 rounded-full hover:bg-gray-50"
       }`}
     >
-      <Bell className={`${mobile ? "w-4 h-4" : "w-4.5 h-4.5"} ${panelOpen ? "text-[#F2754A]" : "text-gray-500"}`} />
+      <Bell className={`${mobile ? "w-5 h-5" : "w-5 h-5"} ${panelOpen ? "text-[#F2754A]" : "text-gray-500"}`} />
       {unreadCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#F2754A] text-white text-[9px] font-black flex items-center justify-center">
+        <span className="absolute -top-1 -right-1 min-w-[19px] h-[19px] px-1 rounded-full bg-[#F2754A] text-white text-[10px] font-black flex items-center justify-center shadow-sm ring-2 ring-white">
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       )}
@@ -344,7 +345,7 @@ function NotificationPanel({
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   // Shrink the panel to fit narrow phones (e.g. 320-360px wide) instead
-  // of assuming the full 320px PANEL_WIDTH always fits with margin on
+  // of assuming the full PANEL_WIDTH always fits with margin on
   // both sides — on a 320px-wide viewport the fixed width alone would
   // force the clamp below into a negative "max", which used to push
   // the panel left of the screen edge.
@@ -357,24 +358,24 @@ function NotificationPanel({
     Math.max(rawLeft, PANEL_MARGIN),
     window.innerWidth - effectiveWidth - PANEL_MARGIN
   );
-  const top = anchorRect.bottom + 8;
+  const top = anchorRect.bottom + 10;
   // Also cap the panel's height so it can't run off the bottom of a
   // short viewport (e.g. a phone in landscape).
-  const maxHeight = Math.min(420, window.innerHeight - top - PANEL_MARGIN);
+  const maxHeight = Math.min(440, window.innerHeight - top - PANEL_MARGIN);
 
   return (
     <div
       ref={panelRef}
       style={{ position: "fixed", top, left, width: effectiveWidth, maxHeight }}
-      className="bg-white rounded-[20px] border border-gray-100 shadow-xl overflow-hidden flex flex-col z-[80]"
+      className="bg-white rounded-[22px] border border-gray-100 shadow-2xl overflow-hidden flex flex-col z-[80]"
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 flex-shrink-0">
-        <p className="text-sm font-bold text-gray-900">Notifications</p>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50 flex-shrink-0">
+        <p className="text-[15px] font-bold text-gray-900">Notifications</p>
         {unreadCount > 0 && (
           <button
             type="button"
             onClick={onMarkAllRead}
-            className="text-[11px] font-bold text-[#F2754A] hover:underline"
+            className="text-xs font-bold text-[#F2754A] hover:underline"
           >
             Mark all read
           </button>
@@ -383,9 +384,9 @@ function NotificationPanel({
 
       <div className="flex-1 overflow-y-auto">
         {notifications.length === 0 ? (
-          <div className="py-10 text-center">
-            <Bell className="w-6 h-6 text-gray-200 mx-auto mb-2" />
-            <p className="text-xs text-gray-400 font-medium">No notifications yet</p>
+          <div className="py-12 text-center">
+            <Bell className="w-7 h-7 text-gray-200 mx-auto mb-2.5" />
+            <p className="text-sm text-gray-400 font-medium">No notifications yet</p>
           </div>
         ) : (
           notifications.map((n) => (
@@ -393,18 +394,18 @@ function NotificationPanel({
               key={n.id}
               type="button"
               onClick={() => onNotificationClick(n)}
-              className={`w-full text-left flex items-start gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-colors ${
+              className={`w-full text-left flex items-start gap-3.5 px-5 py-4 border-b border-gray-50 last:border-0 transition-colors ${
                 n.is_read ? "bg-white hover:bg-gray-50" : "bg-orange-50/40 hover:bg-orange-50"
               }`}
             >
-              <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <NotifIcon type={n.type} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-xs leading-snug ${n.is_read ? "text-gray-500" : "text-gray-800 font-semibold"}`}>
+                <p className={`text-[13px] leading-snug ${n.is_read ? "text-gray-500" : "text-gray-800 font-semibold"}`}>
                   {n.message}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
+                <p className="text-[11px] text-gray-400 mt-1.5">{timeAgo(n.created_at)}</p>
               </div>
               {!n.is_read && (
                 <span className="w-2 h-2 rounded-full bg-[#F2754A] flex-shrink-0 mt-1.5" />
@@ -452,9 +453,9 @@ function MobileNavMenu({
       <div className="fixed inset-0 bg-black/20 z-40 md:hidden" />
       <div
         ref={menuRef}
-        className="absolute left-0 right-0 top-full bg-white border-b border-gray-100 shadow-lg z-50 md:hidden max-h-[75vh] overflow-y-auto"
+        className="absolute left-0 right-0 top-full bg-white border-b border-gray-100 shadow-xl z-50 md:hidden max-h-[75vh] overflow-y-auto"
       >
-        <nav className="flex flex-col py-2">
+        <nav className="flex flex-col py-2.5">
           {TABS.map(({ label, href, icon: Icon }) => {
             const active = pathname === href;
             const isMessages = href === "/messages";
@@ -463,14 +464,14 @@ function MobileNavMenu({
                 key={href}
                 href={href}
                 onClick={onNavigate}
-                className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors ${
+                className={`flex items-center gap-3.5 px-5 py-3.5 text-[15px] font-semibold transition-colors ${
                   active ? "bg-orange-50 text-[#F2754A]" : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 <span className="relative inline-flex">
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
+                  <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
                   {isMessages && unreadMessagesTotal > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#F2754A] text-white text-[9px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#F2754A] text-white text-[9px] font-bold flex items-center justify-center">
                       {unreadMessagesTotal > 9 ? "9+" : unreadMessagesTotal}
                     </span>
                   )}
@@ -484,14 +485,14 @@ function MobileNavMenu({
             <Link
               href="/admin/weekly-question"
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-colors ${
+              className={`flex items-center gap-3.5 px-5 py-3.5 text-[15px] font-semibold transition-colors ${
                 pathname === "/admin/weekly-question"
                   ? "bg-orange-50 text-[#F2754A]"
                   : "text-gray-600 hover:bg-gray-50"
               }`}
             >
               <ShieldCheck
-                className={`w-4 h-4 flex-shrink-0 ${
+                className={`w-[18px] h-[18px] flex-shrink-0 ${
                   pathname === "/admin/weekly-question" ? "text-[#F2754A]" : "text-gray-400"
                 }`}
               />
@@ -752,8 +753,8 @@ export default function DeveloperNavbar() {
     <>
       {/* ── Left sidebar (desktop) ── */}
       <aside
-        className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white border-r border-gray-100 z-50 px-3 py-6 transition-all duration-200 ease-in-out ${
-          effectiveCollapsed ? "w-20" : "w-56"
+        className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white border-r border-gray-100 z-50 px-4 py-7 transition-all duration-200 ease-in-out ${
+          effectiveCollapsed ? "w-24" : "w-64"
         }`}
       >
         {/* Toggle handle — pinned to the sidebar's right edge, vertically
@@ -763,18 +764,18 @@ export default function DeveloperNavbar() {
           onClick={toggleCollapsed}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="absolute -right-3 top-8 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-[#F2754A] hover:border-[#F2754A] transition-colors z-10"
+          className="absolute -right-3.5 top-9 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-400 hover:text-[#F2754A] hover:border-[#F2754A] transition-colors z-10"
         >
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
-        <div className={`flex items-center mb-6 ${effectiveCollapsed ? "flex-col gap-3" : "justify-between px-1"}`}>
+        <div className={`flex items-center mb-8 ${effectiveCollapsed ? "flex-col gap-4" : "justify-between px-1"}`}>
           <Link href="/feed" className="flex items-center" aria-label="Home">
             <Image
               src="/Antyl.png"
               alt="Antyl logo"
-              width={effectiveCollapsed ? 30 : 70}
-              height={effectiveCollapsed ? 30 : 30}
+              width={effectiveCollapsed ? 36 : 84}
+              height={effectiveCollapsed ? 36 : 36}
               className="object-contain"
             />
           </Link>
@@ -788,7 +789,7 @@ export default function DeveloperNavbar() {
           </div>
         </div>
 
-        <nav className="flex flex-col gap-1 flex-1">
+        <nav className="flex flex-col gap-1.5 flex-1">
           {TABS.map(({ label, href, icon: Icon, tourId }) => {
             const active = pathname === href;
             const isMessages = href === "/messages";
@@ -798,8 +799,8 @@ export default function DeveloperNavbar() {
                 href={href}
                 data-tour={tourId}
                 title={effectiveCollapsed ? label : undefined}
-                className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
-                  effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
+                className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold transition-colors ${
+                  effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
                 } ${
                   active
                     ? "bg-orange-50 text-[#F2754A]"
@@ -807,9 +808,9 @@ export default function DeveloperNavbar() {
                 }`}
               >
                 <span className="relative inline-flex">
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
+                  <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-[#F2754A]" : "text-gray-400"}`} />
                   {isMessages && unreadMessagesTotal > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 min-w-[15px] h-[15px] px-1 rounded-full bg-[#F2754A] text-white text-[9px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-[#F2754A] text-white text-[9px] font-bold flex items-center justify-center">
                       {unreadMessagesTotal > 9 ? "9+" : unreadMessagesTotal}
                     </span>
                   )}
@@ -824,8 +825,8 @@ export default function DeveloperNavbar() {
               href="/admin/weekly-question"
               data-tour="nav-admin"
               title={effectiveCollapsed ? "Admin" : undefined}
-              className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold transition-colors ${
-                effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
+              className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold transition-colors ${
+                effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
               } ${
                 pathname === "/admin/weekly-question"
                   ? "bg-orange-50 text-[#F2754A]"
@@ -833,7 +834,7 @@ export default function DeveloperNavbar() {
               }`}
             >
               <ShieldCheck
-                className={`w-4 h-4 flex-shrink-0 ${
+                className={`w-5 h-5 flex-shrink-0 ${
                   pathname === "/admin/weekly-question" ? "text-[#F2754A]" : "text-gray-400"
                 }`}
               />
@@ -847,15 +848,15 @@ export default function DeveloperNavbar() {
             above the tour/logout buttons at the bottom of the sidebar.
             Square container so the gif is never stretched into an oval.
             Hovering shows a speech-bubble tooltip with a matching message. */}
-        <div className={`flex items-center justify-center mb-3 ${effectiveCollapsed ? "px-0" : "px-10"}`}>
+        <div className={`flex items-center justify-center mb-4 ${effectiveCollapsed ? "px-0" : "px-8"}`}>
           <div className={`group relative block ${effectiveCollapsed ? "w-auto" : "w-full"}`}>
             {/* Speech bubble — hidden by default, fades/slides in on hover */}
             <div
-              className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[180px]
+              className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-max max-w-[190px]
                          opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0
                          transition-all duration-200 ease-out z-20"
             >
-              <div className="relative rounded-xl bg-gray-900 text-white text-[11px] leading-snug font-medium px-3 py-2 shadow-lg text-center">
+              <div className="relative rounded-xl bg-gray-900 text-white text-xs leading-snug font-medium px-3.5 py-2.5 shadow-lg text-center">
                 {TIME_OF_DAY_MESSAGES[timeOfDay]}
                 {/* tail */}
                 <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
@@ -864,7 +865,7 @@ export default function DeveloperNavbar() {
 
             <div
               className={`relative overflow-hidden rounded-2xl bg-gradient-to-b from-orange-50 to-white border border-orange-100/70 cursor-default ${
-                effectiveCollapsed ? "w-8 h-8" : "w-full aspect-square"
+                effectiveCollapsed ? "w-10 h-10" : "w-full aspect-square"
               }`}
             >
               <Image
@@ -882,11 +883,11 @@ export default function DeveloperNavbar() {
           type="button"
           onClick={() => setTourActive(true)}
           title={effectiveCollapsed ? "Take a tour" : undefined}
-          className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left ${
-            effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
+          className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold text-gray-400 hover:bg-orange-50 hover:text-[#F2754A] transition-colors w-full text-left ${
+            effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
           }`}
         >
-          <HelpCircle className="w-4 h-4 flex-shrink-0" />
+          <HelpCircle className="w-5 h-5 flex-shrink-0" />
           {!effectiveCollapsed && "Take a tour"}
         </button>
 
@@ -894,19 +895,19 @@ export default function DeveloperNavbar() {
           type="button"
           onClick={handleLogout}
           title={effectiveCollapsed ? "Logout" : undefined}
-          className={`flex items-center py-2.5 rounded-2xl text-sm font-semibold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-full text-left ${
-            effectiveCollapsed ? "justify-center px-0" : "gap-3 px-3"
+          className={`flex items-center py-3 rounded-2xl text-[15px] font-semibold text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors w-full text-left ${
+            effectiveCollapsed ? "justify-center px-0" : "gap-3.5 px-4"
           }`}
         >
-          <LogOut className="w-4 h-4 flex-shrink-0" />
+          <LogOut className="w-5 h-5 flex-shrink-0" />
           {!effectiveCollapsed && "Logout"}
         </button>
       </aside>
 
       {/* ── Top bar (mobile) ── */}
-      <header className="md:hidden bg-white border-b border-gray-100 sticky top-0 z-50 relative">
-        <div className="px-2.5 sm:px-3 h-12 flex items-center justify-between gap-1.5">
-          <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+      <header className="md:hidden bg-white border-b border-gray-100 sticky top-0 z-50 relative shadow-[0_2px_6px_rgba(17,17,17,0.04)]">
+        <div className="px-4 sm:px-5 h-[68px] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
             {/* Hamburger menu — replaces the old horizontally-scrolling
                 tab strip. Opens a full-width dropdown listing every tab
                 vertically so nothing requires side-scrolling to reach. */}
@@ -915,24 +916,24 @@ export default function DeveloperNavbar() {
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                mobileMenuOpen ? "bg-orange-50 text-[#F2754A]" : "hover:bg-gray-50 text-gray-500"
+              className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                mobileMenuOpen ? "bg-orange-50 text-[#F2754A]" : "hover:bg-gray-50 text-gray-600"
               }`}
             >
-              {mobileMenuOpen ? <X className="w-[18px] h-[18px]" /> : <Menu className="w-[18px] h-[18px]" />}
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
             <Link href="/feed" className="flex items-center flex-shrink-0 min-w-0" aria-label="Home">
               <Image
                 src="/Antyl.png"
                 alt="Antyl logo"
-                width={62}
-                height={18}
-                className="object-contain h-[18px] w-auto"
+                width={96}
+                height={28}
+                className="object-contain h-7 w-auto"
               />
             </Link>
           </div>
 
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <BellButton
               mobile
               buttonRef={mobileBellRef}
@@ -943,18 +944,18 @@ export default function DeveloperNavbar() {
             {isAdmin && (
               <Link
                 href="/admin/weekly-question"
-                className="w-8 h-8 rounded-lg hover:bg-gray-50 flex items-center justify-center flex-shrink-0"
+                className="w-11 h-11 rounded-xl bg-gray-50 hover:bg-gray-100 flex items-center justify-center flex-shrink-0 transition-colors"
               >
-                <ShieldCheck className="w-4 h-4 text-gray-500" />
+                <ShieldCheck className="w-5 h-5 text-gray-500" />
               </Link>
             )}
             <button
               type="button"
               onClick={handleLogout}
               aria-label="Logout"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
+              className="w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors flex-shrink-0"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -972,7 +973,7 @@ export default function DeveloperNavbar() {
 
       <div
         className={`hidden md:block flex-shrink-0 transition-all duration-200 ease-in-out ${
-          effectiveCollapsed ? "w-20" : "w-56"
+          effectiveCollapsed ? "w-24" : "w-64"
         }`}
       />
 
@@ -994,7 +995,7 @@ export default function DeveloperNavbar() {
           onOpen={handleMessageToastOpen}
           onClose={() => setMessageToast(null)}
           mobile={isMobileViewport}
-          leftOffsetClass={effectiveCollapsed ? "left-24" : "left-60"}
+          leftOffsetClass={effectiveCollapsed ? "left-28" : "left-[17rem]"}
         />
       )}
 
