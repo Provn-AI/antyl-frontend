@@ -256,14 +256,18 @@ function NoJobsState() {
         />
 
         <div className="text-center md:text-left">
-          <h2 className="font-sans text-xl sm:text-2xl md:text-[28px] font-bold text-gray-900 mb-2">
-            No jobs available right now
-          </h2>
-          <p className="font-sans text-sm sm:text-base text-gray-400 leading-relaxed mb-6 sm:mb-7 max-w-md">
-            Your feed is empty for the moment. Improve your Antyl score,
-            widen your preferences, or check back tomorrow, new roles get
-            added every day.
-          </p>
+          <h2
+  className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 truncate"
+  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+>
+  No jobs available right now
+</h2>
+
+<p className="font-sans text-sm sm:text-base text-gray-400 leading-relaxed mb-6 sm:mb-7 max-w-md">
+  Your feed is empty for the moment. Improve your Antyl score,
+  widen your preferences, or check back tomorrow, new roles get
+  added every day.
+</p>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-center md:justify-start gap-3">
             <Link
@@ -497,9 +501,12 @@ export default function FeedPage() {
             </AnimatePresence>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
-              <h1 className="font-sans text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">
-                Find your next role
-              </h1>
+              <h1
+  className="text-xl sm:text-2xl font-bold text-gray-900 truncate"
+  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+>
+  Find your next role
+</h1>
 
               {statusLoaded && (
                 <span

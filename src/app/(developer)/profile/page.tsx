@@ -475,9 +475,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0]">
+      <div className="min-h-screen w-full md:flex bg-[#FAF6F0] overflow-x-hidden">
         <DeveloperNavbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <div className="w-full md:flex-1 md:min-w-0 flex items-center justify-center min-h-[calc(100vh-68px)] md:min-h-screen">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 rounded-full border-2 border-[#F2754A] border-t-transparent animate-spin" />
             <p className="text-sm text-gray-400 font-medium">Loading profile…</p>
@@ -489,9 +489,9 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0]">
+      <div className="min-h-screen w-full md:flex bg-[#FAF6F0] overflow-x-hidden">
         <DeveloperNavbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <div className="w-full md:flex-1 md:min-w-0 flex items-center justify-center min-h-[calc(100vh-68px)] md:min-h-screen">
           <p className="text-gray-400 font-medium">Profile not found.</p>
         </div>
       </div>
@@ -507,13 +507,13 @@ export default function ProfilePage() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF6F0]">
+    <div className="min-h-screen w-full md:flex bg-[#FAF6F0] overflow-x-hidden">
       <DeveloperNavbar />
       <ConfirmModal state={confirm} onClose={() => setConfirm(CONFIRM_CLOSED)} />
       <ShareBadgeModal badge={sharedBadge} isOpen={Boolean(sharedBadge)} onClose={() => setSharedBadge(null)} />
 
-      <div className="px-4 py-12">
-        <div className="w-full max-w-2xl mx-auto">
+      <div className="w-full md:flex-1 md:min-w-0 md:flex md:justify-center px-4 py-12">
+        <div className="w-full max-w-2xl md:mx-auto min-w-0">
 
           {/* ── Hero card ── */}
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">

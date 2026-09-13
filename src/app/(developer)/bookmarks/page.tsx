@@ -29,31 +29,45 @@ export default function BookmarksPage() {
         setLoading(false);
       }
     }
+
     load();
   }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAF6F0]">
+      <div className="min-h-screen w-full md:flex bg-[#FAF6F0]">
         <DeveloperNavbar />
-        <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
-          <p className="text-sm text-gray-400 font-medium">Loading bookmarks…</p>
+
+        <div className="md:flex-1 md:min-w-0 flex items-center justify-center min-h-[calc(100vh-68px)] md:min-h-screen">
+          <p className="text-sm text-gray-400 font-medium">
+            Loading bookmarks…
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF6F0]">
+    <div className="min-h-screen w-full md:flex bg-[#FAF6F0]">
       <DeveloperNavbar />
-      <div className="px-4 py-12">
-        <div className="w-full max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Saved Jobs</h1>
+
+      <div className="md:flex-1 md:min-w-0 flex justify-center px-4 py-12">
+        <div className="w-full max-w-3xl">
+          <h1
+  className="text-xl sm:text-2xl font-bold text-gray-900 truncate"
+  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+>
+  Saved Jobs
+</h1>
+<br/>
 
           {bookmarks.length === 0 ? (
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-8 text-center">
               <Bookmark className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-400">You have not saved any jobs yet.</p>
+
+              <p className="text-sm text-gray-400">
+                You have not saved any jobs yet.
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -65,6 +79,7 @@ export default function BookmarksPage() {
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-gray-900">{b.job_title}</p>
+
                     {b.already_applied && (
                       <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2.5 py-1">
                         <CheckCircle2 className="w-3 h-3" />
@@ -72,8 +87,10 @@ export default function BookmarksPage() {
                       </span>
                     )}
                   </div>
+
                   <p className="text-xs text-gray-400 mt-1">
-                    Saved {new Date(b.created_at).toLocaleDateString()}
+                    Saved{" "}
+                    {new Date(b.created_at).toLocaleDateString()}
                   </p>
                 </Link>
               ))}

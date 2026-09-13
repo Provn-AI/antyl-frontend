@@ -292,7 +292,7 @@ export default function LeaderboardPage() {
               className="text-xl sm:text-2xl font-bold text-gray-900 truncate"
               style={{ fontFamily: "var(--font-fraunces, serif)" }}
             >
-              Leaderboard
+              Rankings
             </h1>
           </div>
           <WeekTimer />

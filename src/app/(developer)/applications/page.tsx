@@ -182,7 +182,12 @@ export default function ApplicationsPage() {
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Applications</h1>
+            <h1
+  className="text-xl sm:text-2xl font-bold text-gray-900 truncate mb-1"
+  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+>
+  Applications
+</h1>
             <p className="text-gray-400 text-sm">
               {applications.length} total application{applications.length !== 1 ? "s" : ""}
             </p>

@@ -275,7 +275,7 @@ export default function LoginPage() {
 
           <h1 className="card-title">Welcome back</h1>
           <p className="card-sub">
-            Log in to your verified dev account
+            Log in to your verified account
           </p>
 
           {/* ── Google OAuth (disabled — coming soon) ── */}

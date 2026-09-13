@@ -123,7 +123,13 @@ export default function DashboardPage() {
 
       <div className="flex-1 min-w-0 px-4 py-12">
         <div className="w-full max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Your progress</h1>
+          <h1
+  className="text-xl sm:text-2xl font-bold text-gray-900 truncate"
+  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+>
+  Your progress
+</h1>
+<br/>
 
           {/* ── Stat cards ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
