@@ -41,6 +41,8 @@ interface JobDetail {
   description: string;
   required_tech_stack: string[];
   experience_level: string;
+  min_experience_years: number;
+  max_experience_years: number;
   salary_min: number;
   salary_max: number;
   job_type: string;
@@ -523,6 +525,12 @@ function JobPreviewModal({
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">
                     {job.experience_level}
                   </span>
+                  {job.min_experience_years != null &&
+                    job.max_experience_years != null && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                        {job.min_experience_years}–{job.max_experience_years} yrs
+                      </span>
+                    )}
                 </div>
               </div>
 
