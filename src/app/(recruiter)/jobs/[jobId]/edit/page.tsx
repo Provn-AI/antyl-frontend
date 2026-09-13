@@ -169,7 +169,7 @@ export default function EditJobPage({
       setSuccess(true);
       // BUG-FIX: this page lives at /dashboard/jobs/[jobId]/edit, so the
       // jobs listing is at /dashboard/jobs, not /jobs.
-      setTimeout(() => router.push("/dashboard/jobs"), 1200);
+      setTimeout(() => router.push("/jobs"), 1200);
     } catch (err) {
       console.error(err);
       setError("We couldn't save this job. Please try again.");
