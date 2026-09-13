@@ -109,27 +109,6 @@ function VerifyOtpForm() {
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pasted = e.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, OTP_LENGTH);
-    const next = [...otp];
-    pasted.split("").forEach((char, i) => {
-      next[i] = char;
-      triggerPop(i, i * 45); // slight stagger so it "fills in" left to right
-    });
-    setOtp(next);
-    inputRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
-  };
-
   const handleVerify = async () => {
     const code = otp.join("");
     if (code.length < OTP_LENGTH) return;
@@ -180,6 +159,33 @@ function VerifyOtpForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (otp.filter(Boolean).length === OTP_LENGTH && !loading) {
+        handleVerify();
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH);
+    const next = [...otp];
+    pasted.split("").forEach((char, i) => {
+      next[i] = char;
+      triggerPop(i, i * 45); // slight stagger so it "fills in" left to right
+    });
+    setOtp(next);
+    inputRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
 
   const handleResend = async () => {
