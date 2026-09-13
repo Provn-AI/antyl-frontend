@@ -1284,7 +1284,7 @@ export default function RecruiterLandingPage() {
               >
                 <img
                   className="video-thumb-img"
-                  src={`https://img.youtube.com/vi/vkfsK6x30i4/hqdefault.jpg`}
+                  src={`https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`}
                   alt="Antyl product demo video thumbnail"
                   loading="lazy"
                 />
