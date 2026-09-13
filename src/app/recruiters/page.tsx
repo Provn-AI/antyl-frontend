@@ -37,9 +37,14 @@ export default function RecruiterLandingPage() {
   const [counts, setCounts] = useState({ devs: 0, companies: 0, match: 0 });
   const statsRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+
+  // YouTube demo video: https://youtu.be/vkfsK6x30i4
+  const VIDEO_ID = "vkfsK6x30i4";
 
   const lazyHero = useLazySection();
   const lazyHowItWorks = useLazySection();
+  const lazyVideo = useLazySection();
   const lazyStats = useLazySection();
   const lazyTech = useLazySection();
   const lazyProof = useLazySection();
@@ -690,6 +695,53 @@ export default function RecruiterLandingPage() {
           to { opacity: 1; transform: translateY(0); }
         }
 
+        /* ---- PRODUCT DEMO VIDEO ---- */
+        .video-section { padding: 5.5rem 1.5rem 6rem; position: relative; }
+        .video-header { text-align: center; max-width: 560px; margin: 0 auto; }
+        .video-frame-wrap { max-width: 880px; margin: 3rem auto 0; position: relative; }
+        .video-frame-glow {
+          position: absolute; inset: -18px; border-radius: 40px;
+          background: linear-gradient(135deg, rgba(255,107,77,.25), rgba(255,216,77,.2));
+          filter: blur(28px); z-index: 0; opacity: .8;
+        }
+        .video-frame {
+          position: relative; z-index: 1; border-radius: 28px; overflow: hidden;
+          border: 4px solid #fff; background: #10100f; aspect-ratio: 16 / 9;
+          box-shadow: 0 24px 60px rgba(58, 41, 20, .22), 0 0 0 1px rgba(255,130,71,.18);
+        }
+        .video-thumb-btn {
+          position: absolute; inset: 0; border: none; padding: 0; cursor: pointer;
+          background: #10100f; display: block; width: 100%; height: 100%;
+        }
+        .video-thumb-img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: .92; }
+        .video-thumb-overlay {
+          position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(180deg, rgba(10,8,6,.08) 0%, rgba(10,8,6,.5) 100%);
+          transition: background .2s ease;
+        }
+        .video-thumb-btn:hover .video-thumb-overlay { background: linear-gradient(180deg, rgba(10,8,6,.15) 0%, rgba(10,8,6,.6) 100%); }
+        .video-play-btn {
+          width: 84px; height: 84px; border-radius: 50%;
+          background: linear-gradient(135deg, #FF6B4D, #FFB347);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 12px 34px rgba(255,107,77,.5), 0 0 0 10px rgba(255,255,255,.12);
+          transition: transform .2s ease, box-shadow .2s ease;
+        }
+        .video-thumb-btn:hover .video-play-btn { transform: scale(1.08); box-shadow: 0 16px 40px rgba(255,107,77,.6), 0 0 0 12px rgba(255,255,255,.16); }
+        .video-play-btn svg { margin-left: 5px; }
+        .video-thumb-caption {
+          position: absolute; left: 20px; bottom: 18px; display: flex; align-items: center; gap: 8px;
+          background: rgba(0,0,0,.45); backdrop-filter: blur(6px); color: white;
+          font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 50px;
+        }
+        .video-iframe { width: 100%; height: 100%; border: 0; display: block; }
+        .video-meta-row {
+          display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+          flex-wrap: wrap; margin-top: 1.75rem;
+        }
+        .video-meta-item { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--gray4); }
+        .video-meta-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
         /* ---- STATS ---- */
         .stats-strip {
           position: relative; overflow: hidden; background: #FFF8ED; padding: 4.75rem 2.4rem;
@@ -1003,6 +1055,9 @@ export default function RecruiterLandingPage() {
           .single-cta-card { padding: 2rem 1.5rem; }
           .score-main-card, .score-side-card { padding: 1.25rem; }
           .demo-form-card { padding: 1.25rem; }
+          .video-play-btn { width: 64px; height: 64px; }
+          .video-thumb-caption { left: 12px; bottom: 12px; font-size: 11px; padding: 6px 12px; }
+          .video-meta-row { gap: 1rem; }
         }
         @media (max-width: 420px) {
           .hero-badge-row { flex-direction: column; align-items: center; }
@@ -1019,6 +1074,7 @@ export default function RecruiterLandingPage() {
         </Link>
         <div className="nav-links">
           <a href="#how-it-works" className="nav-link">How it works</a>
+          <a href="#demo-video" className="nav-link">Watch demo</a>
           <a href="#features" className="nav-link">Features</a>
           <a href="#antyl-score" className="nav-link">Antyl Score</a>
           <Link href="/" className="nav-link">For developers</Link>
@@ -1042,6 +1098,7 @@ export default function RecruiterLandingPage() {
       {/* ─── MOBILE MENU PANEL ─── */}
       <div className={`mobile-menu-panel${mobileMenuOpen ? " open" : ""}`}>
         <a href="#how-it-works" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>How it works</a>
+        <a href="#demo-video" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Watch demo</a>
         <a href="#features" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
         <a href="#antyl-score" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Antyl Score</a>
         <a href="#request-demo" className="mobile-menu-link" onClick={() => setMobileMenuOpen(false)}>Request a demo</a>
@@ -1082,11 +1139,11 @@ export default function RecruiterLandingPage() {
                 </svg>
                 Post a job free
               </a>
-              <a href="#how-it-works" className="btn-hero-secondary">
+              <a href="#demo-video" className="btn-hero-secondary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                  <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
-                See how it works
+                Watch the demo
               </a>
             </div>
 
@@ -1191,6 +1248,66 @@ export default function RecruiterLandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── PRODUCT DEMO VIDEO ─── */}
+      <section className={`video-section lazy-section${lazyVideo.visible ? " visible" : ""}`} id="demo-video" ref={lazyVideo.ref}>
+        <div className="video-header">
+          <span className="section-eyebrow" style={{ justifyContent: "center" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--coral)", display: "inline-block" }} />
+            See it in action
+          </span>
+          <h2 className="section-title blur-reveal">Watch Antyl <em>fill your pipeline</em></h2>
+          <p className="section-sub" style={{ margin: "0 auto" }}>
+            A 2-minute walkthrough of posting a role, filtering by Antyl Score, and moving verified candidates through your kanban pipeline.
+          </p>
+        </div>
+
+        <div className="video-frame-wrap scale-up">
+          <div className="video-frame-glow" aria-hidden="true" />
+          <div className="video-frame">
+            {videoPlaying ? (
+              <iframe
+                className="video-iframe"
+                src={`https://www.youtube.com/embed/${VIDEO_ID}?autoplay=1&rel=0`}
+                title="Antyl Product Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <button
+                type="button"
+                className="video-thumb-btn"
+                onClick={() => setVideoPlaying(true)}
+                aria-label="Play Antyl product demo video"
+              >
+                <img
+                  className="video-thumb-img"
+                  src={`https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`}
+                  alt="Antyl product demo video thumbnail"
+                  loading="lazy"
+                />
+                <div className="video-thumb-overlay">
+                  <div className="video-play-btn">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+                      <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                  </div>
+                </div>
+                <span className="video-thumb-caption">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                  Antyl Product Demo
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="video-meta-row">
+          <span className="video-meta-item"><span className="video-meta-dot" style={{ background: "#22C55E" }} />Live product walkthrough</span>
+          <span className="video-meta-item"><span className="video-meta-dot" style={{ background: "#FF6B4D" }} />Real Antyl Score filtering</span>
+          <span className="video-meta-item"><span className="video-meta-dot" style={{ background: "#FFB347" }} />Kanban pipeline in action</span>
         </div>
       </section>
 
@@ -1782,6 +1899,7 @@ export default function RecruiterLandingPage() {
               <div className="footer-col-title">Product</div>
               <div className="footer-links">
                 <a href="#how-it-works" className="footer-link">How it works</a>
+                <a href="#demo-video" className="footer-link">Watch demo</a>
                 <a href="#antyl-score" className="footer-link">Antyl Score</a>
                 <a href="#features" className="footer-link">Features</a>
               </div>
