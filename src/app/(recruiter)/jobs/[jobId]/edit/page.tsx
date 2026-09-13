@@ -10,12 +10,16 @@ import {
 } from "lucide-react";
 import { getJob, updateJob } from "@/services/recruiter-job.service";
 import TrustScoreSlider from "@/components/jobs/TrustScoreSlider";
+import CitySelect from "@/components/citySelect";
+import { isValidCity } from "@/lib/cities";
 
 interface JobForm {
   title: string;
   description: string;
   required_tech_stack: string;
   experience_level: string;
+  min_experience_years: number;
+  max_experience_years: number;
   salary_min: number;
   salary_max: number;
   job_type: string;
@@ -38,28 +42,10 @@ function mapExperienceLevel(years: number): string {
   return "lead";
 }
 
-function experienceLevelToYears(level: string): number {
-  switch (level) {
-    case "entry": return 0;
-    case "mid": return 3;
-    case "senior": return 6;
-    case "lead": return 9;
-    default: return 0;
-  }
-}
-
 const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
   e.currentTarget.blur();
 };
 
-// BUG-FIX: `params` is only a real Promise under Next.js 15's App Router
-// (where unwrapping it with React.use() is required). On Next 14, params
-// arrives as a plain `{ jobId: string }` object — calling React.use() on
-// a non-Promise throws during render, and that unhandled throw is the
-// most likely reason this route was 404'ing even though the file exists
-// in the right place with the right name. Resolving params defensively
-// here makes the page work correctly on either Next.js version without
-// needing to know which one the project is actually on.
 type ParamsShape = { jobId: string } | Promise<{ jobId: string }>;
 
 function resolveParams(params: ParamsShape): { jobId: string } {
@@ -82,16 +68,17 @@ export default function EditJobPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [experienceYears, setExperienceYears] = useState<number>(0);
-  // Raw string backing the experience-years input so the field can be
-  // temporarily empty while typing (e.g. clearing it to type "0").
-  const [experienceYearsInput, setExperienceYearsInput] = useState<string>("0");
+
+  const [minExpInput, setMinExpInput] = useState<string>("0");
+  const [maxExpInput, setMaxExpInput] = useState<string>("0");
 
   const [form, setForm] = useState<JobForm>({
     title: "",
     description: "",
     required_tech_stack: "",
     experience_level: "entry",
+    min_experience_years: 0,
+    max_experience_years: 0,
     salary_min: 0,
     salary_max: 0,
     job_type: "full_time",
@@ -110,18 +97,24 @@ export default function EditJobPage({
     async function loadJob() {
       try {
         const job = await getJob(jobId);
-        const years = experienceLevelToYears(job.experience_level);
-        setExperienceYears(years);
-        setExperienceYearsInput(String(years));
+        const minYears = job.min_experience_years ?? 0;
+        const maxYears = job.max_experience_years ?? 0;
+        setMinExpInput(String(minYears));
+        setMaxExpInput(String(maxYears));
         setForm({
           title: job.title || "",
           description: job.description || "",
           required_tech_stack: (job.required_tech_stack || []).join(", "),
           experience_level: job.experience_level || "entry",
+          min_experience_years: minYears,
+          max_experience_years: maxYears,
           salary_min: job.salary_min || 0,
           salary_max: job.salary_max || 0,
           job_type: job.job_type || "full_time",
-          location: job.location || "",
+          // FIX: guard against a stale/non-canonical city coming back
+          // from the API (e.g. a job created before CitySelect existed)
+          // so it doesn't silently pass through as free text again.
+          location: isValidCity(job.location) ? job.location : "",
           is_remote: job.is_remote || false,
           min_score: job.min_score || 0,
           max_score: job.max_score || 100,
@@ -143,6 +136,11 @@ export default function EditJobPage({
       return "Add a location, or mark this as remote.";
     if (form.salary_max && form.salary_min > form.salary_max)
       return "Minimum salary can't be greater than maximum salary.";
+    if (
+      form.max_experience_years &&
+      form.min_experience_years > form.max_experience_years
+    )
+      return "Minimum experience can't be greater than maximum experience.";
     const techStack = form.required_tech_stack.trim();
     if (techStack) {
       const hasComma = techStack.includes(",");
@@ -167,8 +165,6 @@ export default function EditJobPage({
         required_tech_stack: techTags,
       });
       setSuccess(true);
-      // BUG-FIX: this page lives at /dashboard/jobs/[jobId]/edit, so the
-      // jobs listing is at /dashboard/jobs, not /jobs.
       setTimeout(() => router.push("/jobs"), 1200);
     } catch (err) {
       console.error(err);
@@ -187,7 +183,6 @@ export default function EditJobPage({
           <h1 className="text-3xl font-bold text-gray-900">Edit Job</h1>
           <button
             type="button"
-            // BUG-FIX: same /jobs → /dashboard/jobs correction.
             onClick={() => router.push("/dashboard/jobs")}
             className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
           >
@@ -274,49 +269,88 @@ export default function EditJobPage({
               )}
             </div>
 
-            {/* Experience + Job Type + Salary */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Experience (years)
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  className={inputClass}
-                  placeholder="e.g. 3"
-                  value={experienceYearsInput}
-                  onWheel={preventWheelChange}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    setExperienceYearsInput(raw);
-
-                    if (raw === "") {
-                      // Let the field be blank while editing; don't touch
-                      // experienceYears/form until there's a real number.
-                      return;
-                    }
-
-                    const years = Number(raw);
-                    if (!Number.isNaN(years)) {
-                      setExperienceYears(years);
-                      setForm({ ...form, experience_level: mapExperienceLevel(years) });
-                    }
-                  }}
-                  onBlur={() => {
-                    // If left blank, snap back to a valid numeric value.
-                    if (experienceYearsInput === "") {
-                      setExperienceYearsInput(String(experienceYears));
-                    }
-                  }}
-                />
-                {experienceYearsInput !== "" && (
-                  <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
-                    Maps to: {mapExperienceLevel(experienceYears)}
+            {/* Experience range */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Experience Range (years)
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input
+                    type="number"
+                    min={0}
+                    className={inputClass}
+                    placeholder="Min e.g. 3"
+                    value={minExpInput}
+                    onWheel={preventWheelChange}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setMinExpInput(raw);
+                      if (raw === "") return;
+                      const min = Number(raw);
+                      if (!Number.isNaN(min)) {
+                        setForm((prev) => ({
+                          ...prev,
+                          min_experience_years: min,
+                          experience_level: mapExperienceLevel(
+                            prev.max_experience_years || min
+                          ),
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (minExpInput === "") {
+                        setMinExpInput(String(form.min_experience_years));
+                      }
+                    }}
+                  />
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    min={0}
+                    className={inputClass}
+                    placeholder="Max e.g. 5"
+                    value={maxExpInput}
+                    onWheel={preventWheelChange}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setMaxExpInput(raw);
+                      if (raw === "") return;
+                      const max = Number(raw);
+                      if (!Number.isNaN(max)) {
+                        setForm((prev) => ({
+                          ...prev,
+                          max_experience_years: max,
+                          experience_level: mapExperienceLevel(
+                            max || prev.min_experience_years
+                          ),
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (maxExpInput === "") {
+                        setMaxExpInput(String(form.max_experience_years));
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              {(minExpInput !== "" || maxExpInput !== "") && (
+                <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
+                  Maps to: {form.experience_level} level
+                </p>
+              )}
+              {form.max_experience_years > 0 &&
+                form.min_experience_years > form.max_experience_years && (
+                  <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">
+                    Max experience must be greater than min experience.
                   </p>
                 )}
-              </div>
+            </div>
 
+            {/* Job Type + Salary */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-semibold text-gray-900 mb-2">
                   Job Type
@@ -369,16 +403,19 @@ export default function EditJobPage({
               </div>
             </div>
 
-            {/* Location */}
+            {/* Location — canonical CitySelect, same as the create-job
+                page, so edits can't reintroduce spelling variants (e.g.
+                "Mumbai" vs "Bombay") that break exact-match filtering
+                against developer preferred_locations. */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
                 Location
               </label>
-              <input
-                className={inputClass}
-                placeholder="e.g. Mumbai, India"
+              <CitySelect
+                mode="single"
                 value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                onChange={(v) => setForm({ ...form, location: v as string })}
+                placeholder="Select a city"
                 disabled={form.is_remote}
               />
             </div>

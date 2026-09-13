@@ -5,7 +5,9 @@ export async function createJob(payload: {
   title: string;
   description: string;
   required_tech_stack: string[];
-  experience_level: string;          // ← changed from number to string
+  experience_level: string;
+  min_experience_years: number;
+  max_experience_years: number;
   salary_min: number;
   salary_max: number;
   job_type: string;
