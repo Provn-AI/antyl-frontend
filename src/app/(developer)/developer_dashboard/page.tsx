@@ -244,12 +244,13 @@ export default function DashboardPage() {
                   width={28}
                 />
                 <Tooltip
-                  contentStyle={{
-                    borderRadius: 12,
-                    border: "1px solid #F3F4F6",
-                    fontSize: 12,
-                  }}
-                />
+  contentStyle={{
+    borderRadius: 12,
+    border: "1px solid #F3F4F6",
+    fontSize: 12,
+  }}
+  labelStyle={{ color: "#111827", fontWeight: 600 }}
+/>
                 <Legend
                   wrapperStyle={{ fontSize: 12 }}
                   formatter={(value) => (value === "auto" ? "Auto-applied" : "Manual")}

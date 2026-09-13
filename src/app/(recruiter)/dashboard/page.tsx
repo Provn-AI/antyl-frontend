@@ -654,9 +654,10 @@ export default function RecruiterDashboard() {
                         />
                         <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#9CA3AF" }} />
                         <Tooltip
-                          cursor={{ fill: "rgba(242,117,74,0.06)" }}
-                          contentStyle={{ borderRadius: 12, border: "1px solid #F1F1EF", fontSize: 12 }}
-                        />
+  cursor={{ fill: "rgba(242,117,74,0.06)" }}
+  contentStyle={{ borderRadius: 12, border: "1px solid #F1F1EF", fontSize: 12 }}
+  labelStyle={{ color: "#111827", fontWeight: 600 }}
+/>
                         <Bar dataKey="applicants" radius={[8, 8, 0, 0]}>
                           {applicantsByJobData.map((_, i) => (
                             <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
