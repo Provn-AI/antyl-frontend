@@ -1076,7 +1076,7 @@ export default function DeveloperLandingPage() {
               >
                 <img
                   className="video-thumb-img"
-                  src={`https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`}
+                  src={`https://img.youtube.com/vi/vkfsK6x30i4/hqdefault.jpg`}
                   alt="Antyl product demo video thumbnail"
                   loading="lazy"
                 />
