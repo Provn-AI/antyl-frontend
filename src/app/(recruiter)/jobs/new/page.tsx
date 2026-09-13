@@ -25,6 +25,8 @@ interface JobForm {
   description: string;
   required_tech_stack: string;
   experience_level: string;
+  min_experience_years: number;
+  max_experience_years: number;
   salary_min: number;
   salary_max: number;
   job_type: string;
@@ -36,9 +38,6 @@ interface JobForm {
 
 const DRAFT_KEY = "antyl_new_job_draft";
 
-// Salary is stored on `form` (and sent to the backend) in raw rupees, but
-// the UI always shows/accepts LPA (lakhs per annum). These two helpers are
-// the single place that conversion happens.
 const RUPEES_PER_LPA = 100000;
 
 function lpaToRupees(lpa: number): number {
@@ -49,8 +48,6 @@ function lpaToRupees(lpa: number): number {
 function rupeesToLpaString(rupees: number): string {
   if (!rupees) return "";
   const lpa = rupees / RUPEES_PER_LPA;
-  // Trim floating point noise (e.g. 14.999999999) without forcing
-  // trailing zeros on whole numbers.
   return String(Number(lpa.toFixed(2)));
 }
 
@@ -59,6 +56,8 @@ const EMPTY_FORM: JobForm = {
   description: "",
   required_tech_stack: "",
   experience_level: "entry",
+  min_experience_years: 0,
+  max_experience_years: 0,
   salary_min: 0,
   salary_max: 0,
   job_type: "full_time",
@@ -74,8 +73,6 @@ const inputClass =
 const textareaClass =
   "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[140px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
 
-// Backing textarea for the pre-autofill summary modal. Shorter than the
-// main description box since we're only asking for 3-4 lines of context.
 const summaryTextareaClass =
   "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[110px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
 
@@ -86,13 +83,6 @@ function mapExperienceLevel(years: number): string {
   return "lead";
 }
 
-// FIX: the AI autofill endpoint returns required_tech_stack as an array
-// (to match the string[] shape createJob() sends to the backend), but this
-// form's internal state — and the comma-separated text <input> — treat it
-// as a single string. Anything that reads form.required_tech_stack needs to
-// go through this so a stray array (from a fresh autofill response, or an
-// old corrupted localStorage draft saved before this fix) never reaches
-// .split() directly.
 function toTechStackString(value: unknown): string {
   if (Array.isArray(value)) return value.join(", ");
   if (typeof value === "string") return value;
@@ -115,22 +105,14 @@ export default function NewJobPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
 
-  // FIX: recruiter testing feedback — auto-fill was firing off the AI call
-  // the moment the button was clicked, using only the job title as context.
-  // That produced pretty generic results. Now we stop and ask the recruiter
-  // for a short 3-4 line summary of the role first, and send that along
-  // with the title so the AI has something real to work with.
   const [showAutofillModal, setShowAutofillModal] = useState(false);
   const [autofillSummary, setAutofillSummary] = useState("");
   const [autofillSummaryError, setAutofillSummaryError] = useState("");
 
-  // One-time "how this form works" tour. We check localStorage ourselves
-  // (rather than always passing active=true) because OnboardingTour only
-  // *writes* the storageKey on finish — it doesn't gate its own activation.
   const [tourActive, setTourActive] = useState<boolean>(() => {
-  if (typeof window === "undefined") return false;
-  return !localStorage.getItem(JOB_FORM_TOUR_KEY);
-});
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem(JOB_FORM_TOUR_KEY);
+  });
 
   useEffect(() => {
     async function loadBalance() {
@@ -148,35 +130,12 @@ export default function NewJobPage() {
 
   const outOfCredits = balance !== null && balance <= 0;
 
-  const [experienceYears, setExperienceYears] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    try {
-      const saved = localStorage.getItem(DRAFT_KEY);
-      if (!saved) return 0;
-      return JSON.parse(saved).experienceYears ?? 0;
-    } catch {
-      return 0;
-    }
-  });
-
-  // Raw string backing the experience-years input so the field can be
-  // temporarily empty while typing (e.g. clearing it to type "0"). Without
-  // this, `value={experienceYears || ""}` collapses 0 and "" into the same
-  // display, and the field can never show/hold a typed 0.
-  const [experienceYearsInput, setExperienceYearsInput] = useState<string>(
-    () => (experienceYears ? String(experienceYears) : "")
-  );
-
   const [form, setForm] = useState<JobForm>(() => {
     if (typeof window === "undefined") return EMPTY_FORM;
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (!saved) return EMPTY_FORM;
       const parsed = JSON.parse(saved).form ?? EMPTY_FORM;
-      // FIX: normalize on load, in case a draft was saved before this
-      // fix with required_tech_stack already corrupted into an array,
-      // or with a free-text location that's no longer valid against the
-      // canonical city list.
       return {
         ...EMPTY_FORM,
         ...parsed,
@@ -188,10 +147,15 @@ export default function NewJobPage() {
     }
   });
 
-  // Raw string backing the two salary inputs, expressed in LPA (lakhs per
-  // annum) — what the recruiter types and sees. `form.salary_min` /
-  // `form.salary_max` stay in rupees underneath, since that's what the
-  // backend expects.
+  // Raw strings backing the min/max experience inputs so they can be
+  // temporarily empty while typing, same pattern as the salary inputs below.
+  const [minExpInput, setMinExpInput] = useState<string>(() =>
+    form.min_experience_years ? String(form.min_experience_years) : ""
+  );
+  const [maxExpInput, setMaxExpInput] = useState<string>(() =>
+    form.max_experience_years ? String(form.max_experience_years) : ""
+  );
+
   const [salaryMinInput, setSalaryMinInput] = useState<string>(() =>
     rupeesToLpaString(form.salary_min)
   );
@@ -199,12 +163,11 @@ export default function NewJobPage() {
     rupeesToLpaString(form.salary_max)
   );
 
-  const hasDraft =
-    JSON.stringify(form) !== JSON.stringify(EMPTY_FORM) || experienceYears !== 0;
+  const hasDraft = JSON.stringify(form) !== JSON.stringify(EMPTY_FORM);
 
   useEffect(() => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, experienceYears }));
-  }, [form, experienceYears]);
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form }));
+  }, [form]);
 
   const techTags = toTechStackString(form.required_tech_stack)
     .split(",")
@@ -214,8 +177,8 @@ export default function NewJobPage() {
   function discardDraft() {
     localStorage.removeItem(DRAFT_KEY);
     setForm(EMPTY_FORM);
-    setExperienceYears(0);
-    setExperienceYearsInput("");
+    setMinExpInput("");
+    setMaxExpInput("");
     setSalaryMinInput("");
     setSalaryMaxInput("");
   }
@@ -227,6 +190,11 @@ export default function NewJobPage() {
       return "Add a location, or mark this as remote.";
     if (form.salary_max && form.salary_min > form.salary_max)
       return "Minimum salary can't be greater than maximum salary.";
+    if (
+      form.max_experience_years &&
+      form.min_experience_years > form.max_experience_years
+    )
+      return "Minimum experience can't be greater than maximum experience.";
 
     const techStack = toTechStackString(form.required_tech_stack).trim();
     if (techStack) {
@@ -240,21 +208,12 @@ export default function NewJobPage() {
     return "";
   };
 
-  // FIX: the AI autofill endpoint returns a free-text location string
-  // (e.g. "Bangalore, India") — that's exactly the kind of un-canonical
-  // spelling this whole change is meant to eliminate. Rather than trust
-  // it directly, only keep the AI's location if it happens to match a
-  // canonical city; otherwise leave the field blank so the recruiter
-  // has to pick one explicitly from the dropdown.
   function normalizeAutofillLocation(raw: string): string {
     if (!raw) return "";
     const city = raw.split(",")[0].trim();
     return isValidCity(city) ? city : "";
   }
 
-  // Opens the "tell us a bit more" modal instead of calling the AI right
-  // away. Title is still required before we even get here (button stays
-  // disabled without one).
   function openAutofillModal() {
     if (!form.title.trim()) {
       setError("Enter a job title first so AI knows what to fill.");
@@ -270,7 +229,6 @@ export default function NewJobPage() {
     setAutofillSummaryError("");
   }
 
-  // Runs once the recruiter has entered a short summary and confirmed.
   async function handleAutofill() {
     const summary = autofillSummary.trim();
     if (!summary) {
@@ -285,15 +243,15 @@ export default function NewJobPage() {
       setError("");
       setShowAutofillModal(false);
 
-      // NOTE: autofillJob now takes the recruiter's short summary as
-      // additional context alongside the title. If the service function
-      // hasn't been updated yet to accept a second argument, add it there:
-      //   export async function autofillJob(title: string, context?: string)
       const result = await autofillJob(form.title, summary);
 
+      // The AI only returns a single experience_years figure, not a
+      // range — use it as a starting point for both min and max; the
+      // recruiter can widen it manually afterwards.
       const years = result.experience_years ?? 0;
-      setExperienceYears(years);
-      setExperienceYearsInput(years ? String(years) : "");
+      setMinExpInput(years ? String(years) : "");
+      setMaxExpInput(years ? String(years) : "");
+
       const techStackStr = toTechStackString(result.required_tech_stack);
       setSalaryMinInput(rupeesToLpaString(result.salary_min));
       setSalaryMaxInput(rupeesToLpaString(result.salary_max));
@@ -302,6 +260,8 @@ export default function NewJobPage() {
         description: result.description,
         required_tech_stack: techStackStr,
         experience_level: result.experience_level,
+        min_experience_years: years,
+        max_experience_years: years,
         salary_min: result.salary_min,
         salary_max: result.salary_max,
         job_type: result.job_type,
@@ -518,50 +478,97 @@ export default function NewJobPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Experience (years)
-              </label>
-              <input
-                type="number"
-                min={0}
-                className={inputClass}
-                placeholder="e.g. 3"
-                value={experienceYearsInput}
-                onWheel={preventWheelChange}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setExperienceYearsInput(raw);
-
-                  if (raw === "") {
-                    // Let the field be blank while editing; don't touch
-                    // experienceYears/form until there's a real number.
-                    return;
-                  }
-
-                  const years = Number(raw);
-                  if (!Number.isNaN(years)) {
-                    setExperienceYears(years);
-                    setForm({ ...form, experience_level: mapExperienceLevel(years) });
-                  }
-                }}
-                onBlur={() => {
-                  // If left blank, snap back to a valid numeric value.
-                  if (experienceYearsInput === "") {
-                    setExperienceYearsInput(
-                      experienceYears ? String(experienceYears) : ""
-                    );
-                  }
-                }}
-              />
-              {experienceYearsInput !== "" && (
-                <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
-                  Maps to: {mapExperienceLevel(experienceYears)}
+          {/* Experience range — two inputs, stored as min_experience_years
+              and max_experience_years so the backend/preview can show a
+              real "X–Y years" range instead of a single number. */}
+          <div data-tour="job-experience">
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Experience Range (years)
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="number"
+                  min={0}
+                  className={inputClass}
+                  placeholder="Min e.g. 3"
+                  value={minExpInput}
+                  onWheel={preventWheelChange}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setMinExpInput(raw);
+                    if (raw === "") return;
+                    const min = Number(raw);
+                    if (!Number.isNaN(min)) {
+                      setForm((prev) => ({
+                        ...prev,
+                        min_experience_years: min,
+                        experience_level: mapExperienceLevel(
+                          prev.max_experience_years || min
+                        ),
+                      }));
+                    }
+                  }}
+                  onBlur={() => {
+                    if (minExpInput === "") {
+                      setMinExpInput(
+                        form.min_experience_years
+                          ? String(form.min_experience_years)
+                          : ""
+                      );
+                    }
+                  }}
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  min={0}
+                  className={inputClass}
+                  placeholder="Max e.g. 5"
+                  value={maxExpInput}
+                  onWheel={preventWheelChange}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setMaxExpInput(raw);
+                    if (raw === "") return;
+                    const max = Number(raw);
+                    if (!Number.isNaN(max)) {
+                      setForm((prev) => ({
+                        ...prev,
+                        max_experience_years: max,
+                        experience_level: mapExperienceLevel(
+                          max || prev.min_experience_years
+                        ),
+                      }));
+                    }
+                  }}
+                  onBlur={() => {
+                    if (maxExpInput === "") {
+                      setMaxExpInput(
+                        form.max_experience_years
+                          ? String(form.max_experience_years)
+                          : ""
+                      );
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            {(minExpInput !== "" || maxExpInput !== "") && (
+              <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
+                Maps to: {form.experience_level} level
+              </p>
+            )}
+            {form.max_experience_years > 0 &&
+              form.min_experience_years > form.max_experience_years && (
+                <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">
+                  Max experience must be greater than min experience.
                 </p>
               )}
-            </div>
+          </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
                 Job Type
@@ -630,10 +637,6 @@ export default function NewJobPage() {
             </div>
           </div>
 
-          {/* Location — was a free-text <input>, now a canonical CitySelect
-              so recruiters can't introduce spelling variants (e.g.
-              "Bangalore" vs "Bengaluru") that break exact-match filtering
-              against developer preferred_locations. */}
           <div data-tour="job-location">
             <label className="block text-sm font-semibold text-gray-900 mb-2">
               Location
@@ -872,10 +875,10 @@ export default function NewJobPage() {
                 </span>
               </div>
 
-              {experienceYears > 0 && (
+              {(form.min_experience_years > 0 || form.max_experience_years > 0) && (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Briefcase className="w-4 h-4" />
-                  {experienceYears}+ years ·{" "}
+                  {form.min_experience_years}–{form.max_experience_years} years ·{" "}
                   <span className="capitalize">{form.experience_level} level</span>
                 </div>
               )}
