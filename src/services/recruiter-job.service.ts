@@ -71,6 +71,26 @@ export async function updateJobStatus(jobId: string, status: string) {
   return data;
 }
 
+export async function repostJob(jobId: string) {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/recruiter/jobs/${jobId}/repost`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to repost job");
+  }
+
+  return data.job;
+}
+
 export async function getJobCandidates(jobId: string) {
   const token = localStorage.getItem("access_token");
 

@@ -19,10 +19,12 @@ import {
   IndianRupee,
   CheckCircle2,
   ChevronRight,
+  RefreshCcw,
 } from "lucide-react";
 import {
   getRecruiterJobs,
   updateJobStatus,
+  repostJob,
   getJob,
 } from "@/services/recruiter-job.service";
 
@@ -62,7 +64,7 @@ interface ActionToast {
   message: string;
 }
 
-const tabs = ["active", "paused", "closed"];
+const tabs = ["active", "paused", "closed", "expired"];
 
 const statusActions: StatusAction[] = [
   { status: "active", label: "Active", icon: PlayCircle, activeColor: "#16A34A" },
@@ -150,6 +152,43 @@ export default function JobsPage() {
           err instanceof Error
             ? err.message
             : "Failed to update job status. Please try again.",
+      });
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  // Repost consumes a credit, unlike changeStatus. On success the job
+  // moves from "expired" to "active" — same trailing removal pattern as
+  // changeStatus so the recruiter sees the button update before the card
+  // leaves the Expired tab.
+  async function repost(jobId: string) {
+    try {
+      setUpdatingId(jobId);
+      await repostJob(jobId);
+
+      setJobs((prev) =>
+        prev.map((job) =>
+          job.id === jobId ? { ...job, status: "active" } : job
+        )
+      );
+
+      showActionToast({
+        type: "success",
+        message: "Job reposted. 1 credit used.",
+      });
+
+      setTimeout(() => {
+        setVisibleJobs((prev) => prev.filter((job) => job.id !== jobId));
+      }, 700);
+    } catch (err) {
+      console.error(err);
+      showActionToast({
+        type: "error",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Failed to repost job. Please try again.",
       });
     } finally {
       setUpdatingId(null);
@@ -277,6 +316,8 @@ export default function JobsPage() {
             <p className="text-gray-400 text-sm">
               {tab === "active"
                 ? "Jobs you publish will show up here."
+                : tab === "expired"
+                ? "Jobs that pass their 30-day window will show up here. You can repost them from here."
                 : `You don't have any ${tab} jobs right now.`}
             </p>
           </div>
@@ -284,6 +325,7 @@ export default function JobsPage() {
           <div className="space-y-3">
             {visibleJobs.map((vJob) => {
               const job = jobs.find((j) => j.id === vJob.id) ?? vJob;
+              const isExpired = job.status === "expired";
 
               return (
                 <div
@@ -320,6 +362,12 @@ export default function JobsPage() {
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
+
+                        {isExpired && (
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-500">
+                            Expired
+                          </span>
+                        )}
                       </div>
 
                       {/* Applicant count — click through to this job's
@@ -359,28 +407,41 @@ export default function JobsPage() {
                     </div>
 
                     <div className="flex gap-2">
-                      {statusActions.map((action) => {
-                        const Icon = action.icon;
-                        const isCurrent = job.status === action.status;
-                        const isUpdating = updatingId === job.id;
+                      {isExpired ? (
+                        <button
+                          onClick={() => repost(job.id)}
+                          disabled={updatingId === job.id}
+                          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full text-white disabled:cursor-default disabled:opacity-60"
+                          style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+                          title="Repost this job (uses 1 credit)"
+                        >
+                          <RefreshCcw className="w-3.5 h-3.5" />
+                          {updatingId === job.id ? "..." : "Repost"}
+                        </button>
+                      ) : (
+                        statusActions.map((action) => {
+                          const Icon = action.icon;
+                          const isCurrent = job.status === action.status;
+                          const isUpdating = updatingId === job.id;
 
-                        return (
-                          <button
-                            key={action.status}
-                            onClick={() => changeStatus(job.id, action.status)}
-                            disabled={isCurrent || isUpdating}
-                            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full border transition-colors disabled:cursor-default ${
-                              isCurrent
-                                ? "text-white border-transparent"
-                                : "text-gray-500 border-gray-200 hover:border-gray-300"
-                            }`}
-                            style={isCurrent ? { background: action.activeColor } : undefined}
-                          >
-                            <Icon className="w-3.5 h-3.5" />
-                            {isUpdating ? "..." : action.label}
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={action.status}
+                              onClick={() => changeStatus(job.id, action.status)}
+                              disabled={isCurrent || isUpdating}
+                              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full border transition-colors disabled:cursor-default ${
+                                isCurrent
+                                  ? "text-white border-transparent"
+                                  : "text-gray-500 border-gray-200 hover:border-gray-300"
+                              }`}
+                              style={isCurrent ? { background: action.activeColor } : undefined}
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                              {isUpdating ? "..." : action.label}
+                            </button>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 </div>
