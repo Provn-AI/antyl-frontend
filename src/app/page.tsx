@@ -60,6 +60,19 @@ export default function DeveloperLandingPage() {
   // YouTube demo video: https://youtu.be/vkfsK6x30i4
   const VIDEO_ID = "vkfsK6x30i4";
 
+  // maxresdefault only exists for videos uploaded at 720p+. When it's missing,
+  // YouTube returns a 120x90 grey placeholder with a 200 status, so we step down
+  // the chain on either an error or a suspiciously small image.
+  const THUMB_FALLBACKS = [
+    `https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`,
+    `https://img.youtube.com/vi/${VIDEO_ID}/sddefault.jpg`,
+    `https://img.youtube.com/vi/${VIDEO_ID}/hqdefault.jpg`,
+  ];
+  const [thumbIndex, setThumbIndex] = useState(0);
+  const thumbSrc = THUMB_FALLBACKS[thumbIndex];
+  const handleThumbFallback = () =>
+    setThumbIndex((i) => (i < THUMB_FALLBACKS.length - 1 ? i + 1 : i));
+
   const lazyHero = useLazySection();
   const lazyHowItWorks = useLazySection();
   const lazyVideo = useLazySection();
@@ -1125,9 +1138,13 @@ export default function DeveloperLandingPage() {
               >
                 <img
                   className="video-thumb-img"
-                  src={`https://img.youtube.com/vi/${VIDEO_ID}/maxresdefault.jpg`}
+                  src={thumbSrc}
                   alt="Antyl product demo video thumbnail"
                   loading="lazy"
+                  onError={handleThumbFallback}
+                  onLoad={(e) => {
+                    if (e.currentTarget.naturalWidth <= 120) handleThumbFallback();
+                  }}
                 />
                 <div className="video-thumb-overlay">
                   <div className="video-play-btn">

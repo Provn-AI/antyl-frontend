@@ -31,6 +31,7 @@ import {
   getAutoApplyStatus,
   toggleAutoApply,
   getAutoApplyPreferences,
+  saveAutoApplyPreferences,
   AutoApplyStatus,
 } from "@/services/developer.service";
 import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service";
@@ -74,6 +75,8 @@ const JOB_STATUS_OPTIONS = [
   // { value: "open_to_opportunities", label: "Open to opportunities" },
   { value: "not_looking", label: "Not looking" },
 ];
+
+const JOB_TYPES = ["full_time", "part_time", "contract", "internship"];
 
 function jobStatusLabel(value: string | undefined) {
   return JOB_STATUS_OPTIONS.find((o) => o.value === value)?.label || "Not set";
@@ -216,6 +219,17 @@ function LinkedInIcon({ className }: { className?: string }) {
   );
 }
 
+// ── Section header (used inside the unified edit form) ────────────────────────
+
+function EditSectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-bold text-gray-700 uppercase tracking-widest">{title}</p>
+      {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
+
 // ── Input style ───────────────────────────────────────────────────────────────
 
 const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
@@ -241,6 +255,8 @@ export default function ProfilePage() {
   const [confirm, setConfirm] = useState<ConfirmState>(CONFIRM_CLOSED);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
   const [formData, setFormData] = useState({
     name: "",
     bio: "",
@@ -251,6 +267,17 @@ export default function ProfilePage() {
     job_status: "",
     tech_stack: [] as string[],
     remote_ok: false,
+  });
+
+  // Auto-apply / match preferences — now edited inline alongside the rest
+  // of the profile instead of on a separate /settings/auto-apply page.
+  const [autoApplyForm, setAutoApplyForm] = useState({
+    min_similarity_score: 70,
+    preferred_tech_stack: "", // comma-separated string while editing
+    job_type: [] as string[],
+    preferred_locations: [] as string[],
+    salary_min: 0,
+    salary_max: 0,
   });
 
   // Text box for adding a new skill to the tech stack while editing.
@@ -267,6 +294,12 @@ export default function ProfilePage() {
   const [autoApply, setAutoApply] = useState<AutoApplyStatus | null>(null);
   const [autoApplyToggling, setAutoApplyToggling] = useState(false);
   const [salaryRange, setSalaryRange] = useState<SalaryRange | null>(null);
+  const [matchPrefsSummary, setMatchPrefsSummary] = useState<{
+    minScore: number;
+    techStack: string[];
+    jobTypes: string[];
+    locations: string[];
+  } | null>(null);
   const [sharedBadge, setSharedBadge] = useState<ShareBadgeData | null>(null);
 
   // Danger zone starts collapsed so destructive actions aren't front-and-center.
@@ -317,6 +350,20 @@ export default function ProfilePage() {
         if (prefs.salary_min || prefs.salary_max) {
           setSalaryRange({ min: prefs.salary_min, max: prefs.salary_max });
         }
+        setMatchPrefsSummary({
+          minScore: prefs.min_similarity_score ?? 70,
+          techStack: prefs.preferred_tech_stack || [],
+          jobTypes: prefs.job_type || [],
+          locations: prefs.preferred_locations || [],
+        });
+        setAutoApplyForm({
+          min_similarity_score: prefs.min_similarity_score ?? 70,
+          preferred_tech_stack: (prefs.preferred_tech_stack || []).join(", "),
+          job_type: prefs.job_type || [],
+          preferred_locations: prefs.preferred_locations || [],
+          salary_min: prefs.salary_min ?? 0,
+          salary_max: prefs.salary_max ?? 0,
+        });
       } catch (error) {
         console.error(error);
       }
@@ -327,12 +374,37 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!profile) return;
     setSaving(true);
+    setSaveError("");
     try {
-      await updateProfile(formData);
+      const parsedTechStack = autoApplyForm.preferred_tech_stack
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      await Promise.all([
+        updateProfile(formData),
+        saveAutoApplyPreferences({
+          min_similarity_score: autoApplyForm.min_similarity_score,
+          preferred_tech_stack: parsedTechStack,
+          job_type: autoApplyForm.job_type,
+          preferred_locations: autoApplyForm.preferred_locations,
+          salary_min: autoApplyForm.salary_min,
+          salary_max: autoApplyForm.salary_max,
+        }),
+      ]);
+
       setProfile({ ...profile, ...formData });
+      setSalaryRange({ min: autoApplyForm.salary_min, max: autoApplyForm.salary_max });
+      setMatchPrefsSummary({
+        minScore: autoApplyForm.min_similarity_score,
+        techStack: parsedTechStack,
+        jobTypes: autoApplyForm.job_type,
+        locations: autoApplyForm.preferred_locations,
+      });
       setIsEditing(false);
     } catch (error) {
       console.error(error);
+      setSaveError("Couldn't save changes. Try again.");
     } finally {
       setSaving(false);
     }
@@ -352,7 +424,18 @@ export default function ProfilePage() {
         remote_ok: profile.remote_ok || false,
       });
     }
+    if (matchPrefsSummary) {
+      setAutoApplyForm({
+        min_similarity_score: matchPrefsSummary.minScore,
+        preferred_tech_stack: matchPrefsSummary.techStack.join(", "),
+        job_type: matchPrefsSummary.jobTypes,
+        preferred_locations: matchPrefsSummary.locations,
+        salary_min: salaryRange?.min ?? 0,
+        salary_max: salaryRange?.max ?? 0,
+      });
+    }
     setSkillInput("");
+    setSaveError("");
     setIsEditing(false);
   };
 
@@ -452,6 +535,15 @@ export default function ProfilePage() {
     } finally {
       setAutoApplyToggling(false);
     }
+  };
+
+  const toggleJobType = (type: string) => {
+    setAutoApplyForm((prev) => ({
+      ...prev,
+      job_type: prev.job_type.includes(type)
+        ? prev.job_type.filter((t) => t !== type)
+        : [...prev.job_type, type],
+    }));
   };
 
   // Adds the current skillInput to formData.tech_stack (case-insensitive dedupe).
@@ -724,8 +816,8 @@ export default function ProfilePage() {
               )
             )}
 
-            <div className="flex gap-2 mt-5 pt-5 border-t border-gray-50">
-              {!isEditing ? (
+            {!isEditing && (
+              <div className="flex gap-2 mt-5 pt-5 border-t border-gray-50">
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
@@ -734,28 +826,8 @@ export default function ProfilePage() {
                   <Pencil className="w-4 h-4" />
                   Edit profile
                 </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-[#F2754A] text-white hover:bg-[#e0623a] disabled:opacity-50 transition-colors shadow-md shadow-orange-100"
-                  >
-                    <Save className="w-4 h-4" />
-                    {saving ? "Saving…" : "Save changes"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelEdit}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                </>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* ── Score history ── */}
@@ -768,7 +840,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* ── Tech stack ── */}
+          {/* ── Tech stack (your own skills) ── */}
           {(isEditing || (profile.tech_stack && profile.tech_stack.length > 0)) && (
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
@@ -856,12 +928,12 @@ export default function ProfilePage() {
             </a>
           </div>
 
-          {/* ── Auto-apply ── */}
+          {/* ── Auto-apply & match preferences (salary range now lives here too) ── */}
           {autoApply && (
             <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                  Auto-apply
+                  Auto-apply & match preferences
                 </p>
                 <button
                   type="button"
@@ -895,31 +967,141 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {salaryRange && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400">Salary range</p>
-                    <p className="text-sm font-bold text-gray-800 mt-0.5">
-                      {formatSalary(salaryRange.min)} – {formatSalary(salaryRange.max)}
-                    </p>
+              {!isEditing ? (
+                <>
+                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-50">
+                    {matchPrefsSummary && matchPrefsSummary.minScore != null && (
+                      <span className="text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        Min match: {matchPrefsSummary.minScore}%
+                      </span>
+                    )}
+                    {matchPrefsSummary?.jobTypes.map((t) => (
+                      <span key={t} className="text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        {t.replace("_", " ")}
+                      </span>
+                    ))}
+                    {matchPrefsSummary?.locations.map((loc) => (
+                      <span key={loc} className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        <MapPin className="w-3 h-3" />{loc}
+                      </span>
+                    ))}
                   </div>
-                  <a
-                    href="/settings/auto-apply"
-                    aria-label="Edit salary range"
-                    title="Edit salary range"
-                    className="w-8 h-8 rounded-full bg-orange-50 hover:bg-orange-100 flex items-center justify-center text-[#F2754A] transition-colors flex-shrink-0"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </a>
+
+                  {matchPrefsSummary && matchPrefsSummary.techStack.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {matchPrefsSummary.techStack.map((tech) => (
+                        <span key={tech} className="text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {salaryRange && (
+                    <div className="mt-4 pt-4 border-t border-gray-50">
+                      <p className="text-xs font-semibold text-gray-400">Salary range</p>
+                      <p className="text-sm font-bold text-gray-800 mt-0.5">
+                        {formatSalary(salaryRange.min)} – {formatSalary(salaryRange.max)}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-5 pt-5 border-t border-gray-50 space-y-6">
+                  <div>
+                    <EditSectionHeader
+                      title={`Minimum match score (${autoApplyForm.min_similarity_score}%)`}
+                      subtitle="Only apply to jobs scoring this or higher"
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={autoApplyForm.min_similarity_score}
+                      onChange={(e) =>
+                        setAutoApplyForm({ ...autoApplyForm, min_similarity_score: Number(e.target.value) })
+                      }
+                      className="w-full accent-[#F2754A]"
+                    />
+                  </div>
+
+                  <div>
+                    <EditSectionHeader title="Preferred tech stack to match" subtitle="Comma-separated — used to score job matches" />
+                    <input
+                      value={autoApplyForm.preferred_tech_stack}
+                      onChange={(e) => setAutoApplyForm({ ...autoApplyForm, preferred_tech_stack: e.target.value })}
+                      className={inputCls}
+                      placeholder="Python, React, PostgreSQL"
+                    />
+                  </div>
+
+                  <div>
+                    <EditSectionHeader title="Job type" subtitle="Leave all unselected to match any job type" />
+                    <div className="flex flex-wrap gap-2">
+                      {JOB_TYPES.map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => toggleJobType(type)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${
+                            autoApplyForm.job_type.includes(type)
+                              ? "bg-[#F2754A] text-white border-[#F2754A]"
+                              : "bg-white text-gray-500 border-gray-200"
+                          }`}
+                        >
+                          {type.replace("_", " ")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <EditSectionHeader title="Preferred locations" subtitle="Remote jobs always match regardless of location" />
+                    <CitySelect
+                      mode="multi"
+                      value={autoApplyForm.preferred_locations}
+                      onChange={(v) => setAutoApplyForm({ ...autoApplyForm, preferred_locations: v as string[] })}
+                      placeholder="Select cities"
+                    />
+                  </div>
+
+                  <div>
+                    <EditSectionHeader
+                      title="Salary range"
+                      subtitle="Only apply to jobs within this range — eg: ₹15 LPA"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-400 block mb-1.5">Minimum</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">₹</span>
+                          <input
+                            type="number"
+                            value={autoApplyForm.salary_min || ""}
+                            onChange={(e) => setAutoApplyForm({ ...autoApplyForm, salary_min: Number(e.target.value) })}
+                            placeholder="0"
+                            className={inputCls + " pl-7"}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-400 block mb-1.5">Maximum</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">₹</span>
+                          <input
+                            type="number"
+                            value={autoApplyForm.salary_max || ""}
+                            onChange={(e) => setAutoApplyForm({ ...autoApplyForm, salary_max: Number(e.target.value) })}
+                            placeholder="0"
+                            className={inputCls + " pl-7"}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
-
-              <a
-                href="/settings/auto-apply"
-                className="inline-block mt-4 text-xs font-bold text-[#F2754A] hover:underline"
-              >
-                Edit match preferences →
-              </a>
             </div>
           )}
 
@@ -1157,6 +1339,33 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* ── Unified save/cancel bar — appears once, covers every section above ── */}
+          {isEditing && (
+            <div className="sticky bottom-4 z-10 bg-white rounded-[24px] border border-gray-100 shadow-lg p-4 sm:p-5 mb-4 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-[#F2754A] text-white hover:bg-[#e0623a] disabled:opacity-50 transition-colors shadow-md shadow-orange-100"
+              >
+                <Save className="w-4 h-4" />
+                {saving ? "Saving…" : "Save changes"}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                disabled={saving}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+                Cancel
+              </button>
+              {saveError && (
+                <span className="text-xs font-semibold text-red-500 ml-1">{saveError}</span>
+              )}
+            </div>
+          )}
 
           {/* ── Danger zone (collapsible) ── */}
           <div className="bg-white rounded-[24px] border border-red-100 shadow-sm overflow-hidden">
