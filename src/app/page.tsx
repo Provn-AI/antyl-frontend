@@ -36,6 +36,27 @@ export default function DeveloperLandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
 
+  // Which feature card has its preview expanded (click / tap). Hover expands too, on pointer devices.
+  const [openFeature, setOpenFeature] = useState<number | null>(null);
+
+  const toggleFeature = (i: number) =>
+    setOpenFeature((prev) => (prev === i ? null : i));
+
+  // Shared props for every feature card: click to expand, keyboard accessible.
+  const featureCardProps = (i: number) => ({
+    className: `feature-card stagger-child${openFeature === i ? " open" : ""}`,
+    role: "button",
+    tabIndex: 0,
+    "aria-expanded": openFeature === i,
+    onClick: () => toggleFeature(i),
+    onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggleFeature(i);
+      }
+    },
+  });
+
   // YouTube demo video: https://youtu.be/vkfsK6x30i4
   const VIDEO_ID = "vkfsK6x30i4";
 
@@ -790,16 +811,44 @@ export default function DeveloperLandingPage() {
         .step-connector { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--white); border: 1.5px solid var(--gray2); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1; }
 
         /* ---- FEATURES (enhanced 6-card) ---- */
-        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
+        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; align-items: start; }
         .hiw-step-num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--grad-90); color: white; font-size: 14px; font-weight: 800; margin-bottom: 1rem; }
-        .feature-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2.25rem 2rem; min-height: 240px; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s; position: relative; overflow: hidden; text-align: left; }
+        .feature-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2.25rem 2rem; min-height: 200px; cursor: pointer; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s; position: relative; overflow: hidden; text-align: left; }
         .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--grad-90); opacity: 0; transition: opacity .25s; border-radius: 24px 24px 0 0; }
         .feature-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(255,107,77,.10); border-color: var(--coral); }
-        .feature-card:hover::before { opacity: 1; }
+        .feature-card:hover::before, .feature-card.open::before { opacity: 1; }
+        .feature-card.open { box-shadow: 0 16px 48px rgba(255,107,77,.10); border-color: var(--coral); }
+        .feature-card:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; }
         .feature-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: .625rem; letter-spacing: -.02em; }
         .feature-desc { font-size: 14px; color: var(--gray4); line-height: 1.7; }
         .feature-connect-row { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
         .feature-score-row { display: flex; gap: 1.25rem; align-items: center; margin-top: 1rem; }
+
+        /* ---- FEATURE PREVIEW: hidden until hover (pointer) or tap/click ---- */
+        .feature-reveal {
+          display: grid; grid-template-rows: 0fr; opacity: 0;
+          transition: grid-template-rows .4s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+        }
+        .feature-reveal-inner { overflow: hidden; min-height: 0; }
+        .feature-card.open .feature-reveal { grid-template-rows: 1fr; opacity: 1; }
+        @media (hover: hover) {
+          .feature-card:hover .feature-reveal { grid-template-rows: 1fr; opacity: 1; }
+        }
+        .feature-hint {
+          display: inline-flex; align-items: center; gap: 7px; margin-top: 1.25rem;
+          font-size: 12.5px; font-weight: 600; color: var(--gray3);
+          transition: opacity .25s ease; user-select: none;
+        }
+        .feature-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); flex-shrink: 0; }
+        .feature-card.open .feature-hint { opacity: 0; }
+        @media (hover: hover) {
+          .feature-card:hover .feature-hint { opacity: 0; }
+        }
+        .feature-hint-tap { display: none; }
+        @media (hover: none) {
+          .feature-hint-hover { display: none; }
+          .feature-hint-tap { display: inline; }
+        }
 
         @keyframes scoreRingFill {
           from { stroke-dasharray: 0 264; }
@@ -1315,94 +1364,148 @@ export default function DeveloperLandingPage() {
 
           <div className="features-grid">
             {/* Card 1 */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(0)}>
               <span className="hiw-step-num">1</span>
               <div className="feature-title">Connect your portfolio</div>
               <p className="feature-desc">We securely connect with your portfolio to understand your real work and projects.</p>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: "1rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 24, height: 24, background: "var(--cream)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="11" height="11" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-                  </div>
-                  <span style={{ fontSize: 11, color: "var(--gray3)", fontWeight: 500 }}>Secure connection</span>
-                </div>
-                <div className="feature-connect-row">
-                  <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Portfolio</span>
-                  </div>
-                  <svg viewBox="0 0 32 14" fill="none" style={{ width: 32, height: 14, flexShrink: 0 }}><path d="M2 7h24m0 0l-5-5m5 5l-5 5" stroke="url(#ca2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="ca2" x1="0" y1="7" x2="32" y2="7"><stop stopColor="#FF6B4D"/><stop offset="1" stopColor="#FFB347"/></linearGradient></defs></svg>
-                  <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
-                    <Image src="/Antyl.png" alt="Antyl" width={36} height={36} style={{ objectFit: "contain" }} />
-                    <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Antyl</span>
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginTop: "1rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <div style={{ width: 24, height: 24, background: "var(--cream)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="11" height="11" fill="var(--coral)" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                      </div>
+                      <span style={{ fontSize: 11, color: "var(--gray3)", fontWeight: 500 }}>Secure connection</span>
+                    </div>
+                    <div className="feature-connect-row">
+                      <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF6B4D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Portfolio</span>
+                      </div>
+                      <svg viewBox="0 0 32 14" fill="none" style={{ width: 32, height: 14, flexShrink: 0 }}><path d="M2 7h24m0 0l-5-5m5 5l-5 5" stroke="url(#ca2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="ca2" x1="0" y1="7" x2="32" y2="7"><stop stopColor="#FF6B4D"/><stop offset="1" stopColor="#FFB347"/></linearGradient></defs></svg>
+                      <div style={{ width: 72, height: 72, borderRadius: 16, background: "var(--white)", border: "1px solid var(--gray2)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, boxShadow: "0 4px 16px rgba(0,0,0,.05)" }}>
+                        <Image src="/Antyl.png" alt="Antyl" width={36} height={36} style={{ objectFit: "contain" }} />
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "var(--gray4)" }}>Antyl</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
             {/* Card 2 */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(1)}>
               <span className="hiw-step-num">2</span>
               <div className="feature-title">Auto-apply runs for you</div>
               <p className="feature-desc">Every 6 hours, Antyl applies you to matching jobs automatically.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
-                {[{ text: "Applied to Frontend @ Microsoft", time: "2h ago" },{ text: "Applied to SDE II @ Meta", time: "4h ago" },{ text: "Applied to Full Stack @ SAP", time: "6h ago" }].map((item) => (
-                  <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--coral)", flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>{item.text}</span>
-                    <span style={{ fontSize: 10, color: "var(--gray3)", marginLeft: "auto" }}>{item.time}</span>
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                    {[{ text: "Applied to Frontend @ Microsoft", time: "2h ago" },{ text: "Applied to SDE II @ Meta", time: "4h ago" },{ text: "Applied to Full Stack @ SAP", time: "6h ago" }].map((item) => (
+                      <div key={item.text} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--coral)", flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500 }}>{item.text}</span>
+                        <span style={{ fontSize: 10, color: "var(--gray3)", marginLeft: "auto" }}>{item.time}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
             {/* Card 3 */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(2)}>
               <span className="hiw-step-num">3</span>
               <div className="feature-title">Antyl Score</div>
               <p className="feature-desc">One score from 0–100 that tells the whole story. Carries across every job application on Antyl.</p>
-              <div className="feature-score-row">
-                <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0, margin: "0 auto" }}>
-                  <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}><circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="url(#sg3d)" strokeWidth="8" strokeDasharray="206 58" strokeLinecap="round" /><defs><linearGradient id="sg3d" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF6B4D"/><stop offset="100%" stopColor="#FFB347"/></linearGradient></defs></svg>
-                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 26, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>78</span><span style={{ fontSize: 9, color: "var(--gray3)" }}>/ 100</span></div>
-                </div>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
-                  {[{ label: "Code quality", value: 82 },{ label: "Architecture", value: 75 },{ label: "Consistency", value: 80 },{ label: "Impact", value: 74 }].map((d) => (
-                    <div key={d.label}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 10, fontWeight: 600, color: "var(--ink)" }}>{d.label}</span><span style={{ fontSize: 10, fontWeight: 700, color: "var(--gray3)" }}>{d.value}%</span></div><div style={{ height: 5, background: "var(--gray2)", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${d.value}%`, background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 3 }} /></div></div>
-                  ))}
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div className="feature-score-row">
+                    <div style={{ position: "relative", width: 90, height: 90, flexShrink: 0, margin: "0 auto" }}>
+                      <svg width="90" height="90" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}><circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="url(#sg3d)" strokeWidth="8" strokeDasharray="206 58" strokeLinecap="round" /><defs><linearGradient id="sg3d" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF6B4D"/><stop offset="100%" stopColor="#FFB347"/></linearGradient></defs></svg>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 26, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>78</span><span style={{ fontSize: 9, color: "var(--gray3)" }}>/ 100</span></div>
+                    </div>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+                      {[{ label: "Code quality", value: 82 },{ label: "Architecture", value: 75 },{ label: "Consistency", value: 80 },{ label: "Impact", value: 74 }].map((d) => (
+                        <div key={d.label}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span style={{ fontSize: 10, fontWeight: 600, color: "var(--ink)" }}>{d.label}</span><span style={{ fontSize: 10, fontWeight: 700, color: "var(--gray3)" }}>{d.value}%</span></div><div style={{ height: 5, background: "var(--gray2)", borderRadius: 3, overflow: "hidden" }}><div style={{ height: "100%", width: `${d.value}%`, background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 3 }} /></div></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, flexWrap: "wrap" }}><span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 50, textTransform: "uppercase" as const, letterSpacing: ".04em" }}>Advanced</span><span style={{ fontSize: 11, color: "var(--coral)", fontWeight: 700 }}>Top 18% of developers</span></div>
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, flexWrap: "wrap" }}><span style={{ background: "var(--coral)", color: "white", fontSize: 10, fontWeight: 700, padding: "4px 14px", borderRadius: 50, textTransform: "uppercase" as const, letterSpacing: ".04em" }}>Advanced</span><span style={{ fontSize: 11, color: "var(--coral)", fontWeight: 700 }}>Top 18% of developers</span></div>
             </div>
             {/* Card 4 */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(3)}>
               <span className="hiw-step-num">4</span>
               <div className="feature-title">Application tracking</div>
               <p className="feature-desc">See every job you&apos;ve been auto-applied to and its live status, in one dashboard.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
-                {[{ company: "Microsoft", role: "Frontend Engineer", time: "Applied 2h ago", status: "Interview", statusColor: "#8B5CF6", statusBg: "#F3EFFE" },{ company: "Google", role: "SDE II", time: "Applied 5h ago", status: "Offer", statusColor: "#22C55E", statusBg: "#EAFAF0" },{ company: "McKinsey", role: "Full Stack Dev", time: "Applied 8h ago", status: "Applied", statusColor: "var(--amber)", statusBg: "#FFF8ED" }].map((item) => (
-                  <div key={item.company} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}><div style={{ flex: 1, minWidth: 120 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{item.company}</div><div style={{ fontSize: 10, color: "var(--gray3)" }}>{item.role} · {item.time}</div></div><span style={{ fontSize: 10, fontWeight: 700, color: item.statusColor, background: item.statusBg, padding: "3px 10px", borderRadius: 50 }}>{item.status}</span></div>
-                ))}
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                    {[{ company: "Microsoft", role: "Frontend Engineer", time: "Applied 2h ago", status: "Interview", statusColor: "#8B5CF6", statusBg: "#F3EFFE" },{ company: "Google", role: "SDE II", time: "Applied 5h ago", status: "Offer", statusColor: "#22C55E", statusBg: "#EAFAF0" },{ company: "McKinsey", role: "Full Stack Dev", time: "Applied 8h ago", status: "Applied", statusColor: "var(--amber)", statusBg: "#FFF8ED" }].map((item) => (
+                      <div key={item.company} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}><div style={{ flex: 1, minWidth: 120 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{item.company}</div><div style={{ fontSize: 10, color: "var(--gray3)" }}>{item.role} · {item.time}</div></div><span style={{ fontSize: 10, fontWeight: 700, color: item.statusColor, background: item.statusBg, padding: "3px 10px", borderRadius: 50 }}>{item.status}</span></div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             {/* Card 5 */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(4)}>
               <span className="hiw-step-num">5</span>
               <div className="feature-title">Score improvement tips</div>
               <p className="feature-desc">Get <strong style={{ color: "var(--coral)" }}>AI-powered</strong> suggestions based on <strong style={{ color: "var(--coral)" }}>current industry demands</strong> and what top companies are hiring for.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem", textAlign: "left" }}>
-                {[{ icon: "🎯", text: "Learn System Design — required by Meta, Google", priority: "High", color: "var(--coral)", bg: "#FFF0ED" },{ icon: "📊", text: "Add AWS/Cloud certs — trending at SAP, Microsoft", priority: "Med", color: "var(--amber)", bg: "#FFF8ED" },{ icon: "🤖", text: "Build AI/ML projects — top demand in industry", priority: "Hot", color: "#22C55E", bg: "#EAFAF0" }].map((tip) => (
-                  <div key={tip.text} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--gray1)", borderRadius: 12, flexWrap: "wrap" }}><div style={{ width: 28, height: 28, borderRadius: 8, background: tip.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{tip.icon}</div><span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, textAlign: "left", flex: 1, minWidth: 140 }}>{tip.text}</span><span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: tip.color, flexShrink: 0 }}>{tip.priority}</span></div>
-                ))}
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem", textAlign: "left" }}>
+                    {[{ icon: "🎯", text: "Learn System Design — required by Meta, Google", priority: "High", color: "var(--coral)", bg: "#FFF0ED" },{ icon: "📊", text: "Add AWS/Cloud certs — trending at SAP, Microsoft", priority: "Med", color: "var(--amber)", bg: "#FFF8ED" },{ icon: "🤖", text: "Build AI/ML projects — top demand in industry", priority: "Hot", color: "#22C55E", bg: "#EAFAF0" }].map((tip) => (
+                      <div key={tip.text} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--gray1)", borderRadius: 12, flexWrap: "wrap" }}><div style={{ width: 28, height: 28, borderRadius: 8, background: tip.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{tip.icon}</div><span style={{ fontSize: 12, color: "var(--ink)", fontWeight: 500, textAlign: "left", flex: 1, minWidth: 140 }}>{tip.text}</span><span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: tip.color, flexShrink: 0 }}>{tip.priority}</span></div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             {/* Card 6 */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(5)}>
               <span className="hiw-step-num">6</span>
               <div className="feature-title">Seen by real recruiters</div>
               <p className="feature-desc">Verified companies filter candidates by Antyl Score - your profile surfaces to people actively hiring.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
-                {[{ name: "Priya M.", company: "Google", action: "Viewed your profile", time: "1h ago" },{ name: "Rahul K.", company: "Microsoft", action: "Shortlisted you", time: "3h ago" },{ name: "Anika S.", company: "McKinsey", action: "Sent interview invite", time: "5h ago" }].map((r) => (
-                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}><div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.name.split(" ").map(n => n[0]).join("")}</div><div style={{ flex: 1, minWidth: 120 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name} <span style={{ fontWeight: 400, color: "var(--gray3)" }}>· {r.company}</span></div><div style={{ fontSize: 10, color: "var(--coral)", fontWeight: 500 }}>{r.action}</div></div><span style={{ fontSize: 10, color: "var(--gray3)" }}>{r.time}</span></div>
-                ))}
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                    {[{ name: "Priya M.", company: "Google", action: "Viewed your profile", time: "1h ago" },{ name: "Rahul K.", company: "Microsoft", action: "Shortlisted you", time: "3h ago" },{ name: "Anika S.", company: "McKinsey", action: "Sent interview invite", time: "5h ago" }].map((r) => (
+                      <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}><div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.name.split(" ").map(n => n[0]).join("")}</div><div style={{ flex: 1, minWidth: 120 }}><div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name} <span style={{ fontWeight: 400, color: "var(--gray3)" }}>· {r.company}</span></div><div style={{ fontSize: 10, color: "var(--coral)", fontWeight: 500 }}>{r.action}</div></div><span style={{ fontSize: 10, color: "var(--gray3)" }}>{r.time}</span></div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -39,6 +39,27 @@ export default function RecruiterLandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
 
+  // Which feature card has its preview expanded (click / tap). Hover expands too, on pointer devices.
+  const [openFeature, setOpenFeature] = useState<number | null>(null);
+
+  const toggleFeature = (i: number) =>
+    setOpenFeature((prev) => (prev === i ? null : i));
+
+  // Shared props for every feature card: click to expand, keyboard accessible.
+  const featureCardProps = (i: number) => ({
+    className: `feature-card stagger-child${openFeature === i ? " open" : ""}`,
+    role: "button",
+    tabIndex: 0,
+    "aria-expanded": openFeature === i,
+    onClick: () => toggleFeature(i),
+    onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggleFeature(i);
+      }
+    },
+  });
+
   // YouTube demo video: https://youtu.be/vkfsK6x30i4
   const VIDEO_ID = "vkfsK6x30i4";
 
@@ -884,16 +905,44 @@ export default function RecruiterLandingPage() {
         .step-connector { position: absolute; right: -14px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--white); border: 1.5px solid var(--gray2); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1; }
 
         /* ---- FEATURES (enhanced 6-card) ---- */
-        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; }
+        .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.25rem; margin-top: 3.5rem; align-items: start; }
         .hiw-step-num { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--grad-90); color: white; font-size: 14px; font-weight: 800; margin-bottom: 1rem; }
-        .feature-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2.25rem 2rem; min-height: 240px; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s; position: relative; overflow: hidden; text-align: left; }
+        .feature-card { background: var(--white); border: 1px solid var(--gray2); border-radius: 24px; padding: 2.25rem 2rem; min-height: 200px; cursor: pointer; transition: transform .25s cubic-bezier(.22,1,.36,1), box-shadow .25s, border-color .25s; position: relative; overflow: hidden; text-align: left; }
         .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--grad-90); opacity: 0; transition: opacity .25s; border-radius: 24px 24px 0 0; }
         .feature-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(255,107,77,.10); border-color: var(--coral); }
-        .feature-card:hover::before { opacity: 1; }
+        .feature-card:hover::before, .feature-card.open::before { opacity: 1; }
+        .feature-card.open { box-shadow: 0 16px 48px rgba(255,107,77,.10); border-color: var(--coral); }
+        .feature-card:focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; }
         .feature-title { font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: .625rem; letter-spacing: -.02em; }
         .feature-desc { font-size: 14px; color: var(--gray4); line-height: 1.7; }
         .feature-score-row { display: flex; gap: 1.25rem; align-items: center; margin-top: 1rem; }
         .feature-kanban-row { display: flex; gap: 6px; margin-top: 1rem; flex-wrap: wrap; }
+
+        /* ---- FEATURE PREVIEW: hidden until hover (pointer) or tap/click ---- */
+        .feature-reveal {
+          display: grid; grid-template-rows: 0fr; opacity: 0;
+          transition: grid-template-rows .4s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+        }
+        .feature-reveal-inner { overflow: hidden; min-height: 0; }
+        .feature-card.open .feature-reveal { grid-template-rows: 1fr; opacity: 1; }
+        @media (hover: hover) {
+          .feature-card:hover .feature-reveal { grid-template-rows: 1fr; opacity: 1; }
+        }
+        .feature-hint {
+          display: inline-flex; align-items: center; gap: 7px; margin-top: 1.25rem;
+          font-size: 12.5px; font-weight: 600; color: var(--gray3);
+          transition: opacity .25s ease; user-select: none;
+        }
+        .feature-hint-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--coral); flex-shrink: 0; }
+        .feature-card.open .feature-hint { opacity: 0; }
+        @media (hover: hover) {
+          .feature-card:hover .feature-hint { opacity: 0; }
+        }
+        .feature-hint-tap { display: none; }
+        @media (hover: none) {
+          .feature-hint-hover { display: none; }
+          .feature-hint-tap { display: inline; }
+        }
 
         @keyframes scoreRingFill {
           from { stroke-dasharray: 0 264; }
@@ -1494,7 +1543,7 @@ export default function RecruiterLandingPage() {
                   <div style={{ marginBottom: 4 }}>
                     <h4 style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)" }}>Dimension breakdown</h4>
                   </div>
-                  <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>See exactly where a candidate's strengths lie.</p>
+                  <p style={{ fontSize: 13, color: "var(--gray3)", marginBottom: "1.5rem" }}>See exactly where a candidate&apos;s strengths lie.</p>
 
                   <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
                     {scoreDimensions.map((dim, i) => (
@@ -1565,108 +1614,162 @@ export default function RecruiterLandingPage() {
 
           <div className="features-grid">
             {/* Card 1: Profile-JD Match */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(0)}>
               <span className="hiw-step-num">1</span>
               <div className="feature-title">Profile-JD match</div>
               <p className="feature-desc">Describe the role once. Antyl auto-matches portfolio-verified candidates whose skills fit.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
-                {[{ role: "React Frontend", match: "92% match", color: "#22C55E" },{ role: "Node.js Backend", match: "87% match", color: "var(--coral)" },{ role: "Full Stack Python", match: "81% match", color: "var(--amber)" }].map((item) => (
-                  <div key={item.role} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", flex: 1, textAlign: "left" }}>{item.role}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: item.color }}>{item.match}</span>
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                    {[{ role: "React Frontend", match: "92% match", color: "#22C55E" },{ role: "Node.js Backend", match: "87% match", color: "var(--coral)" },{ role: "Full Stack Python", match: "81% match", color: "var(--amber)" }].map((item) => (
+                      <div key={item.role} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", flex: 1, textAlign: "left" }}>{item.role}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: item.color }}>{item.match}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
 
             {/* Card 2: Kanban Pipeline */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(1)}>
               <span className="hiw-step-num">2</span>
               <div className="feature-title">Kanban pipeline</div>
               <p className="feature-desc">Move candidates through stages — applied, screening, interview, offer — in one view.</p>
-              <div className="feature-kanban-row">
-                <div style={{ flex: 1, minWidth: 80, background: "var(--gray1)", borderRadius: 12, padding: "10px 6px" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "var(--gray3)", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Applied</div>
-                  <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. A</div>
-                  <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. B</div>
-                </div>
-                <div style={{ flex: 1, minWidth: 80, background: "#FFF6EE", borderRadius: 12, padding: "10px 6px" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "var(--coral)", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Interview</div>
-                  <div style={{ background: "var(--white)", border: "1px solid var(--beige)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. C</div>
-                </div>
-                <div style={{ flex: 1, minWidth: 80, background: "#EAFAF0", borderRadius: 12, padding: "10px 6px" }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: "#22C55E", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Offer</div>
-                  <div style={{ background: "var(--white)", border: "1px solid #BBF7D0", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 700, color: "#22C55E", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. D</div>
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div className="feature-kanban-row">
+                    <div style={{ flex: 1, minWidth: 80, background: "var(--gray1)", borderRadius: 12, padding: "10px 6px" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "var(--gray3)", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Applied</div>
+                      <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. A</div>
+                      <div style={{ background: "var(--white)", border: "1px solid var(--gray2)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. B</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 80, background: "#FFF6EE", borderRadius: 12, padding: "10px 6px" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "var(--coral)", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Interview</div>
+                      <div style={{ background: "var(--white)", border: "1px solid var(--beige)", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 500, color: "var(--ink)", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. C</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 80, background: "#EAFAF0", borderRadius: 12, padding: "10px 6px" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#22C55E", textTransform: "uppercase" as const, letterSpacing: ".05em", marginBottom: 8, textAlign: "center" }}>Offer</div>
+                      <div style={{ background: "var(--white)", border: "1px solid #BBF7D0", borderRadius: 8, padding: "5px 6px", fontSize: 9, fontWeight: 700, color: "#22C55E", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cand. D</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Card 3: Filter by Antyl Score */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(2)}>
               <span className="hiw-step-num">3</span>
               <div className="feature-title">Filter by Antyl Score</div>
               <p className="feature-desc">Set a minimum score and only qualified candidates appear in your feed.</p>
-              <div className="feature-score-row">
-                <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0, margin: "0 auto" }}>
-                  <svg width="80" height="80" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}><circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="url(#sgR3)" strokeWidth="8" strokeDasharray="185 79" strokeLinecap="round" /><defs><linearGradient id="sgR3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF6B4D"/><stop offset="100%" stopColor="#FFB347"/></linearGradient></defs></svg>
-                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 22, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>70+</span></div>
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div className="feature-score-row">
+                    <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0, margin: "0 auto" }}>
+                      <svg width="80" height="80" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}><circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" strokeWidth="8" /><circle cx="50" cy="50" r="42" fill="none" stroke="url(#sgR3)" strokeWidth="8" strokeDasharray="185 79" strokeLinecap="round" /><defs><linearGradient id="sgR3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FF6B4D"/><stop offset="100%" stopColor="#FFB347"/></linearGradient></defs></svg>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><span style={{ fontSize: 22, fontWeight: 700, color: "var(--ink)", fontFamily: "var(--serif)" }}>70+</span></div>
+                    </div>
+                    <div style={{ fontSize: 13, color: "var(--gray4)", lineHeight: 1.6, textAlign: "left" }}>Only candidates scoring <strong style={{ color: "var(--coral)" }}>70 and above</strong> make it to your pipeline.</div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: "var(--gray4)", lineHeight: 1.6, textAlign: "left" }}>Only candidates scoring <strong style={{ color: "var(--coral)" }}>70 and above</strong> make it to your pipeline.</div>
               </div>
             </div>
 
             {/* Card 4: Portfolio-verified */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(3)}>
               <span className="hiw-step-num">4</span>
               <div className="feature-title">Portfolio-verified candidates</div>
               <p className="feature-desc">Every candidate is questioned by AI about their resume before they reach your feed.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
-                {[{ q: "Explain your project architecture decisions" },{ q: "Why did you choose this tech stack?" },{ q: "Walk through your key achievements" }].map((item) => (
-                  <div key={item.q} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 11, color: "var(--ink)", fontWeight: 500, flex: 1, textAlign: "left", minWidth: 140 }}>{item.q}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#22C55E" }}>✓ Verified</span>
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                    {[{ q: "Explain your project architecture decisions" },{ q: "Why did you choose this tech stack?" },{ q: "Walk through your key achievements" }].map((item) => (
+                      <div key={item.q} style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, color: "var(--ink)", fontWeight: 500, flex: 1, textAlign: "left", minWidth: 140 }}>{item.q}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: "#22C55E" }}>✓ Verified</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
 
             {/* Card 5: Trust score filtering */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(4)}>
               <span className="hiw-step-num">5</span>
               <div className="feature-title">Trust score filtering</div>
               <p className="feature-desc">Set a minimum score range with a slider and instantly narrow your candidate pool to who&apos;s qualified.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "1rem" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Min score</span>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: "var(--coral)", fontFamily: "var(--serif)" }}>65</span>
-                </div>
-                <div style={{ position: "relative", height: 6, background: "var(--gray2)", borderRadius: 3 }}>
-                  <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "65%", background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 3 }} />
-                  <div style={{ position: "absolute", top: "50%", left: "65%", transform: "translate(-50%, -50%)", width: 16, height: 16, borderRadius: "50%", background: "var(--coral)", border: "3px solid white", boxShadow: "0 2px 6px rgba(255,107,77,.3)" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--gray3)" }}><span>0</span><span>50</span><span>100</span></div>
-                <div style={{ background: "var(--cream)", border: "1px solid var(--beige)", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "var(--gray4)", textAlign: "left" }}>
-                  <strong style={{ color: "var(--ink)" }}>238 candidates</strong> match your criteria
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: "1rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>Min score</span>
+                      <span style={{ fontSize: 18, fontWeight: 700, color: "var(--coral)", fontFamily: "var(--serif)" }}>65</span>
+                    </div>
+                    <div style={{ position: "relative", height: 6, background: "var(--gray2)", borderRadius: 3 }}>
+                      <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "65%", background: "linear-gradient(90deg, #FF6B4D, #FFB347)", borderRadius: 3 }} />
+                      <div style={{ position: "absolute", top: "50%", left: "65%", transform: "translate(-50%, -50%)", width: 16, height: 16, borderRadius: "50%", background: "var(--coral)", border: "3px solid white", boxShadow: "0 2px 6px rgba(255,107,77,.3)" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--gray3)" }}><span>0</span><span>50</span><span>100</span></div>
+                    <div style={{ background: "var(--cream)", border: "1px solid var(--beige)", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "var(--gray4)", textAlign: "left" }}>
+                      <strong style={{ color: "var(--ink)" }}>238 candidates</strong> match your criteria
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Card 6: Live application feed */}
-            <div className="feature-card stagger-child">
+            <div {...featureCardProps(5)}>
               <span className="hiw-step-num">6</span>
               <div className="feature-title">Live application feed</div>
               <p className="feature-desc">See candidates land in your pipeline the moment auto-apply matches them to your open role.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
-                {[{ initials: "PS", name: "Priya S.", detail: "Frontend Engineer · Score: 88", time: "Just now", timeColor: "#22C55E" },{ initials: "RM", name: "Rahul M.", detail: "Backend Dev · Score: 91", time: "2m ago", timeColor: "var(--coral)" },{ initials: "DP", name: "Dev P.", detail: "Full Stack · Score: 79", time: "8m ago", timeColor: "var(--amber)" }].map((r) => (
-                  <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
-                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.initials}</div>
-                    <div style={{ flex: 1, textAlign: "left", minWidth: 120 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name}</div>
-                      <div style={{ fontSize: 10, color: "var(--gray3)" }}>{r.detail}</div>
-                    </div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: r.timeColor }}>{r.time}</span>
+              <div className="feature-hint">
+                <span className="feature-hint-dot" />
+                <span className="feature-hint-hover">Hover to see it</span>
+                <span className="feature-hint-tap">Tap to see it</span>
+              </div>
+              <div className="feature-reveal">
+                <div className="feature-reveal-inner">
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "1rem" }}>
+                    {[{ initials: "PS", name: "Priya S.", detail: "Frontend Engineer · Score: 88", time: "Just now", timeColor: "#22C55E" },{ initials: "RM", name: "Rahul M.", detail: "Backend Dev · Score: 91", time: "2m ago", timeColor: "var(--coral)" },{ initials: "DP", name: "Dev P.", detail: "Full Stack · Score: 79", time: "8m ago", timeColor: "var(--amber)" }].map((r) => (
+                      <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--gray1)", borderRadius: 12, padding: "10px 14px", flexWrap: "wrap" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--cream)", border: "1px solid var(--beige)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "var(--coral)", flexShrink: 0 }}>{r.initials}</div>
+                        <div style={{ flex: 1, textAlign: "left", minWidth: 120 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{r.name}</div>
+                          <div style={{ fontSize: 10, color: "var(--gray3)" }}>{r.detail}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: r.timeColor }}>{r.time}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           </div>
