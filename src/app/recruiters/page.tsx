@@ -2044,7 +2044,7 @@ export default function RecruiterLandingPage() {
               <div className="footer-col-title">Contact</div>
               <div className="footer-links">
                 <a href="mailto:info@antyl.org" className="footer-link">info@antyl.org</a>
-                <a href="tel:+918172836138" className="footer-link">+91-8172836138</a>
+                {/* <a href="tel:+918172836138" className="footer-link">+91-8172836138</a> */}
                 <span className="footer-link" style={{ cursor: "default" }}>Koramangala, Bangalore, India</span>
               </div>
             </div>
