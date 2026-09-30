@@ -15,6 +15,7 @@ export async function createJob(payload: {
   is_remote: boolean;
   min_score: number;
   max_score: number;
+  max_notice_period_days: number;
 }) {
   const token = localStorage.getItem("access_token");
 

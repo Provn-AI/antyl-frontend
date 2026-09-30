@@ -24,6 +24,7 @@ import {
   SkipForward,
   StickyNote,
   MessageCircle,
+  Clock,
 } from "lucide-react";
 
 interface Candidate {
@@ -36,6 +37,7 @@ interface Candidate {
   trust_score: number;
   years_experience?: number;
   tech_stack?: string[];
+  notice_period_days?: number;
   resume_url?: string | null;
   resume_parsed_data?: {
     education?: { degree: string; institution: string }[];
@@ -49,6 +51,11 @@ interface Candidate {
   applied_via: string;
   applied_at: string;
   note?: string | null;
+}
+
+function noticePeriodLabel(days: number | undefined) {
+  if (days == null) return null;
+  return days === 0 ? "Available immediately" : `${days}d notice`;
 }
 
 // ── GitHub icon (inline SVG, matches the rest of the design system) ──────────
@@ -455,6 +462,11 @@ export default function CandidatesPage() {
                             <Briefcase className="w-3 h-3" />{c.years_experience}y
                           </span>
                         )}
+                        {c.notice_period_days != null && (
+                          <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-400">
+                            <Clock className="w-3 h-3" />{noticePeriodLabel(c.notice_period_days)}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-400">
                           {c.applied_via === "auto" ? <Zap className="w-3 h-3 text-[#F2754A]" /> : <MousePointer className="w-3 h-3" />}
                           {c.applied_via === "auto" ? "Auto" : "Manual"}
@@ -532,6 +544,11 @@ export default function CandidatesPage() {
                     {selected.years_experience != null && (
                       <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
                         <Briefcase className="w-3 h-3" />{selected.years_experience}y exp
+                      </span>
+                    )}
+                    {selected.notice_period_days != null && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        <Clock className="w-3 h-3" />{noticePeriodLabel(selected.notice_period_days)}
                       </span>
                     )}
                   </div>

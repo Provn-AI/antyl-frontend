@@ -27,6 +27,7 @@ interface JobForm {
   is_remote: boolean;
   min_score: number;
   max_score: number;
+  max_notice_period_days: number;
 }
 
 const inputClass =
@@ -71,6 +72,7 @@ export default function EditJobPage({
 
   const [minExpInput, setMinExpInput] = useState<string>("0");
   const [maxExpInput, setMaxExpInput] = useState<string>("0");
+  const [noticePeriodInput, setNoticePeriodInput] = useState<string>("0");
 
   const [form, setForm] = useState<JobForm>({
     title: "",
@@ -86,6 +88,7 @@ export default function EditJobPage({
     is_remote: false,
     min_score: 0,
     max_score: 100,
+    max_notice_period_days: 0,
   });
 
   const techTags = form.required_tech_stack
@@ -99,8 +102,10 @@ export default function EditJobPage({
         const job = await getJob(jobId);
         const minYears = job.min_experience_years ?? 0;
         const maxYears = job.max_experience_years ?? 0;
+        const noticeDays = job.max_notice_period_days ?? 0;
         setMinExpInput(String(minYears));
         setMaxExpInput(String(maxYears));
+        setNoticePeriodInput(noticeDays ? String(noticeDays) : "");
         setForm({
           title: job.title || "",
           description: job.description || "",
@@ -118,6 +123,7 @@ export default function EditJobPage({
           is_remote: job.is_remote || false,
           min_score: job.min_score || 0,
           max_score: job.max_score || 100,
+          max_notice_period_days: noticeDays,
         });
       } catch (err) {
         console.error(err);
@@ -347,6 +353,45 @@ export default function EditJobPage({
                     Max experience must be greater than min experience.
                   </p>
                 )}
+            </div>
+
+            {/* Notice period — how quickly a candidate must be able to join. */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Max Notice Period (days)
+              </label>
+              <input
+                type="number"
+                min={0}
+                className={inputClass}
+                placeholder="e.g. 7"
+                value={noticePeriodInput}
+                onWheel={preventWheelChange}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setNoticePeriodInput(raw);
+                  if (raw === "") {
+                    setForm((prev) => ({ ...prev, max_notice_period_days: 0 }));
+                    return;
+                  }
+                  const days = Number(raw);
+                  if (!Number.isNaN(days)) {
+                    setForm((prev) => ({ ...prev, max_notice_period_days: days }));
+                  }
+                }}
+                onBlur={() => {
+                  if (noticePeriodInput === "") {
+                    setNoticePeriodInput(
+                      form.max_notice_period_days
+                        ? String(form.max_notice_period_days)
+                        : ""
+                    );
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-400 mt-2">
+                How soon a candidate needs to be able to join. Leave blank if flexible.
+              </p>
             </div>
 
             {/* Job Type + Salary */}

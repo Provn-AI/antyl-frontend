@@ -46,6 +46,7 @@ export interface UpdateProfilePayload {
   tech_stack?: string[];
   linkedin_url?: string; 
   job_status?: string; 
+  notice_period_days?: number;
   resume_parsed_data?: {
     work_history?: { company: string; role: string; duration: string; }[];
     education?: { degree: string; institution: string; year: string; }[];

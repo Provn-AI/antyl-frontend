@@ -17,6 +17,8 @@ export interface Job {
 
   required_tech_stack: string[];
 
+  max_notice_period_days?: number;
+
   similarity_score: number;
 
   company_name?: string;

@@ -49,6 +49,7 @@ export default function ResumeReviewPage() {
   const router = useRouter();
 
   const [yearsExperience, setYearsExperience] = useState("");
+  const [noticePeriod, setNoticePeriod] = useState("");
   const [skills, setSkills] = useState("");
   const [workHistory, setWorkHistory] = useState<WorkHistoryItem[]>([]);
   const [education, setEducation] = useState<EducationItem[]>([]);
@@ -60,6 +61,13 @@ export default function ResumeReviewPage() {
     async function loadParsedResume() {
       try {
         const profile = await getMyProfile();
+
+        setNoticePeriod(
+          profile.notice_period_days !== null && profile.notice_period_days !== undefined
+            ? String(profile.notice_period_days)
+            : ""
+        );
+
         const parsed = profile.resume_parsed_data;
 
         if (!parsed) return;
@@ -108,6 +116,8 @@ export default function ResumeReviewPage() {
 
       await updateProfile({
         years_experience: Number(yearsExperience),
+
+        notice_period_days: noticePeriod === "" ? 0 : Number(noticePeriod),
 
         tech_stack: skills
           .split(",")
@@ -179,6 +189,23 @@ export default function ResumeReviewPage() {
               placeholder="e.g. 4"
               className="w-full border border-gray-200 rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors"
             />
+          </div>
+
+          {/* Notice period */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-6">
+            <h3 className="font-bold text-gray-900 mb-4">
+              Notice period
+            </h3>
+
+            <input
+              value={noticePeriod}
+              onChange={(e) => setNoticePeriod(e.target.value)}
+              placeholder="e.g. 7 (days until you can join)"
+              className="w-full border border-gray-200 rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors"
+            />
+            <p className="text-xs text-gray-400 mt-2">
+              Number of days until you can join a new role. Enter 0 if you can join immediately.
+            </p>
           </div>
 
           {/* Skills */}

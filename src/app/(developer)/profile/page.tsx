@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Upload,
   Share2,
+  Clock,
 } from "lucide-react";
 
 import {
@@ -59,6 +60,7 @@ interface Profile {
   avatar_url?: string;
   job_status?: string;
   remote_ok?: boolean;
+  notice_period_days?: number;
   resume_parsed_data?: {
     work_history?: { company: string; role: string; duration: string }[];
     education?: { degree: string; institution: string; year: string }[];
@@ -84,6 +86,11 @@ function jobStatusLabel(value: string | undefined) {
 
 function formatSalary(n: number) {
   return `₹${n.toLocaleString("en-IN")} LPA`;
+}
+
+function noticePeriodLabel(days: number | undefined) {
+  if (days == null) return null;
+  return days === 0 ? "Available immediately" : `${days}d notice period`;
 }
 
 function resolveBadgeRank(metadata?: Record<string, unknown>) {
@@ -267,6 +274,7 @@ export default function ProfilePage() {
     job_status: "",
     tech_stack: [] as string[],
     remote_ok: false,
+    notice_period_days: 0,
   });
 
   // Auto-apply / match preferences — now edited inline alongside the rest
@@ -329,6 +337,7 @@ export default function ProfilePage() {
           job_status: profileData.job_status || "not_looking",
           tech_stack: profileData.tech_stack || [],
           remote_ok: profileData.remote_ok || false,
+          notice_period_days: profileData.notice_period_days ?? 0,
         });
       } catch (error) {
         console.error(error);
@@ -422,6 +431,7 @@ export default function ProfilePage() {
         job_status: profile.job_status || "not_looking",
         tech_stack: profile.tech_stack || [],
         remote_ok: profile.remote_ok || false,
+        notice_period_days: profile.notice_period_days ?? 0,
       });
     }
     if (matchPrefsSummary) {
@@ -691,6 +701,11 @@ export default function ProfilePage() {
                         <Briefcase className="w-3 h-3" />{profile.years_experience}y exp
                       </span>
                     )}
+                    {profile.notice_period_days != null && (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+                        <Clock className="w-3 h-3" />{noticePeriodLabel(profile.notice_period_days)}
+                      </span>
+                    )}
                     {streak && streak.current_streak_days > 0 && (
                       <span className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
                         <Flame className="w-3 h-3" />
@@ -727,6 +742,17 @@ export default function ProfilePage() {
                         onChange={(e) => setFormData({ ...formData, years_experience: Number(e.target.value) })}
                         className={inputCls}
                         placeholder="3"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">Notice period (days)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formData.notice_period_days || ""}
+                        onChange={(e) => setFormData({ ...formData, notice_period_days: Number(e.target.value) })}
+                        className={inputCls}
+                        placeholder="0"
                       />
                     </div>
                   </div>
