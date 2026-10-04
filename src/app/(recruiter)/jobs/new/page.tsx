@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -12,6 +12,7 @@ import {
   IndianRupee,
   MapPin,
   Briefcase,
+  Plus,
   Sparkles,
   Target,
   X,
@@ -24,6 +25,11 @@ import { isValidCity } from "@/lib/cities";
 import CitySelect from "@/components/citySelect";
 import OnboardingTour from "@/components/OnboardingTour";
 import { jobFormTourSteps, JOB_FORM_TOUR_KEY } from "@/lib/tourSteps";
+import {
+  findCatalogSkill,
+  getSkillSuggestions,
+  normalizeSkillList,
+} from "@/lib/skills";
 
 interface JobForm {
   title: string;
@@ -97,6 +103,16 @@ function toTechStackString(value: unknown): string {
   if (typeof value === "string") return value;
   return "";
 }
+
+// Splits the comma-separated tech stack string into trimmed, non-empty tokens.
+function splitTechStack(value: string): string[] {
+  return value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+type SkillOption = { label: string; value: string; custom?: boolean };
 
 const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
   e.currentTarget.blur();
@@ -374,16 +390,125 @@ export default function NewJobPage() {
     rupeesToLpaString(form.salary_max)
   );
 
+  // Autocomplete state for the Required Tech Stack input.
+  const [techDropdownOpen, setTechDropdownOpen] = useState(false);
+  const [techActiveIndex, setTechActiveIndex] = useState(0);
+  const techBoxRef = useRef<HTMLDivElement>(null);
+
   const hasDraft = JSON.stringify(form) !== JSON.stringify(EMPTY_FORM);
 
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ form }));
   }, [form]);
 
-  const techTags = toTechStackString(form.required_tech_stack)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // Close the skill suggestions when clicking outside the input box.
+  useEffect(() => {
+    if (!techDropdownOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (techBoxRef.current && !techBoxRef.current.contains(e.target as Node)) {
+        setTechDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [techDropdownOpen]);
+
+  // Tags shown under the input / in the preview use the correct spelling
+  // (e.g. "python, react" → Python, React) and have duplicates removed.
+  const techTags = normalizeSkillList(
+    splitTechStack(toTechStackString(form.required_tech_stack))
+  );
+
+  // The token currently being typed is whatever follows the last comma.
+  const techValue = form.required_tech_stack;
+  const lastCommaIdx = techValue.lastIndexOf(",");
+  const committedTech = splitTechStack(techValue.slice(0, lastCommaIdx + 1));
+  const currentTechToken = techValue.slice(lastCommaIdx + 1).trim();
+
+  const techOptions: SkillOption[] = useMemo(() => {
+    if (!currentTechToken) return [];
+
+    const options: SkillOption[] = getSkillSuggestions(currentTechToken, committedTech).map(
+      (s) => ({ label: s, value: s })
+    );
+
+    const alreadyAdded = committedTech.some(
+      (t) => t.toLowerCase() === currentTechToken.toLowerCase()
+    );
+    const isKnownExact = !!findCatalogSkill(currentTechToken);
+    if (!alreadyAdded && !isKnownExact) {
+      options.push({ label: currentTechToken, value: currentTechToken, custom: true });
+    }
+    return options;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [techValue]);
+
+  // Replace the token being typed with the chosen skill and start a new one.
+  function pickTechSkill(skill: string) {
+    const list = normalizeSkillList([...committedTech, skill]);
+    setForm((prev) => ({ ...prev, required_tech_stack: list.join(", ") + ", " }));
+    setTechActiveIndex(0);
+    setTechDropdownOpen(false);
+  }
+
+  function handleTechChange(raw: string) {
+    // When the user types a comma, tidy up what they've entered so far
+    // ("python," → "Python, "). Skip this while deleting so backspace works.
+    const isTyping = raw.length > form.required_tech_stack.length;
+    let next = raw;
+    if (isTyping && raw.trimEnd().endsWith(",")) {
+      const list = normalizeSkillList(splitTechStack(raw));
+      next = list.length ? list.join(", ") + ", " : "";
+    }
+    setForm((prev) => ({ ...prev, required_tech_stack: next }));
+    setTechActiveIndex(0);
+    setTechDropdownOpen(true);
+  }
+
+  function handleTechBlur() {
+    // Leaving the field: fix spelling for everything typed and drop the trailing comma.
+    const list = normalizeSkillList(splitTechStack(form.required_tech_stack));
+    const cleaned = list.join(", ");
+    if (cleaned !== form.required_tech_stack) {
+      setForm((prev) => ({ ...prev, required_tech_stack: cleaned }));
+    }
+  }
+
+  function handleTechKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    const hasOptions = techDropdownOpen && techOptions.length > 0;
+
+    if (e.key === "ArrowDown") {
+      if (techOptions.length === 0) return;
+      e.preventDefault();
+      setTechDropdownOpen(true);
+      setTechActiveIndex((i) => (i + 1) % techOptions.length);
+    } else if (e.key === "ArrowUp") {
+      if (techOptions.length === 0) return;
+      e.preventDefault();
+      setTechDropdownOpen(true);
+      setTechActiveIndex((i) => (i - 1 + techOptions.length) % techOptions.length);
+    } else if (e.key === "Enter") {
+      if (hasOptions) {
+        e.preventDefault();
+        const picked = techOptions[Math.min(techActiveIndex, techOptions.length - 1)];
+        pickTechSkill(picked.value);
+      }
+    } else if (e.key === "Tab") {
+      // Tab accepts the highlighted known suggestion without leaving the field.
+      if (hasOptions) {
+        const picked = techOptions[Math.min(techActiveIndex, techOptions.length - 1)];
+        if (picked && !picked.custom) {
+          e.preventDefault();
+          pickTechSkill(picked.value);
+        }
+      }
+    } else if (e.key === "Escape") {
+      if (techDropdownOpen) {
+        e.preventDefault();
+        setTechDropdownOpen(false);
+      }
+    }
+  }
 
   function discardDraft() {
     localStorage.removeItem(DRAFT_KEY);
@@ -393,6 +518,8 @@ export default function NewJobPage() {
     setNoticePeriodInput("");
     setSalaryMinInput("");
     setSalaryMaxInput("");
+    setTechDropdownOpen(false);
+    setTechActiveIndex(0);
   }
 
   const validate = () => {
@@ -412,7 +539,9 @@ export default function NewJobPage() {
     if (techStack) {
       const hasComma = techStack.includes(",");
       const tokenCount = techStack.split(/\s+/).filter(Boolean).length;
-      if (!hasComma && tokenCount > 1) {
+      // Multi-word skills like "Machine Learning" or "Tailwind CSS" are fine
+      // on their own; only complain when it looks like several skills with no commas.
+      if (!hasComma && tokenCount > 1 && !findCatalogSkill(techStack)) {
         return "Please separate each skill with a comma (e.g. React, Node, Python).";
       }
     }
@@ -464,7 +593,10 @@ export default function NewJobPage() {
       setMinExpInput(years ? String(years) : "");
       setMaxExpInput(years ? String(years) : "");
 
-      const techStackStr = toTechStackString(result.required_tech_stack);
+      // Run AI output through the same spelling normalisation as manual entry.
+      const techStackStr = normalizeSkillList(
+        splitTechStack(toTechStackString(result.required_tech_stack))
+      ).join(", ");
       setSalaryMinInput(rupeesToLpaString(result.salary_min));
       setSalaryMaxInput(rupeesToLpaString(result.salary_max));
       setForm((prev) => ({
@@ -555,7 +687,7 @@ export default function NewJobPage() {
               <button
                 type="button"
                 onClick={discardDraft}
-className="inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
               >
                 Discard draft
               </button>
@@ -683,15 +815,85 @@ className="inline-flex items-center justify-center gap-2 rounded-full border bor
 
               <div data-tour="job-tech-stack">
                 <Label>Required Tech Stack</Label>
-                <input
-                  className={inputClass}
-                  placeholder="React, Node, Python"
-                  value={form.required_tech_stack}
-                  onChange={(e) =>
-                    setForm({ ...form, required_tech_stack: e.target.value })
-                  }
-                />
-                <Hint>Separate each skill with a comma.</Hint>
+
+                {/* Input + autocomplete dropdown */}
+                <div ref={techBoxRef} className="relative">
+                  <input
+                    className={inputClass}
+                    placeholder="React, Node, Python"
+                    value={form.required_tech_stack}
+                    onChange={(e) => handleTechChange(e.target.value)}
+                    onFocus={() => {
+                      if (currentTechToken) setTechDropdownOpen(true);
+                    }}
+                    onBlur={handleTechBlur}
+                    onKeyDown={handleTechKeyDown}
+                    autoComplete="off"
+                    role="combobox"
+                    aria-expanded={techDropdownOpen && techOptions.length > 0}
+                    aria-controls="tech-stack-suggestions"
+                    aria-autocomplete="list"
+                  />
+
+                  {techDropdownOpen && techOptions.length > 0 && (
+                    <ul
+                      id="tech-stack-suggestions"
+                      role="listbox"
+                      className="absolute left-0 right-0 top-full mt-2 z-20 max-h-64 overflow-y-auto bg-white rounded-2xl border border-gray-100 shadow-lg py-1.5"
+                    >
+                      {techOptions.map((opt, i) => {
+                        const active = i === techActiveIndex;
+                        return (
+                          <li
+                            key={`${opt.custom ? "custom" : "skill"}-${opt.value}`}
+                            role="option"
+                            aria-selected={active}
+                            // onMouseDown (not onClick) so the input doesn't blur first
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              pickTechSkill(opt.value);
+                            }}
+                            onMouseEnter={() => setTechActiveIndex(i)}
+                            className={`flex items-center justify-between gap-3 px-3.5 py-2 mx-1.5 rounded-xl cursor-pointer text-sm transition-colors ${
+                              active ? "bg-orange-50" : "bg-transparent"
+                            }`}
+                          >
+                            {opt.custom ? (
+                              <span className="flex items-center gap-2 min-w-0 text-gray-500">
+                                <Plus className="w-3.5 h-3.5 text-[#F2754A] flex-shrink-0" />
+                                <span className="truncate">
+                                  Use{" "}
+                                  <span className="font-bold text-gray-800">
+                                    &ldquo;{opt.label}&rdquo;
+                                  </span>{" "}
+                                  as typed
+                                </span>
+                              </span>
+                            ) : (
+                              <span
+                                className={`font-semibold truncate ${
+                                  active ? "text-[#D9582F]" : "text-gray-800"
+                                }`}
+                              >
+                                {opt.label}
+                              </span>
+                            )}
+                            {active && !opt.custom && (
+                              <span className="text-[10px] font-bold text-[#F2754A]/70 flex-shrink-0">
+                                Enter
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+
+                <Hint>
+                  Start typing and pick from the suggestions for correct spelling. Separate each
+                  skill with a comma.
+                </Hint>
                 {techTags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
                     {techTags.map((tech) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   MapPin,
   Briefcase,
@@ -23,6 +23,7 @@ import {
   TrendingUp,
   GraduationCap,
   Link2,
+  Plus,
 } from "lucide-react";
 
 import {
@@ -81,6 +82,289 @@ const JOB_STATUS_OPTIONS = [
 ];
 
 const JOB_TYPES = ["full_time", "part_time", "contract", "internship"];
+
+// ── Skill catalog (canonical spelling/casing used for autocomplete) ──────────
+// Users can still add skills that aren't listed here — those are kept as typed.
+
+const SKILL_CATALOG: string[] = [
+  // Languages
+  "Python",
+  "JavaScript",
+  "TypeScript",
+  "Java",
+  "C",
+  "C++",
+  "C#",
+  "Go",
+  "Rust",
+  "Ruby",
+  "PHP",
+  "Swift",
+  "Kotlin",
+  "Dart",
+  "Scala",
+  "R",
+  "MATLAB",
+  "Perl",
+  "Elixir",
+  "Haskell",
+  "Lua",
+  "Solidity",
+  "Bash",
+  "SQL",
+  "HTML",
+  "CSS",
+  // Frontend
+  "React",
+  "Next.js",
+  "Vue.js",
+  "Nuxt.js",
+  "Angular",
+  "Svelte",
+  "SvelteKit",
+  "Remix",
+  "Astro",
+  "Redux",
+  "Zustand",
+  "React Query",
+  "Tailwind CSS",
+  "Bootstrap",
+  "Material UI",
+  "Chakra UI",
+  "shadcn/ui",
+  "Sass",
+  "Webpack",
+  "Vite",
+  "jQuery",
+  "Three.js",
+  "D3.js",
+  "Framer Motion",
+  "Storybook",
+  // Backend
+  "Node.js",
+  "Express.js",
+  "NestJS",
+  "Fastify",
+  "Django",
+  "Django REST Framework",
+  "Flask",
+  "FastAPI",
+  "Pydantic",
+  "Celery",
+  "Spring Boot",
+  "Hibernate",
+  "Ruby on Rails",
+  "Laravel",
+  "Symfony",
+  "ASP.NET",
+  ".NET",
+  "Gin",
+  "Fiber",
+  "GraphQL",
+  "REST APIs",
+  "gRPC",
+  "WebSockets",
+  "Microservices",
+  "tRPC",
+  // Mobile
+  "React Native",
+  "Flutter",
+  "Android",
+  "iOS",
+  "SwiftUI",
+  "Jetpack Compose",
+  "Expo",
+  // Databases
+  "PostgreSQL",
+  "MySQL",
+  "MongoDB",
+  "Redis",
+  "SQLite",
+  "Oracle",
+  "SQL Server",
+  "DynamoDB",
+  "Cassandra",
+  "Elasticsearch",
+  "Firebase",
+  "Supabase",
+  "Neo4j",
+  "ClickHouse",
+  "Snowflake",
+  "BigQuery",
+  "SQLAlchemy",
+  "Prisma",
+  "TypeORM",
+  "Alembic",
+  // Cloud & DevOps
+  "AWS",
+  "Azure",
+  "Google Cloud",
+  "Docker",
+  "Kubernetes",
+  "Terraform",
+  "Ansible",
+  "Jenkins",
+  "GitHub Actions",
+  "GitLab CI",
+  "CI/CD",
+  "Linux",
+  "Nginx",
+  "Git",
+  "Helm",
+  "Prometheus",
+  "Grafana",
+  "Datadog",
+  "Vercel",
+  "Heroku",
+  "Cloudflare",
+  "Serverless",
+  // Data / AI
+  "Machine Learning",
+  "Deep Learning",
+  "Data Science",
+  "Data Engineering",
+  "NLP",
+  "Computer Vision",
+  "LLMs",
+  "LangChain",
+  "LlamaIndex",
+  "RAG",
+  "OpenAI API",
+  "Hugging Face",
+  "TensorFlow",
+  "PyTorch",
+  "Keras",
+  "scikit-learn",
+  "Pandas",
+  "NumPy",
+  "SciPy",
+  "Matplotlib",
+  "Jupyter",
+  "Apache Spark",
+  "Apache Kafka",
+  "Apache Airflow",
+  "dbt",
+  "Power BI",
+  "Tableau",
+  // Messaging / Infra
+  "RabbitMQ",
+  "Kafka",
+  "Celery Beat",
+  // Testing
+  "Jest",
+  "Vitest",
+  "Cypress",
+  "Playwright",
+  "Selenium",
+  "Pytest",
+  "JUnit",
+  "React Testing Library",
+  // Security / Other
+  "OAuth",
+  "JWT",
+  "Cybersecurity",
+  "Blockchain",
+  "Web3",
+  "Figma",
+  "Agile",
+  "Scrum",
+  "System Design",
+  "Data Structures & Algorithms",
+];
+
+// Common shorthand → canonical skill. Lets "js" suggest JavaScript, "k8s" suggest Kubernetes, etc.
+const SKILL_ALIASES: Record<string, string[]> = {
+  JavaScript: ["js", "ecmascript", "es6"],
+  TypeScript: ["ts"],
+  Python: ["py", "python3"],
+  "Node.js": ["node", "nodejs"],
+  "Express.js": ["express", "expressjs"],
+  "Next.js": ["next", "nextjs"],
+  "Vue.js": ["vue", "vuejs"],
+  "Nuxt.js": ["nuxt", "nuxtjs"],
+  React: ["reactjs", "react.js"],
+  "React Native": ["rn"],
+  PostgreSQL: ["postgres", "psql", "pg"],
+  MongoDB: ["mongo"],
+  Kubernetes: ["k8s"],
+  "Google Cloud": ["gcp", "google cloud platform"],
+  "Tailwind CSS": ["tailwind"],
+  "Spring Boot": ["spring"],
+  "Ruby on Rails": ["rails", "ror"],
+  "C#": ["csharp", "c sharp"],
+  "C++": ["cpp"],
+  Go: ["golang"],
+  "Machine Learning": ["ml"],
+  "Deep Learning": ["dl"],
+  NLP: ["natural language processing"],
+  LLMs: ["llm", "large language models"],
+  "scikit-learn": ["sklearn"],
+  "CI/CD": ["cicd", "ci cd"],
+  "REST APIs": ["rest", "restful", "rest api"],
+  "Data Structures & Algorithms": ["dsa", "data structures", "algorithms"],
+  "Apache Spark": ["spark", "pyspark"],
+  "Apache Kafka": ["kafka"],
+  "Apache Airflow": ["airflow"],
+  "Material UI": ["mui"],
+  "shadcn/ui": ["shadcn"],
+  "D3.js": ["d3"],
+  "Three.js": ["three"],
+  "Hugging Face": ["huggingface", "hf"],
+  "Django REST Framework": ["drf"],
+  "SQL Server": ["mssql", "sqlserver"],
+  Elasticsearch: ["elastic", "es"],
+  ".NET": ["dotnet", "dot net"],
+};
+
+const MAX_SKILL_SUGGESTIONS = 8;
+
+type SkillOption = { label: string; value: string; custom?: boolean };
+
+function findCatalogSkill(raw: string): string | undefined {
+  const q = raw.trim().toLowerCase();
+  if (!q) return undefined;
+  const direct = SKILL_CATALOG.find((s) => s.toLowerCase() === q);
+  if (direct) return direct;
+  for (const [canonical, aliases] of Object.entries(SKILL_ALIASES)) {
+    if (aliases.some((a) => a === q)) return canonical;
+  }
+  return undefined;
+}
+
+// Returns the canonical spelling if we know the skill, otherwise the text as typed.
+function resolveSkill(raw: string): string {
+  const trimmed = raw.trim();
+  return findCatalogSkill(trimmed) ?? trimmed;
+}
+
+function rankSkillMatch(skill: string, q: string): number | null {
+  const name = skill.toLowerCase();
+  if (name === q) return 0;
+  if (name.startsWith(q)) return 1;
+
+  const aliases = SKILL_ALIASES[skill] || [];
+  if (aliases.some((a) => a === q)) return 2;
+  if (aliases.some((a) => a.startsWith(q))) return 3;
+
+  const words = name.split(/[^a-z0-9+#.]+/).filter(Boolean);
+  if (words.some((w) => w.startsWith(q))) return 4;
+
+  if (q.length >= 2 && name.includes(q)) return 5;
+  return null;
+}
+
+function getSkillSuggestions(query: string, alreadyAdded: string[]): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const taken = new Set(alreadyAdded.map((s) => s.toLowerCase()));
+
+  return SKILL_CATALOG.filter((s) => !taken.has(s.toLowerCase()))
+    .map((s) => ({ s, rank: rankSkillMatch(s, q) }))
+    .filter((x): x is { s: string; rank: number } => x.rank !== null)
+    .sort((a, b) => a.rank - b.rank || a.s.length - b.s.length || a.s.localeCompare(b.s))
+    .slice(0, MAX_SKILL_SUGGESTIONS)
+    .map((x) => x.s);
+}
 
 function jobStatusLabel(value: string | undefined) {
   return JOB_STATUS_OPTIONS.find((o) => o.value === value)?.label || "Not set";
@@ -461,6 +745,10 @@ export default function ProfilePage() {
 
   // Text box for adding a new skill to the tech stack while editing.
   const [skillInput, setSkillInput] = useState("");
+  // Autocomplete dropdown state for the skill input.
+  const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
+  const [skillActiveIndex, setSkillActiveIndex] = useState(0);
+  const skillBoxRef = useRef<HTMLDivElement>(null);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
@@ -551,6 +839,37 @@ export default function ProfilePage() {
     loadProfile();
   }, []);
 
+  // Close the skill suggestions when clicking anywhere outside the input box.
+  useEffect(() => {
+    if (!skillDropdownOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (skillBoxRef.current && !skillBoxRef.current.contains(e.target as Node)) {
+        setSkillDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [skillDropdownOpen]);
+
+  // Suggestions for the current text: known skills first (canonical spelling),
+  // plus a "add as typed" row so custom skills are still possible.
+  const skillOptions: SkillOption[] = useMemo(() => {
+    const q = skillInput.trim();
+    if (!q) return [];
+
+    const options: SkillOption[] = getSkillSuggestions(q, formData.tech_stack).map((s) => ({
+      label: s,
+      value: s,
+    }));
+
+    const alreadyAdded = formData.tech_stack.some((t) => t.toLowerCase() === q.toLowerCase());
+    const isKnownExact = !!findCatalogSkill(q);
+    if (!alreadyAdded && !isKnownExact) {
+      options.push({ label: q, value: q, custom: true });
+    }
+    return options;
+  }, [skillInput, formData.tech_stack]);
+
   const handleSave = async () => {
     if (!profile) return;
     setSaving(true);
@@ -616,6 +935,8 @@ export default function ProfilePage() {
       });
     }
     setSkillInput("");
+    setSkillDropdownOpen(false);
+    setSkillActiveIndex(0);
     setSaveError("");
     setIsEditing(false);
   };
@@ -727,16 +1048,18 @@ export default function ProfilePage() {
     }));
   };
 
-  // Adds the current skillInput to formData.tech_stack (case-insensitive dedupe).
-  const addSkill = () => {
-    const skill = skillInput.trim();
+  // Adds a skill to formData.tech_stack. Known skills are normalised to their
+  // canonical spelling ("pyt" → "Python", "nodejs" → "Node.js"); unknown skills
+  // are kept exactly as typed. Case-insensitive dedupe.
+  const addSkill = (raw?: string) => {
+    const skill = resolveSkill(raw ?? skillInput);
     if (!skill) return;
-    if (formData.tech_stack.some((t) => t.toLowerCase() === skill.toLowerCase())) {
-      setSkillInput("");
-      return;
+    if (!formData.tech_stack.some((t) => t.toLowerCase() === skill.toLowerCase())) {
+      setFormData((prev) => ({ ...prev, tech_stack: [...prev.tech_stack, skill] }));
     }
-    setFormData({ ...formData, tech_stack: [...formData.tech_stack, skill] });
     setSkillInput("");
+    setSkillActiveIndex(0);
+    setSkillDropdownOpen(false);
   };
 
   const removeSkill = (skill: string) => {
@@ -744,6 +1067,44 @@ export default function ProfilePage() {
       ...formData,
       tech_stack: formData.tech_stack.filter((t) => t !== skill),
     });
+  };
+
+  const handleSkillKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const hasOptions = skillDropdownOpen && skillOptions.length > 0;
+
+    if (e.key === "ArrowDown") {
+      if (skillOptions.length === 0) return;
+      e.preventDefault();
+      setSkillDropdownOpen(true);
+      setSkillActiveIndex((i) => (i + 1) % skillOptions.length);
+    } else if (e.key === "ArrowUp") {
+      if (skillOptions.length === 0) return;
+      e.preventDefault();
+      setSkillDropdownOpen(true);
+      setSkillActiveIndex((i) => (i - 1 + skillOptions.length) % skillOptions.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (hasOptions) {
+        const picked = skillOptions[Math.min(skillActiveIndex, skillOptions.length - 1)];
+        addSkill(picked.value);
+      } else {
+        addSkill();
+      }
+    } else if (e.key === "Tab") {
+      // Tab accepts the highlighted known suggestion without leaving the field.
+      if (hasOptions) {
+        const picked = skillOptions[Math.min(skillActiveIndex, skillOptions.length - 1)];
+        if (picked && !picked.custom) {
+          e.preventDefault();
+          addSkill(picked.value);
+        }
+      }
+    } else if (e.key === "Escape") {
+      if (skillDropdownOpen) {
+        e.preventDefault();
+        setSkillDropdownOpen(false);
+      }
+    }
   };
 
   if (loading) {
@@ -1186,22 +1547,95 @@ export default function ProfilePage() {
 
               {isEditing && (
                 <div className="flex gap-2 mt-4">
-                  <input
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
+                  {/* Input + autocomplete dropdown */}
+                  <div ref={skillBoxRef} className="relative flex-1 min-w-0">
+                    <input
+                      value={skillInput}
+                      onChange={(e) => {
+                        setSkillInput(e.target.value);
+                        setSkillActiveIndex(0);
+                        setSkillDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        if (skillInput.trim()) setSkillDropdownOpen(true);
+                      }}
+                      onKeyDown={handleSkillKeyDown}
+                      className={inputCls}
+                      placeholder="Type a skill, e.g. Pyt → Python"
+                      autoComplete="off"
+                      role="combobox"
+                      aria-expanded={skillDropdownOpen && skillOptions.length > 0}
+                      aria-controls="skill-suggestions"
+                      aria-autocomplete="list"
+                    />
+
+                    {skillDropdownOpen && skillOptions.length > 0 && (
+                      <ul
+                        id="skill-suggestions"
+                        role="listbox"
+                        className="absolute left-0 right-0 top-full mt-2 z-20 max-h-64 overflow-y-auto bg-white rounded-2xl border border-gray-100 shadow-lg py-1.5"
+                      >
+                        {skillOptions.map((opt, i) => {
+                          const active = i === skillActiveIndex;
+                          return (
+                            <li
+                              key={`${opt.custom ? "custom" : "skill"}-${opt.value}`}
+                              role="option"
+                              aria-selected={active}
+                              // onMouseDown (not onClick) so the input doesn't blur first
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                addSkill(opt.value);
+                              }}
+                              onMouseEnter={() => setSkillActiveIndex(i)}
+                              className={`flex items-center justify-between gap-3 px-3.5 py-2 mx-1.5 rounded-xl cursor-pointer text-sm transition-colors ${
+                                active ? "bg-orange-50" : "bg-transparent"
+                              } ${opt.custom ? "border-t border-gray-50 rounded-t-none" : ""}`}
+                            >
+                              {opt.custom ? (
+                                <span className="flex items-center gap-2 min-w-0 text-gray-500">
+                                  <Plus className="w-3.5 h-3.5 text-[#F2754A] flex-shrink-0" />
+                                  <span className="truncate">
+                                    Add{" "}
+                                    <span className="font-bold text-gray-800">
+                                      &ldquo;{opt.label}&rdquo;
+                                    </span>{" "}
+                                    as a custom skill
+                                  </span>
+                                </span>
+                              ) : (
+                                <span
+                                  className={`font-semibold truncate ${
+                                    active ? "text-[#D9582F]" : "text-gray-800"
+                                  }`}
+                                >
+                                  {opt.label}
+                                </span>
+                              )}
+                              {active && !opt.custom && (
+                                <span className="text-[10px] font-bold text-[#F2754A]/70 flex-shrink-0">
+                                  Enter
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // If the dropdown has a highlighted suggestion, use it; otherwise add as typed.
+                      if (skillOptions.length > 0) {
+                        const picked = skillOptions[Math.min(skillActiveIndex, skillOptions.length - 1)];
+                        addSkill(picked.value);
+                      } else {
                         addSkill();
                       }
                     }}
-                    className={inputCls}
-                    placeholder="e.g. Rust, Kubernetes, GraphQL"
-                  />
-                  <button
-                    type="button"
-                    onClick={addSkill}
-                    className="px-5 py-2.5 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors flex-shrink-0"
+                    className="px-5 py-2.5 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors flex-shrink-0 self-start"
                   >
                     Add
                   </button>
