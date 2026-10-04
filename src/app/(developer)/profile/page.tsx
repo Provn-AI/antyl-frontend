@@ -1297,7 +1297,7 @@ export default function ProfilePage() {
                       )}
                   </div>
 
-                  {/* {matchPrefsSummary && matchPrefsSummary.techStack.length > 0 && (
+                  {matchPrefsSummary && matchPrefsSummary.techStack.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {matchPrefsSummary.techStack.map((tech) => (
                         <span key={tech} className="text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
@@ -1305,7 +1305,7 @@ export default function ProfilePage() {
                         </span>
                       ))}
                     </div>
-                  )} */}
+                  )}
 
                   {salaryRange && (
                     <div className="mt-4 p-4 rounded-2xl bg-gray-50/70">
