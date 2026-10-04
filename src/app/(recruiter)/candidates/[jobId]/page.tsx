@@ -160,6 +160,11 @@ export default function CandidatesPage() {
   // candidate drawer.
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
 
+  // NEW: controls the "Are you sure?" popup shown before rejecting a
+  // candidate. The Reject button only opens this; the actual rejection
+  // (handleSkip) runs when the recruiter confirms.
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+
   // BUG-FIX: skip now persists to the backend (status -> "rejected") instead
   // of only removing the candidate from local state. This toast lets the
   // recruiter undo an accidental skip within a short window.
@@ -242,6 +247,12 @@ export default function CandidatesPage() {
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     setSkippedCandidate(candidate);
     undoTimerRef.current = setTimeout(() => setSkippedCandidate(null), 5000);
+  };
+
+  // NEW: called when the recruiter clicks "Yes, reject" in the popup.
+  const handleConfirmReject = async () => {
+    setShowRejectConfirm(false);
+    await handleSkip();
   };
 
   const handleUndoSkip = async () => {
@@ -688,13 +699,15 @@ export default function CandidatesPage() {
 
             {/* Drawer footer */}
             <div className="flex gap-3 px-6 py-5 border-t border-gray-50 flex-shrink-0">
+              {/* CHANGED: no longer rejects immediately — opens the
+                  confirmation popup first. */}
               <button
                 type="button"
-                onClick={handleSkip}
-                className="flex items-center gap-2 px-5 py-3 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+                onClick={() => setShowRejectConfirm(true)}
+                className="flex items-center gap-2 px-5 py-3 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-red-50 hover:text-red-500 transition-colors"
               >
                 <SkipForward className="w-4 h-4" />
-                Skip
+                Reject
               </button>
               <button
                 type="button"
@@ -823,13 +836,57 @@ export default function CandidatesPage() {
         </div>
       )}
 
+      {/* ── Reject confirmation popup (NEW) ──
+          Shown when the recruiter clicks "Reject" in the drawer. Rejection
+          only happens after they confirm here. z-[65] keeps it above the
+          drawer (z-50) and resume modal (z-60) but below the undo toast. */}
+      {showRejectConfirm && selected && (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
+          onClick={() => setShowRejectConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-[24px] shadow-2xl p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+              <X className="w-5 h-5 text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">
+              Reject this candidate?
+            </h3>
+            <p className="text-sm text-gray-400 mb-6">
+              {selected.name} will be removed from this job&apos;s candidate
+              list. You can undo this for a few seconds afterwards.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowRejectConfirm(false)}
+                className="flex-1 py-3 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReject}
+                className="flex-1 py-3 rounded-full text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md shadow-red-100"
+              >
+                Yes, reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Undo-skip toast ──
           BUG-FIX: gives the recruiter a way to reverse an accidental skip.
           Auto-dismisses after 5s (see undoTimerRef in handleSkip). */}
       {skippedCandidate && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-4 bg-gray-900 text-white rounded-full pl-5 pr-2 py-2.5 shadow-2xl">
           <span className="text-sm font-semibold">
-            Skipped {skippedCandidate.name}
+            Rejected {skippedCandidate.name}
           </span>
           <button
             type="button"
