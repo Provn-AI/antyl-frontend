@@ -25,6 +25,8 @@ import {
   GraduationCap,
   Link2,
   Plus,
+  Lock,
+  Info,
 } from "lucide-react";
 
 import {
@@ -473,7 +475,12 @@ export default function ProfilePage() {
 
   // Time left until the next verification opens. While > 0, tech stack and
   // resume are locked (the backend enforces this too and answers 423).
-  const [cooldown, setCooldown] = useState({ days: 0, hours: 0 });
+  const [cooldown, setCooldown] = useState<{
+    days: number;
+    hours: number;
+    locked: boolean;
+    unlocks_at: string | null;
+  }>({ days: 0, hours: 0, locked: false, unlocks_at: null });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -535,8 +542,19 @@ export default function ProfilePage() {
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
 
   // Derived lock state (plain values, no hooks, so safe before the early returns).
-  const locked = cooldown.days > 0 || cooldown.hours > 0;
-  const lockLabel = `${cooldown.days}d ${cooldown.hours}h`;
+  const locked = cooldown.locked || cooldown.days > 0 || cooldown.hours > 0;
+  const lockLabel =
+    cooldown.days > 0
+      ? `${cooldown.days}d ${cooldown.hours}h`
+      : cooldown.hours > 0
+      ? `${cooldown.hours}h`
+      : "under 1h";
+  const unlockDateLabel = cooldown.unlocks_at
+    ? new Date(cooldown.unlocks_at).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+      })
+    : null;
 
   useEffect(() => {
     async function loadProfile() {
@@ -573,7 +591,13 @@ export default function ProfilePage() {
 
       // Own try/catch so a cooldown failure doesn't break the rest of the page.
       try {
-        setCooldown(await getVerificationCooldown());
+        const c = await getVerificationCooldown();
+        setCooldown({
+          days: c.days ?? 0,
+          hours: c.hours ?? 0,
+          locked: !!c.locked,
+          unlocks_at: c.unlocks_at ?? null,
+        });
       } catch (error) {
         console.error(error);
       }
@@ -996,6 +1020,10 @@ export default function ProfilePage() {
 
   const hasPendingChanges = !!profile.pending_tech_stack || !!profile.pending_resume_url;
 
+  // Verified before, and the 7-day lock is over: changes are allowed, but they
+  // only go live once the next verification is completed.
+  const windowOpen = profile.trust_score != null && !locked;
+
   return (
     <div className="min-h-screen w-full md:flex bg-[#FAF6F0] overflow-x-hidden">
       <DeveloperNavbar />
@@ -1354,17 +1382,55 @@ export default function ProfilePage() {
               sectionRef={techStackSectionRef}
               highlight={isEditing && !locked && !!techStackError}
               action={
-                isEditing && !locked ? (
+                locked ? (
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-gray-500 bg-gray-100 rounded-full px-2.5 py-1 flex-shrink-0">
+                    <Lock className="w-3 h-3" />
+                    Locked · {lockLabel}
+                  </span>
+                ) : isEditing ? (
                   <span className="text-[11px] font-bold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1 flex-shrink-0">
                     Required
                   </span>
                 ) : undefined
               }
             >
-              {isEditing && locked && (
-                <div className="flex items-start gap-2 mb-4 p-3 rounded-2xl bg-gray-50 text-xs font-semibold text-gray-500">
-                  <Clock className="w-4 h-4 flex-shrink-0 mt-px" />
-                  Tech stack is locked for {lockLabel}, until your next verification opens.
+              {locked && (
+                <div className="flex items-start gap-3 mb-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                  <div className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-4 h-4 text-gray-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-gray-800">
+                      Your tech stack is locked
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                      Your Antyl Score is based on the skills you verified, so they can&apos;t change
+                      between verifications. You can edit them again in {lockLabel}
+                      {unlockDateLabel ? ` (on ${unlockDateLabel})` : ""}, when your next
+                      verification opens.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {windowOpen && (
+                <div className="flex items-start gap-3 mb-4 p-4 rounded-2xl bg-orange-50 border border-orange-100">
+                  <div className="w-8 h-8 rounded-xl bg-white border border-orange-100 flex items-center justify-center flex-shrink-0">
+                    <Info className="w-4 h-4 text-[#F2754A]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-gray-800">
+                      Your verification window is open
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                      Update your skills now, then{" "}
+                      <a href="/verification" className="font-bold text-[#F2754A] hover:underline">
+                        complete verification
+                      </a>{" "}
+                      to apply them and refresh your score. Until you finish, your current score and
+                      skills stay as they are, and nothing is lost if you leave halfway.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -1397,6 +1463,27 @@ export default function ProfilePage() {
                   Pending: {profile.pending_tech_stack.join(", ")}. Applies after you complete
                   verification.
                 </p>
+              )}
+
+              {isEditing && locked && (
+                <div className="flex gap-2 mt-4">
+                  <div className="relative flex-1 min-w-0">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                    <input
+                      disabled
+                      className={`${inputCls} pl-10 bg-gray-50 cursor-not-allowed`}
+                      placeholder={`Adding skills opens in ${lockLabel}`}
+                      aria-label="Adding skills is locked"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    className="px-5 py-2.5 rounded-full text-sm font-bold bg-gray-100 text-gray-300 cursor-not-allowed flex-shrink-0 self-start"
+                  >
+                    Add
+                  </button>
+                </div>
               )}
 
               {isEditing && !locked && (
@@ -1867,6 +1954,33 @@ export default function ProfilePage() {
               </div>
             }
           >
+            {locked && (
+              <div className="flex items-start gap-3 mb-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                <div className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+                  <Lock className="w-4 h-4 text-gray-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-800">Resume uploads are locked</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Your score is based on the resume you verified with. You can upload a new one in{" "}
+                    {lockLabel}
+                    {unlockDateLabel ? ` (on ${unlockDateLabel})` : ""}, when your next
+                    verification opens.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {windowOpen && !profile.pending_resume_url && (
+              <p className="flex items-start gap-2 text-xs text-gray-500 bg-orange-50 rounded-2xl px-3.5 py-2.5 mb-4 leading-relaxed">
+                <Info className="w-4 h-4 text-[#F2754A] flex-shrink-0 mt-px" />
+                <span>
+                  A new resume is applied only after you complete verification. Until then your
+                  current resume and score stay as they are.
+                </span>
+              </p>
+            )}
+
             {resumeError && (
               <p className="text-xs font-semibold text-[#D8452F] mb-4">{resumeError}</p>
             )}
