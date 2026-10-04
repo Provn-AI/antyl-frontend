@@ -2,10 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Building2, CheckCircle2, Pencil, X } from "lucide-react";
+import {
+  AlertCircle,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  Gift,
+  Globe,
+  Info,
+  MapPin,
+  Pencil,
+  Rocket,
+  Target,
+  Users,
+  Wifi,
+  X,
+} from "lucide-react";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+const GRADIENT = "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)";
+const CURRENT_YEAR = new Date().getFullYear();
 
 interface RecruiterProfile {
   company_name: string;
@@ -68,26 +86,156 @@ const fundingStageLabels: Record<string, string> = {
 };
 
 const inputClass =
-  "w-full border border-gray-200 rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors";
+  "w-full border border-gray-200 bg-white rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] focus:ring-4 focus:ring-orange-100 transition";
 
 const textareaClass =
-  "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[120px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
+  "w-full border border-gray-200 bg-white rounded-2xl px-5 py-3 min-h-[120px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] focus:ring-4 focus:ring-orange-100 transition resize-none";
 
 const MAX_LOGO_SIZE = 0.2 * 1024 * 1024; // 200kb
 const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const URL_REGEX = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 
-function Field({ label, value }: { label: string; value: string }) {
+// lucide-react no longer ships brand icons, so LinkedIn's logo is inlined.
+function LinkedInIcon({ className }: { className?: string }) {
   return (
-    <div>
-      <p className="text-sm font-semibold text-gray-900 mb-1">{label}</p>
-      <p className="text-gray-600">
-        {value ? value : <span className="text-gray-300">Not set</span>}
-      </p>
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+  );
+}
+
+// ─── Small building blocks ────────────────────────────────────────────
+
+function SectionCard({
+  title,
+  subtitle,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-7">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 text-[#F2754A]" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-bold text-gray-900 text-sm">{title}</h2>
+          {subtitle && <p className="text-xs text-gray-400 truncate">{subtitle}</p>}
+        </div>
+      </div>
+      {children}
     </div>
   );
 }
+
+// Long-form text block (vision, about, perks) in view mode.
+function TextBlock({ value, emptyText }: { value: string; emptyText: string }) {
+  return value ? (
+    <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{value}</p>
+  ) : (
+    <p className="text-sm text-gray-300">{emptyText}</p>
+  );
+}
+
+// Label + value row with an icon tile. Renders as a link when href is given.
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  href?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="w-9 h-9 rounded-xl bg-[#FAF6F0] flex items-center justify-center flex-shrink-0">
+        <Icon className="w-4 h-4 text-gray-400" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
+        {value ? (
+          href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-[#F2754A] hover:underline block truncate"
+            >
+              {value}
+            </a>
+          ) : (
+            <p className="text-sm font-semibold text-gray-800 truncate">{value}</p>
+          )
+        ) : (
+          <p className="text-sm text-gray-300">Not set</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  required,
+  error,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-bold text-gray-900 mb-2">
+        {label} {required && <span className="text-[#F2754A]">*</span>}
+      </label>
+      {children}
+      {error && <p className="text-xs text-red-500 mt-1.5 ml-1">{error}</p>}
+    </div>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-orange-50 text-[#F2754A]">
+      {children}
+    </span>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 sm:px-6 py-8 sm:py-10">
+      <div className="w-full max-w-5xl mx-auto animate-pulse">
+        <div className="h-40 bg-white rounded-[24px] border border-gray-100 mb-6" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="h-48 bg-white rounded-[24px] border border-gray-100" />
+            <div className="h-48 bg-white rounded-[24px] border border-gray-100" />
+          </div>
+          <div className="h-80 bg-white rounded-[24px] border border-gray-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────
 
 export default function RecruiterProfilePage() {
   const router = useRouter();
@@ -112,7 +260,7 @@ export default function RecruiterProfilePage() {
     form.linkedin_url.trim() === "" || URL_REGEX.test(form.linkedin_url.trim());
   const foundedYearValid =
     form.founded_year.trim() === "" ||
-    (Number(form.founded_year) >= 1900 && Number(form.founded_year) <= 2026);
+    (Number(form.founded_year) >= 1900 && Number(form.founded_year) <= CURRENT_YEAR);
 
   const isValid =
     form.company_name.trim() !== "" &&
@@ -169,6 +317,7 @@ export default function RecruiterProfilePage() {
     setForm(savedProfile);
     setError("");
     setIsEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function handleCancelEdit() {
@@ -284,6 +433,7 @@ export default function RecruiterProfilePage() {
       setSavedProfile(merged);
       setIsEditing(false);
       setSaved(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       setTimeout(() => setSaved(false), 2500);
     } catch (err) {
       console.error(err);
@@ -298,350 +448,316 @@ export default function RecruiterProfilePage() {
   }
 
   if (initialLoading) {
-    return (
-      <div className="min-h-screen w-full bg-[#FAF6F0] flex items-center justify-center">
-        <p className="text-gray-400">Loading profile...</p>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
+  const p = savedProfile;
+  const companySizeLabel = p.company_size
+    ? p.company_size === "500+"
+      ? "500+ employees"
+      : `${p.company_size} employees`
+    : "";
+  const remoteLabel = p.remote_policy
+    ? remotePolicyLabels[p.remote_policy] ?? p.remote_policy
+    : "";
+  const fundingLabel = p.funding_stage
+    ? fundingStageLabels[p.funding_stage] ?? p.funding_stage
+    : "";
+
   return (
-    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-12">
-      <div className="w-full max-w-2xl mx-auto">
-        <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-10">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center relative overflow-hidden cursor-pointer group flex-shrink-0"
-                onClick={handleLogoClick}
-                title="Change company logo"
-              >
-                {savedProfile.logo_url ? (
-                  <img
-                    src={savedProfile.logo_url}
-                    alt="Company logo"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Building2 className="w-4.5 h-4.5 text-[#F2754A]" />
-                )}
-
-                {logoUploading && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  </div>
-                )}
-
-                {!logoUploading && (
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <Pencil className="w-3.5 h-3.5 text-white" />
-                  </div>
-                )}
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleLogoChange}
-                  className="hidden"
+    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 sm:px-6 py-8 sm:py-10">
+      <div className="w-full max-w-5xl mx-auto">
+        {/* Hero card */}
+        <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/25 shadow-sm p-6 sm:p-8 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            {/* Logo */}
+            <div
+              className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-[22px] bg-orange-50 flex items-center justify-center overflow-hidden cursor-pointer group flex-shrink-0"
+              onClick={handleLogoClick}
+              title="Change company logo"
+            >
+              {p.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={p.logo_url}
+                  alt="Company logo"
+                  className="w-full h-full object-cover"
                 />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                {savedProfile.company_name
-                  ? `${savedProfile.company_name} Profile`
-                  : "Company Profile"}
-              </h2>
+              ) : (
+                <Building2 className="w-8 h-8 text-[#F2754A]" />
+              )}
+
+              {logoUploading ? (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                </div>
+              ) : (
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <Pencil className="w-4 h-4 text-white" />
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleLogoChange}
+                className="hidden"
+              />
+            </div>
+
+            {/* Title + chips */}
+            <div className="min-w-0 flex-1">
+              <h1
+                className="text-2xl sm:text-3xl font-bold text-gray-900 truncate"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              >
+                {p.company_name || "Company Profile"}
+              </h1>
+              <p className="text-sm text-gray-400 mt-1">
+                {isEditing
+                  ? "Update your company details"
+                  : "Your company details, visible to developers"}
+              </p>
+              {!isEditing && (p.industry || companySizeLabel || fundingLabel || remoteLabel) && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {p.industry && <Chip>{p.industry}</Chip>}
+                  {companySizeLabel && <Chip>{companySizeLabel}</Chip>}
+                  {fundingLabel && <Chip>{fundingLabel}</Chip>}
+                  {remoteLabel && <Chip>{remoteLabel}</Chip>}
+                </div>
+              )}
+              {logoError && (
+                <p className="text-xs font-semibold text-red-500 mt-2">{logoError}</p>
+              )}
             </div>
 
             {!isEditing && (
               <button
                 type="button"
                 onClick={handleStartEdit}
-                aria-label="Edit profile"
-                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[#F2754A] hover:border-[#F2754A] transition-colors"
+                className="flex items-center justify-center gap-2 text-sm font-bold px-5 py-3 sm:py-2.5 rounded-full text-white w-full sm:w-auto shadow-md shadow-orange-100 transition hover:-translate-y-0.5 hover:shadow-lg flex-shrink-0"
+                style={{ background: GRADIENT }}
               >
                 <Pencil className="w-4 h-4" />
+                Edit profile
               </button>
             )}
           </div>
-          <p className="text-gray-400 mb-1 ml-[52px]">
-            {isEditing
-              ? "Update your company details"
-              : "Your company details, visible to developers"}
-          </p>
-          {logoError && (
-            <p className="text-xs font-semibold text-red-500 mb-6 ml-[52px]">{logoError}</p>
-          )}
-          {!logoError && <div className="mb-8" />}
+        </div>
 
-          {error && (
-            <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 rounded-2xl px-5 py-3 mb-6">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
+        {/* Banners */}
+        {error && (
+          <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 rounded-2xl px-5 py-3 mb-6">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+        {saved && !isEditing && (
+          <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-2xl px-5 py-3 mb-6">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+            <span>Profile saved.</span>
+          </div>
+        )}
+
+        {!isEditing ? (
+          /* ── View mode ─────────────────────────────────────────── */
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <SectionCard title="About company" subtitle="Who you are and what makes you unique" icon={Info}>
+                <TextBlock value={p.about} emptyText="Add a short description so developers know who you are." />
+              </SectionCard>
+
+              <SectionCard title="Company vision" subtitle="What you're building towards" icon={Target}>
+                <TextBlock value={p.company_vision} emptyText="Share your mission and where the company is headed." />
+              </SectionCard>
+
+              <SectionCard title="Perks & benefits" subtitle="Why developers will want to join" icon={Gift}>
+                <TextBlock value={p.perks_benefits} emptyText="List the perks that set you apart." />
+              </SectionCard>
             </div>
-          )}
 
-          {saved && !isEditing && (
-            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-2xl px-5 py-3 mb-6">
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-              <span>Profile saved.</span>
-            </div>
-          )}
-
-          {!isEditing ? (
-            <div className="space-y-5">
-              <Field label="Company Name" value={savedProfile.company_name} />
-              <Field label="Industry" value={savedProfile.industry} />
-              <Field
-                label="Company Size"
-                value={
-                  savedProfile.company_size
-                    ? `${savedProfile.company_size} Employees`
-                    : ""
-                }
-              />
-              <Field label="Website" value={savedProfile.website} />
-              <Field label="Location" value={savedProfile.location} />
-              <Field
-                label="Remote Policy"
-                value={
-                  savedProfile.remote_policy
-                    ? remotePolicyLabels[savedProfile.remote_policy] ??
-                      savedProfile.remote_policy
-                    : ""
-                }
-              />
-              <Field label="Company Vision" value={savedProfile.company_vision} />
-              <Field label="Founded Year" value={savedProfile.founded_year} />
-              <Field
-                label="Funding Stage"
-                value={
-                  savedProfile.funding_stage
-                    ? fundingStageLabels[savedProfile.funding_stage] ??
-                      savedProfile.funding_stage
-                    : ""
-                }
-              />
-              <Field label="LinkedIn" value={savedProfile.linkedin_url} />
-              <Field label="Perks & Benefits" value={savedProfile.perks_benefits} />
-              <Field label="About Company" value={savedProfile.about} />
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Company Name <span className="text-[#F2754A]">*</span>
-                </label>
-                <input
-                  className={inputClass}
-                  value={form.company_name}
-                  onChange={(e) =>
-                    setForm({ ...form, company_name: e.target.value })
-                  }
-                  placeholder="Acme Inc."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Industry <span className="text-[#F2754A]">*</span>
-                </label>
-                <input
-                  className={inputClass}
-                  value={form.industry}
-                  onChange={(e) =>
-                    setForm({ ...form, industry: e.target.value })
-                  }
-                  placeholder="Fintech"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Company Size <span className="text-[#F2754A]">*</span>
-                </label>
-                <select
-                  className={inputClass}
-                  value={form.company_size}
-                  onChange={(e) =>
-                    setForm({ ...form, company_size: e.target.value })
-                  }
-                >
-                  <option value="">Select</option>
-                  <option value="1-10">1-10 Employees</option>
-                  <option value="11-50">11-50 Employees</option>
-                  <option value="51-200">51-200 Employees</option>
-                  <option value="201-500">201-500 Employees</option>
-                  <option value="500+">500+</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Website
-                </label>
-                <input
-                  className={inputClass}
-                  value={form.website}
-                  onChange={(e) =>
-                    setForm({ ...form, website: e.target.value })
-                  }
-                  placeholder="https://company.com"
-                />
-                {!websiteValid && (
-                  <p className="text-xs text-red-500 mt-1.5 ml-1">
-                    Enter a valid URL starting with http:// or https://
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Location
-                </label>
-                <input
-                  className={inputClass}
-                  value={form.location}
-                  onChange={(e) =>
-                    setForm({ ...form, location: e.target.value })
-                  }
-                  placeholder="Mumbai, India"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Remote Policy
-                </label>
-                <select
-                  className={inputClass}
-                  value={form.remote_policy}
-                  onChange={(e) =>
-                    setForm({ ...form, remote_policy: e.target.value })
-                  }
-                >
-                  <option value="">Select</option>
-                  <option value="onsite">Onsite</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="remote">Remote</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Company Vision
-                </label>
-                <textarea
-                  className={textareaClass}
-                  value={form.company_vision}
-                  onChange={(e) =>
-                    setForm({ ...form, company_vision: e.target.value })
-                  }
-                  placeholder="What is your company building towards? What's the mission?"
-                  maxLength={2000}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Founded Year
-                  </label>
-                  <input
-                    type="number"
-                    className={inputClass}
-                    value={form.founded_year}
-                    onChange={(e) =>
-                      setForm({ ...form, founded_year: e.target.value })
-                    }
-                    placeholder="2021"
-                    min={1900}
-                    max={2026}
+            <div className="h-fit">
+              <SectionCard title="Company details" icon={Building2}>
+                <div className="space-y-4">
+                  <InfoRow icon={Users} label="Company size" value={companySizeLabel} />
+                  <InfoRow icon={CalendarDays} label="Founded" value={p.founded_year} />
+                  <InfoRow icon={Rocket} label="Funding stage" value={fundingLabel} />
+                  <InfoRow icon={MapPin} label="Location" value={p.location} />
+                  <InfoRow icon={Wifi} label="Remote policy" value={remoteLabel} />
+                  <InfoRow icon={Globe} label="Website" value={p.website} href={p.website || undefined} />
+                  <InfoRow
+                    icon={LinkedInIcon}
+                    label="LinkedIn"
+                    value={p.linkedin_url}
+                    href={p.linkedin_url || undefined}
                   />
-                  {!foundedYearValid && (
-                    <p className="text-xs text-red-500 mt-1.5 ml-1">
-                      Enter a valid year
-                    </p>
-                  )}
                 </div>
+              </SectionCard>
+            </div>
+          </div>
+        ) : (
+          /* ── Edit mode ─────────────────────────────────────────── */
+          <div className="space-y-6">
+            <SectionCard title="Basics" subtitle="The essentials developers see first" icon={Building2}>
+              <div className="space-y-5">
+                <FormField label="Company Name" required>
+                  <input
+                    className={inputClass}
+                    value={form.company_name}
+                    onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+                    placeholder="Acme Inc."
+                  />
+                </FormField>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Funding Stage
-                  </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <FormField label="Industry" required>
+                    <input
+                      className={inputClass}
+                      value={form.industry}
+                      onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                      placeholder="Fintech"
+                    />
+                  </FormField>
+
+                  <FormField label="Company Size" required>
+                    <select
+                      className={inputClass}
+                      value={form.company_size}
+                      onChange={(e) => setForm({ ...form, company_size: e.target.value })}
+                    >
+                      <option value="">Select</option>
+                      <option value="1-10">1-10 Employees</option>
+                      <option value="11-50">11-50 Employees</option>
+                      <option value="51-200">51-200 Employees</option>
+                      <option value="201-500">201-500 Employees</option>
+                      <option value="500+">500+</option>
+                    </select>
+                  </FormField>
+
+                  <FormField label="Founded Year" error={!foundedYearValid ? "Enter a valid year" : undefined}>
+                    <input
+                      type="number"
+                      className={inputClass}
+                      value={form.founded_year}
+                      onChange={(e) => setForm({ ...form, founded_year: e.target.value })}
+                      placeholder="2021"
+                      min={1900}
+                      max={CURRENT_YEAR}
+                    />
+                  </FormField>
+
+                  <FormField label="Funding Stage">
+                    <select
+                      className={inputClass}
+                      value={form.funding_stage}
+                      onChange={(e) => setForm({ ...form, funding_stage: e.target.value })}
+                    >
+                      <option value="">Select</option>
+                      <option value="bootstrapped">Bootstrapped</option>
+                      <option value="pre-seed">Pre-seed</option>
+                      <option value="seed">Seed</option>
+                      <option value="series-a">Series A</option>
+                      <option value="series-b-plus">Series B+</option>
+                      <option value="public">Public</option>
+                    </select>
+                  </FormField>
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Location & links" subtitle="Where you work and where to find you" icon={MapPin}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FormField label="Location">
+                  <input
+                    className={inputClass}
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                    placeholder="Bangalore, India"
+                  />
+                </FormField>
+
+                <FormField label="Remote Policy">
                   <select
                     className={inputClass}
-                    value={form.funding_stage}
-                    onChange={(e) =>
-                      setForm({ ...form, funding_stage: e.target.value })
-                    }
+                    value={form.remote_policy}
+                    onChange={(e) => setForm({ ...form, remote_policy: e.target.value })}
                   >
                     <option value="">Select</option>
-                    <option value="bootstrapped">Bootstrapped</option>
-                    <option value="pre-seed">Pre-seed</option>
-                    <option value="seed">Seed</option>
-                    <option value="series-a">Series A</option>
-                    <option value="series-b-plus">Series B+</option>
-                    <option value="public">Public</option>
+                    <option value="onsite">Onsite</option>
+                    <option value="hybrid">Hybrid</option>
+                    <option value="remote">Remote</option>
                   </select>
-                </div>
-              </div>
+                </FormField>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  LinkedIn URL
-                </label>
-                <input
-                  className={inputClass}
-                  value={form.linkedin_url}
-                  onChange={(e) =>
-                    setForm({ ...form, linkedin_url: e.target.value })
-                  }
-                  placeholder="https://linkedin.com/company/acme"
-                />
-                {!linkedinValid && (
-                  <p className="text-xs text-red-500 mt-1.5 ml-1">
-                    Enter a valid URL starting with http:// or https://
-                  </p>
-                )}
-              </div>
+                <FormField
+                  label="Website"
+                  error={!websiteValid ? "Enter a valid URL starting with http:// or https://" : undefined}
+                >
+                  <input
+                    className={inputClass}
+                    value={form.website}
+                    onChange={(e) => setForm({ ...form, website: e.target.value })}
+                    placeholder="https://company.com"
+                  />
+                </FormField>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Perks & Benefits
-                </label>
-                <textarea
-                  className={textareaClass}
-                  value={form.perks_benefits}
-                  onChange={(e) =>
-                    setForm({ ...form, perks_benefits: e.target.value })
-                  }
-                  placeholder="Health insurance, equity, remote stipend, learning budget..."
-                  maxLength={2000}
-                />
+                <FormField
+                  label="LinkedIn URL"
+                  error={!linkedinValid ? "Enter a valid URL starting with http:// or https://" : undefined}
+                >
+                  <input
+                    className={inputClass}
+                    value={form.linkedin_url}
+                    onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })}
+                    placeholder="https://linkedin.com/company/acme"
+                  />
+                </FormField>
               </div>
+            </SectionCard>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  About Company
-                </label>
-                <textarea
-                  className={textareaClass}
-                  value={form.about}
-                  onChange={(e) =>
-                    setForm({ ...form, about: e.target.value })
-                  }
-                  placeholder="Tell developers about your company, culture, mission and what makes it unique..."
-                  maxLength={2000}
-                />
+            <SectionCard title="Your story" subtitle="Help developers get excited about joining" icon={Info}>
+              <div className="space-y-5">
+                <FormField label="About Company">
+                  <textarea
+                    className={textareaClass}
+                    value={form.about}
+                    onChange={(e) => setForm({ ...form, about: e.target.value })}
+                    placeholder="Tell developers about your company, culture, mission and what makes it unique..."
+                    maxLength={2000}
+                  />
+                </FormField>
+
+                <FormField label="Company Vision">
+                  <textarea
+                    className={textareaClass}
+                    value={form.company_vision}
+                    onChange={(e) => setForm({ ...form, company_vision: e.target.value })}
+                    placeholder="What is your company building towards? What's the mission?"
+                    maxLength={2000}
+                  />
+                </FormField>
+
+                <FormField label="Perks & Benefits">
+                  <textarea
+                    className={textareaClass}
+                    value={form.perks_benefits}
+                    onChange={(e) => setForm({ ...form, perks_benefits: e.target.value })}
+                    placeholder="Health insurance, equity, remote stipend, learning budget..."
+                    maxLength={2000}
+                  />
+                </FormField>
               </div>
+            </SectionCard>
 
-              <div className="flex gap-3 mt-2">
+            {/* Action bar */}
+            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6">
+              <div className="flex flex-col-reverse sm:flex-row gap-3">
                 <button
                   type="button"
                   onClick={handleCancelEdit}
                   disabled={saving}
-                  className="flex-1 rounded-full py-3.5 font-semibold text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 rounded-full py-3.5 text-sm font-semibold text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <X className="w-4 h-4" />
                   Cancel
@@ -650,24 +766,21 @@ export default function RecruiterProfilePage() {
                   type="button"
                   onClick={handleSave}
                   disabled={!isValid || saving}
-                  className="flex-1 rounded-full py-3.5 font-semibold text-white transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-                  }}
+                  className="flex-1 rounded-full py-3.5 text-sm font-bold text-white shadow-md shadow-orange-100 transition hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md"
+                  style={{ background: GRADIENT }}
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
               </div>
 
               {!isValid && (
-                <p className="text-xs text-gray-400 text-center">
+                <p className="text-xs text-gray-400 text-center mt-3">
                   Company name, industry, and company size are required.
                 </p>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

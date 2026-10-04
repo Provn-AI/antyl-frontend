@@ -13,6 +13,8 @@ import {
   Clock3,
   CalendarClock,
   X,
+  ChevronRight,
+  Video,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -25,7 +27,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
 } from "recharts";
 import { getMatches } from "@/services/match.service";
 import { getApplicationsToday, TodayApplication } from "@/services/application.service";
@@ -64,20 +65,89 @@ interface Match {
 // Brand-ish palette for chart slices/bars.
 const CHART_COLORS = ["#F2754A", "#F8B36B", "#34D399", "#60A5FA", "#A78BFA", "#F472B6"];
 
+const GRADIENT = "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)";
+
+const tooltipStyle = {
+  borderRadius: 12,
+  border: "1px solid #F1F1EF",
+  fontSize: 12,
+  boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+};
+
+// First visible letter or digit of each of up to two words, so initials never
+// render blank for names with stray spaces or symbols.
+function initialsOf(name?: string) {
+  const letters = (name ?? "")
+    .split(/\s+/)
+    .map((w) => w.match(/[\p{L}\p{N}]/u)?.[0] ?? "")
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return letters || "?";
+}
+
+function daysLeftFor(expiresAt: string) {
+  return Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tone = "orange",
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: number | string;
+  hint?: string;
+  tone?: "orange" | "green";
+}) {
+  return (
+    <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/25 shadow-sm p-5 sm:p-6 transition hover:border-[#F2754A]/60 hover:shadow-md hover:-translate-y-0.5">
+      <div
+        className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
+          tone === "green" ? "bg-emerald-50" : "bg-orange-50"
+        }`}
+      >
+        <Icon
+          className={`w-[18px] h-[18px] ${tone === "green" ? "text-emerald-600" : "text-[#F2754A]"}`}
+        />
+      </div>
+      <div
+        className="text-3xl sm:text-4xl font-bold text-gray-900 tabular-nums leading-none"
+        style={{ fontFamily: "var(--font-fraunces, serif)" }}
+      >
+        {value}
+      </div>
+      <p className="text-sm font-semibold text-gray-500 mt-2">{label}</p>
+      {hint && <p className="text-xs text-gray-400 mt-0.5 truncate">{hint}</p>}
+    </div>
+  );
+}
+
 function ChartCard({
   title,
+  subtitle,
   icon: Icon,
   children,
 }: {
   title: string;
+  subtitle?: string;
   icon: React.ElementType;
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8">
-      <div className="flex items-center gap-2.5 mb-5">
-        <Icon className="w-5 h-5 text-[#F2754A]" />
-        <h2 className="font-bold text-gray-900 text-lg">{title}</h2>
+    <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-7 h-full">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 text-[#F2754A]" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-bold text-gray-900 text-sm">{title}</h2>
+          {subtitle && <p className="text-xs text-gray-400 truncate">{subtitle}</p>}
+        </div>
       </div>
       {children}
     </div>
@@ -89,21 +159,26 @@ function ReminderRow({
   iconClassName,
   iconBg,
   title,
+  count,
   children,
 }: {
   icon: React.ElementType;
   iconClassName: string;
   iconBg: string;
   title: string;
+  count: number;
   children: React.ReactNode;
 }) {
   return (
     <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
-      <div className="flex items-center gap-3 flex-shrink-0 sm:w-52">
+      <div className="flex items-center gap-3 flex-shrink-0 sm:w-60">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
           <Icon className={`w-[18px] h-[18px] ${iconClassName}`} />
         </div>
         <span className="font-bold text-gray-900 text-sm">{title}</span>
+        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+          {count}
+        </span>
       </div>
       <div className="flex items-center gap-2 overflow-x-auto flex-1 pb-0.5 -mx-1 px-1">
         {children}
@@ -123,8 +198,18 @@ function ExpiryModal({
   onClose: () => void;
   onEdit: (jobId: string) => void;
 }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
       onClick={onClose}
@@ -150,6 +235,7 @@ function ExpiryModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close"
             className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
           >
             <X className="w-5 h-5" />
@@ -158,20 +244,20 @@ function ExpiryModal({
 
         <div className="p-6 space-y-2">
           {jobs.map((job) => {
-            const daysLeft = Math.ceil(
-              (new Date(job.expires_at!).getTime() - Date.now()) /
-                (1000 * 60 * 60 * 24)
-            );
+            const daysLeft = daysLeftFor(job.expires_at!);
             return (
               <button
                 key={job.id}
                 type="button"
                 onClick={() => onEdit(job.id)}
-                className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 border border-gray-100 hover:border-amber-200 hover:bg-amber-50/50 transition-colors text-left"
+                className="group w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 border border-gray-100 hover:border-amber-200 hover:bg-amber-50/50 transition-colors text-left"
               >
                 <span className="font-semibold text-gray-900 truncate">{job.title}</span>
-                <span className="text-xs font-black px-2 py-1 rounded-full bg-amber-50 text-amber-600 flex-shrink-0">
-                  {daysLeft <= 0 ? "Today" : `${daysLeft}d left`}
+                <span className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className="text-xs font-black px-2 py-1 rounded-full bg-amber-50 text-amber-600">
+                    {daysLeft <= 0 ? "Today" : `${daysLeft}d left`}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-amber-500 transition-colors" />
                 </span>
               </button>
             );
@@ -187,6 +273,23 @@ function ExpiryModal({
             Got it
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-36 bg-white rounded-[24px] border border-gray-100" />
+        ))}
+      </div>
+      <div className="h-20 bg-white rounded-[20px] border border-gray-100 mb-6" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 h-[380px] bg-white rounded-[24px] border border-gray-100" />
+        <div className="h-[380px] bg-white rounded-[24px] border border-gray-100" />
       </div>
     </div>
   );
@@ -232,6 +335,7 @@ export default function RecruiterDashboard() {
         // interview_scheduled_at silently read as undefined here even
         // though Pipeline showed the edit correctly. Normalize the same
         // way Pipeline does so both pages agree on the same data.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const normalizedMatches: Match[] = (matchesData || []).map((m: any) => ({
           match_id: m.match_id ?? m.matchId ?? m.id,
           name: m.name ?? m.candidate_name ?? m.candidateName ?? "",
@@ -299,7 +403,7 @@ export default function RecruiterDashboard() {
   }
 
   // Interviews scheduled from right now through the next
-  // INTERVIEW_LOOKAHEAD_DAYS days (was previously "today only").
+  // INTERVIEW_LOOKAHEAD_DAYS days.
   const upcomingInterviews = useMemo(() => {
     const start = new Date();
     const end = new Date();
@@ -378,21 +482,30 @@ export default function RecruiterDashboard() {
     }));
   }, [matches]);
 
+  const avgPerJob = jobs.length ? Math.round((totalApplicants / jobs.length) * 10) / 10 : 0;
+
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 sm:px-6 py-8 sm:py-10">
       <div className="w-full max-w-5xl mx-auto">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            Dashboard
-          </h1>
+          <div>
+            <h1
+              className="text-2xl sm:text-3xl font-bold text-gray-900"
+              style={{ fontFamily: "var(--font-fraunces, serif)" }}
+            >
+              Dashboard
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">
+              Your hiring at a glance: jobs, applicants and what needs attention.
+            </p>
+          </div>
 
           <button
             type="button"
             onClick={() => router.push("/jobs/new")}
-            className="flex items-center justify-center gap-2 text-sm font-semibold px-5 py-3 sm:py-2.5 rounded-full text-white w-full sm:w-auto"
-            style={{
-              background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-            }}
+            className="flex items-center justify-center gap-2 text-sm font-bold px-5 py-3 sm:py-2.5 rounded-full text-white w-full sm:w-auto shadow-md shadow-orange-100 transition hover:-translate-y-0.5 hover:shadow-lg"
+            style={{ background: GRADIENT }}
           >
             <PlusCircle className="w-4 h-4" />
             New Job
@@ -400,19 +513,11 @@ export default function RecruiterDashboard() {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm py-20 text-center">
-            <div
-              className="w-8 h-8 rounded-full border-[3px] border-gray-200 mx-auto animate-spin"
-              style={{ borderTopColor: "#F2754A" }}
-            />
-            <p className="text-gray-400 text-sm mt-4">
-              Loading your dashboard...
-            </p>
-          </div>
+          <DashboardSkeleton />
         ) : error ? (
           <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm px-8 py-16 text-center">
-            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
-              <AlertCircle className="w-6 h-6 text-red-500" />
+            <div className="w-14 h-14 rounded-full bg-[#E0533D]/10 flex items-center justify-center mx-auto mb-5">
+              <AlertCircle className="w-6 h-6 text-[#E0533D]" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">
               Something went wrong
@@ -421,10 +526,8 @@ export default function RecruiterDashboard() {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="px-6 py-3 rounded-full font-semibold text-white"
-              style={{
-                background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-              }}
+              className="px-6 py-3 rounded-full font-bold text-sm text-white shadow-md shadow-orange-100"
+              style={{ background: GRADIENT }}
             >
               Try again
             </button>
@@ -434,154 +537,136 @@ export default function RecruiterDashboard() {
             {/* Stat cards — outlined in brand orange to stand out from the
                 rest of the page's neutral bordered cards. */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                    <Briefcase className="w-[18px] h-[18px] text-[#F2754A]" />
-                  </div>
-                  <span className="text-sm text-gray-400">Total Jobs</span>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {jobs.length}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                    <TrendingUp className="w-[18px] h-[18px] text-[#F2754A]" />
-                  </div>
-                  <span className="text-sm text-gray-400">Active Jobs</span>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {activeJobs}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                    <Users className="w-[18px] h-[18px] text-[#F2754A]" />
-                  </div>
-                  <span className="text-sm text-gray-400">Applicants</span>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {totalApplicants}
-                </div>
-              </div>
-
-              <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/30 shadow-sm p-5 sm:p-6 transition-colors hover:border-[#F2754A]/60">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                    <PartyPopper className="w-[18px] h-[18px] text-emerald-600" />
-                  </div>
-                  <span className="text-sm text-gray-400">Hires</span>
-                </div>
-                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  {hiredCount}
-                </div>
-              </div>
+              <StatCard
+                icon={Briefcase}
+                label="Total jobs"
+                value={jobs.length}
+                hint={`${jobs.length - activeJobs} closed`}
+              />
+              <StatCard
+                icon={TrendingUp}
+                label="Active jobs"
+                value={activeJobs}
+                hint={jobs.length ? `${Math.round((activeJobs / jobs.length) * 100)}% of all jobs` : undefined}
+              />
+              <StatCard
+                icon={Users}
+                label="Applicants"
+                value={totalApplicants}
+                hint={jobs.length ? `About ${avgPerJob} per job` : undefined}
+              />
+              <StatCard
+                icon={PartyPopper}
+                label="Hires"
+                value={hiredCount}
+                hint={`${matches.length} candidate${matches.length === 1 ? "" : "s"} in pipeline`}
+                tone="green"
+              />
             </div>
 
             {/* Reminder rows — expiring jobs, today's applications, upcoming
                 interviews. Each is a full-width row so the layout reads
                 the same whether one, two, or all three have data. */}
             {hasReminders && (
-              <div className="flex flex-col gap-3 mb-6">
-                {expiringJobs.length > 0 && (
-                  <ReminderRow
-                    title="Jobs expiring soon"
-                    icon={Clock3}
-                    iconClassName="text-amber-600"
-                    iconBg="bg-amber-50"
-                  >
-                    {expiringJobs.map((job) => {
-                      const daysLeft = Math.ceil(
-                        (new Date(job.expires_at!).getTime() - Date.now()) /
-                          (1000 * 60 * 60 * 24)
-                      );
-                      return (
-                        <button
-                          key={job.id}
-                          type="button"
-                          onClick={() => router.push(`/jobs/${job.id}/edit`)}
-                          className="flex-shrink-0 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 transition-colors whitespace-nowrap"
-                        >
-                          <span className="text-xs font-semibold text-amber-900">
-                            {job.title}
-                          </span>
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-amber-600">
-                            {daysLeft <= 0 ? "Today" : `${daysLeft}d`}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </ReminderRow>
-                )}
-
-                {appsToday.length > 0 && (
-                  <ReminderRow
-                    title="New applications today"
-                    icon={Users}
-                    iconClassName="text-[#F2754A]"
-                    iconBg="bg-orange-50"
-                  >
-                    {appsToday.map((app) => (
-                      <div
-                        key={app.application_id}
-                        className="flex-shrink-0 px-3 py-1.5 rounded-full bg-orange-50 whitespace-nowrap"
-                      >
-                        <span className="text-xs font-semibold text-orange-900">
-                          {app.developer_name || "Candidate"}
-                        </span>
-                        <span className="text-xs text-orange-400"> · {app.job_title}</span>
-                      </div>
-                    ))}
-                  </ReminderRow>
-                )}
-
-                {upcomingInterviews.length > 0 && (
-                  <ReminderRow
-                    title="Upcoming interviews"
-                    icon={CalendarClock}
-                    iconClassName="text-violet-600"
-                    iconBg="bg-violet-50"
-                  >
-                    {upcomingInterviews.map((m) => (
-                      <div key={m.match_id} className="flex-shrink-0 flex items-center gap-1.5">
-                        <div className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-violet-50 whitespace-nowrap">
-                          <span className="text-xs font-semibold text-violet-900">
-                            {m.name}
-                          </span>
-                          <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-violet-600">
-                            {formatInterviewChip(m.interview_scheduled_at!)}
-                          </span>
-                        </div>
-                        {m.meeting_link && (
-                          
-                           <a href={m.meeting_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] font-bold text-violet-600 hover:underline whitespace-nowrap"
+              <div className="mb-6">
+                <h2 className="text-sm font-bold text-gray-900 mb-3 px-1">Needs your attention</h2>
+                <div className="flex flex-col gap-3">
+                  {expiringJobs.length > 0 && (
+                    <ReminderRow
+                      title="Jobs expiring soon"
+                      count={expiringJobs.length}
+                      icon={Clock3}
+                      iconClassName="text-amber-600"
+                      iconBg="bg-amber-50"
+                    >
+                      {expiringJobs.map((job) => {
+                        const daysLeft = daysLeftFor(job.expires_at!);
+                        return (
+                          <button
+                            key={job.id}
+                            type="button"
+                            onClick={() => router.push(`/jobs/${job.id}/edit`)}
+                            className="flex-shrink-0 flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 transition-colors whitespace-nowrap"
                           >
-                            Join
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </ReminderRow>
-                )}
+                            <span className="text-xs font-semibold text-amber-900">
+                              {job.title}
+                            </span>
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-amber-600">
+                              {daysLeft <= 0 ? "Today" : `${daysLeft}d`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </ReminderRow>
+                  )}
+
+                  {appsToday.length > 0 && (
+                    <ReminderRow
+                      title="New applications today"
+                      count={appsToday.length}
+                      icon={Users}
+                      iconClassName="text-[#F2754A]"
+                      iconBg="bg-orange-50"
+                    >
+                      {appsToday.map((app) => (
+                        <div
+                          key={app.application_id}
+                          className="flex-shrink-0 px-3 py-1.5 rounded-full bg-orange-50 whitespace-nowrap"
+                        >
+                          <span className="text-xs font-semibold text-orange-900">
+                            {app.developer_name || "Candidate"}
+                          </span>
+                          <span className="text-xs text-orange-400"> · {app.job_title}</span>
+                        </div>
+                      ))}
+                    </ReminderRow>
+                  )}
+
+                  {upcomingInterviews.length > 0 && (
+                    <ReminderRow
+                      title="Upcoming interviews"
+                      count={upcomingInterviews.length}
+                      icon={CalendarClock}
+                      iconClassName="text-violet-600"
+                      iconBg="bg-violet-50"
+                    >
+                      {upcomingInterviews.map((m) => (
+                        <div key={m.match_id} className="flex-shrink-0 flex items-center gap-1.5">
+                          <div className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full bg-violet-50 whitespace-nowrap">
+                            <span className="text-xs font-semibold text-violet-900">
+                              {m.name}
+                            </span>
+                            <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-white text-violet-600">
+                              {formatInterviewChip(m.interview_scheduled_at!)}
+                            </span>
+                          </div>
+                          {m.meeting_link && (
+                            <a
+                              href={m.meeting_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[11px] font-bold text-white bg-violet-500 hover:bg-violet-600 rounded-full px-2.5 py-1.5 whitespace-nowrap transition-colors"
+                            >
+                              <Video className="w-3 h-3" />
+                              Join
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </ReminderRow>
+                  )}
+                </div>
               </div>
             )}
 
             {/* Recently Hired */}
             {hiredCount > 0 && (
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-6">
-                <div className="flex items-center gap-2.5 mb-5">
-                  <PartyPopper className="w-5 h-5 text-emerald-600" />
-                  <h2 className="font-bold text-gray-900 text-lg">
-                    Recently Hired
-                  </h2>
+              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-7 mb-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                    <PartyPopper className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <h2 className="font-bold text-gray-900 text-sm">Recently hired</h2>
                 </div>
                 <div className="space-y-2">
                   {hiredMatches.map((m) => (
@@ -589,21 +674,22 @@ export default function RecruiterDashboard() {
                       key={m.match_id}
                       type="button"
                       onClick={() => router.push("/dashboard/pipeline")}
-                      className="w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-3 hover:bg-emerald-50/60 transition-colors text-left"
+                      className="group w-full flex items-center justify-between gap-4 rounded-2xl px-4 py-3 bg-gray-50/60 hover:bg-emerald-50/60 transition-colors text-left"
                     >
                       <div className="min-w-0 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white font-black text-xs">
-                            {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
-                          </span>
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-black text-xs">{initialsOf(m.name)}</span>
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-gray-900 truncate">{m.name}</p>
                           <p className="text-sm text-gray-400 truncate">{m.job_title}</p>
                         </div>
                       </div>
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 flex-shrink-0">
-                        Hired
+                      <span className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600">
+                          Hired
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 transition-colors" />
                       </span>
                     </button>
                   ))}
@@ -611,7 +697,7 @@ export default function RecruiterDashboard() {
               </div>
             )}
 
-            {/* Charts — replaces the old Recent Activity job list */}
+            {/* Charts */}
             {jobs.length === 0 ? (
               <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 text-center py-16">
                 <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
@@ -627,11 +713,8 @@ export default function RecruiterDashboard() {
                 <button
                   type="button"
                   onClick={() => router.push("/jobs/new")}
-                  className="px-6 py-2.5 rounded-full font-semibold text-white text-sm"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)",
-                  }}
+                  className="px-6 py-2.5 rounded-full font-bold text-white text-sm shadow-md shadow-orange-100"
+                  style={{ background: GRADIENT }}
                 >
                   Post a Job
                 </button>
@@ -640,9 +723,16 @@ export default function RecruiterDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Applicants by job */}
                 <div className="lg:col-span-2">
-                  <ChartCard title="Applicants by Job" icon={BarChart3}>
+                  <ChartCard
+                    title="Applicants by job"
+                    subtitle="Your top jobs by number of applicants"
+                    icon={BarChart3}
+                  >
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={applicantsByJobData} margin={{ top: 4, right: 8, left: -16, bottom: 4 }}>
+                      <BarChart
+                        data={applicantsByJobData}
+                        margin={{ top: 4, right: 8, left: -16, bottom: 4 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1EF" />
                         <XAxis
                           dataKey="name"
@@ -654,10 +744,10 @@ export default function RecruiterDashboard() {
                         />
                         <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#9CA3AF" }} />
                         <Tooltip
-  cursor={{ fill: "rgba(242,117,74,0.06)" }}
-  contentStyle={{ borderRadius: 12, border: "1px solid #F1F1EF", fontSize: 12 }}
-  labelStyle={{ color: "#111827", fontWeight: 600 }}
-/>
+                          cursor={{ fill: "rgba(242,117,74,0.06)" }}
+                          contentStyle={tooltipStyle}
+                          labelStyle={{ color: "#111827", fontWeight: 600 }}
+                        />
                         <Bar dataKey="applicants" radius={[8, 8, 0, 0]}>
                           {applicantsByJobData.map((_, i) => (
                             <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -669,35 +759,63 @@ export default function RecruiterDashboard() {
                 </div>
 
                 {/* Job status split */}
-                <ChartCard title="Job Status" icon={Briefcase}>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={jobStatusData}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={55}
-                        outerRadius={90}
-                        paddingAngle={3}
+                <ChartCard title="Job status" subtitle="Active versus closed" icon={Briefcase}>
+                  <div className="relative">
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie
+                          data={jobStatusData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={62}
+                          outerRadius={92}
+                          paddingAngle={3}
+                          stroke="none"
+                        >
+                          {jobStatusData.map((d, i) => (
+                            <Cell key={i} fill={d.name === "Active" ? "#F2754A" : "#E5E7EB"} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={tooltipStyle} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span
+                        className="text-3xl font-bold text-gray-900 tabular-nums leading-none"
+                        style={{ fontFamily: "var(--font-fraunces, serif)" }}
                       >
-                        {jobStatusData.map((_, i) => (
-                          <Cell key={i} fill={i === 0 ? "#F2754A" : "#E5E7EB"} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #F1F1EF", fontSize: 12 }} />
-                      <Legend
-                        verticalAlign="bottom"
-                        iconType="circle"
-                        wrapperStyle={{ fontSize: 12, color: "#6B7280" }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                        {jobs.length}
+                      </span>
+                      <span className="text-xs font-semibold text-gray-400 mt-1">
+                        job{jobs.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-5 mt-4">
+                    <span className="flex items-center gap-2 text-xs text-gray-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#F2754A]" />
+                      Active
+                      <span className="font-bold text-gray-800 tabular-nums">{activeJobs}</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-gray-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-gray-200" />
+                      Closed
+                      <span className="font-bold text-gray-800 tabular-nums">
+                        {jobs.length - activeJobs}
+                      </span>
+                    </span>
+                  </div>
                 </ChartCard>
 
                 {/* Pipeline funnel */}
                 {pipelineData.length > 0 && (
                   <div className="lg:col-span-3">
-                    <ChartCard title="Candidate Pipeline" icon={Users}>
+                    <ChartCard
+                      title="Candidate pipeline"
+                      subtitle="Where your candidates are right now"
+                      icon={Users}
+                    >
                       <ResponsiveContainer width="100%" height={280}>
                         <BarChart
                           data={pipelineData}
@@ -714,7 +832,7 @@ export default function RecruiterDashboard() {
                           />
                           <Tooltip
                             cursor={{ fill: "rgba(242,117,74,0.06)" }}
-                            contentStyle={{ borderRadius: 12, border: "1px solid #F1F1EF", fontSize: 12 }}
+                            contentStyle={tooltipStyle}
                           />
                           <Bar dataKey="count" radius={[0, 8, 8, 0]} fill="#F8B36B" />
                         </BarChart>

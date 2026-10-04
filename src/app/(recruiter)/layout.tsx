@@ -301,9 +301,11 @@ export default function RecruiterLayout({
         )}
       </header>
 
-      {/* ── Sidebar (desktop) ── */}
+      {/* ── Sidebar (desktop) ──
+          SCROLL FIX 1: md:sticky md:top-0 md:h-screen pins the sidebar to
+          the viewport so it no longer scrolls away with the page. */}
       <aside
-        className={`hidden md:flex relative bg-white border-r border-gray-100 flex-col px-4 py-7 flex-shrink-0 transition-all duration-200 ease-in-out ${
+        className={`hidden md:flex md:sticky md:top-0 md:h-screen relative bg-white border-r border-gray-100 flex-col px-4 py-7 flex-shrink-0 transition-all duration-200 ease-in-out ${
           effectiveCollapsed ? "w-24" : "w-64"
         }`}
       >
@@ -331,7 +333,9 @@ export default function RecruiterLayout({
           </Link>
         </div>
 
-        <nav className="flex flex-col gap-1.5 flex-1">
+        {/* SCROLL FIX 2: min-h-0 overflow-y-auto lets the menu scroll on
+            short screens instead of pushing Take a tour / Log out off-screen. */}
+        <nav className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-y-auto">
           {menu.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -451,8 +455,10 @@ export default function RecruiterLayout({
         </div>
       )}
 
-      {/* Content */}
-      <main className="flex-1 overflow-auto">{children}</main>
+      {/* Content
+          SCROLL FIX 3: removed overflow-auto (the page itself scrolls now)
+          and added min-w-0 so wide content can't stretch the layout. */}
+      <main className="flex-1 min-w-0">{children}</main>
 
       {/* Weekly question popup — checks itself on mount whether there's
           an unanswered question for this recruiter; audience is derived

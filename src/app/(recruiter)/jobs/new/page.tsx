@@ -4,12 +4,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
+  ArrowLeft,
   CheckCircle2,
+  Clock3,
   Eye,
+  FileText,
+  IndianRupee,
   MapPin,
   Briefcase,
+  Sparkles,
+  Target,
   X,
-  IndianRupee,
   Zap,
 } from "lucide-react";
 import { createJob, autofillJob } from "@/services/recruiter-job.service";
@@ -38,6 +43,8 @@ interface JobForm {
 }
 
 const DRAFT_KEY = "antyl_new_job_draft";
+
+const GRADIENT = "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)";
 
 const RUPEES_PER_LPA = 100000;
 
@@ -70,13 +77,13 @@ const EMPTY_FORM: JobForm = {
 };
 
 const inputClass =
-  "w-full border border-gray-200 rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors";
+  "w-full border border-gray-200 bg-white rounded-full px-5 py-3 text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] focus:ring-4 focus:ring-orange-100 transition";
 
 const textareaClass =
-  "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[140px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
+  "w-full border border-gray-200 bg-white rounded-2xl px-5 py-3 min-h-[140px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] focus:ring-4 focus:ring-orange-100 transition resize-none";
 
 const summaryTextareaClass =
-  "w-full border border-gray-200 rounded-2xl px-5 py-3 min-h-[110px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] transition-colors resize-none";
+  "w-full border border-gray-200 bg-white rounded-2xl px-5 py-3 min-h-[110px] text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-[#F2754A] focus:ring-4 focus:ring-orange-100 transition resize-none";
 
 function mapExperienceLevel(years: number): string {
   if (years <= 1) return "entry";
@@ -94,6 +101,204 @@ function toTechStackString(value: unknown): string {
 const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
   e.currentTarget.blur();
 };
+
+// ─── Small building blocks ────────────────────────────────────────────
+
+function SectionCard({
+  title,
+  subtitle,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-7">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 text-[#F2754A]" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="font-bold text-gray-900 text-sm">{title}</h2>
+          {subtitle && <p className="text-xs text-gray-400 truncate">{subtitle}</p>}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="block text-sm font-bold text-gray-900 mb-2">{children}</label>;
+}
+
+function Hint({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs text-gray-400 mt-2 px-1">{children}</p>;
+}
+
+function FieldError({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">{children}</p>;
+}
+
+function PreviewModal({
+  form,
+  techTags,
+  onClose,
+}: {
+  form: JobForm;
+  techTags: string[];
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-[28px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 p-6 pb-0">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+              <Briefcase className="w-5 h-5 text-[#F2754A]" />
+            </div>
+            <div className="min-w-0">
+              <h2
+                className="text-xl sm:text-2xl font-bold text-gray-900"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              >
+                {form.title || "Untitled role"}
+              </h2>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {(form.location || form.is_remote) && (
+                  <span className="flex items-center gap-1 text-sm text-gray-500">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {form.is_remote ? "Remote" : form.location}
+                  </span>
+                )}
+                {form.is_remote && (
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
+                    Remote
+                  </span>
+                )}
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-orange-50 text-[#F2754A] capitalize">
+                  {form.job_type.replace(/_/g, " ")}
+                </span>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">
+                  {form.experience_level}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center">
+              <IndianRupee className="w-4 h-4 text-[#F2754A]" />
+            </div>
+            <span className="tabular-nums">
+              {rupeesToLpaString(form.salary_min) || "0"} –{" "}
+              {rupeesToLpaString(form.salary_max) || "0"} LPA
+            </span>
+            <span className="font-normal text-gray-400">/ year</span>
+          </div>
+
+          {form.description && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                Description
+              </p>
+              <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+                {form.description}
+              </p>
+            </div>
+          )}
+
+          {techTags.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                Tech Stack
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {techTags.map((tech) => (
+                  <span
+                    key={tech}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#FAF6F0] text-gray-700 border border-gray-100"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+              Antyl Score Range
+            </p>
+            <span
+              className="inline-block text-sm font-bold px-3 py-1.5 rounded-full text-white tabular-nums"
+              style={{ background: GRADIENT }}
+            >
+              {form.min_score} – {form.max_score}
+            </span>
+          </div>
+
+          {(form.min_experience_years > 0 || form.max_experience_years > 0) && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Briefcase className="w-4 h-4" />
+              {form.min_experience_years}–{form.max_experience_years} years ·{" "}
+              <span className="capitalize">{form.experience_level} level</span>
+            </div>
+          )}
+
+          {form.max_notice_period_days > 0 && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Clock3 className="w-4 h-4" />
+              Needs to join within {form.max_notice_period_days} day
+              {form.max_notice_period_days !== 1 ? "s" : ""}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm font-semibold px-5 py-2.5 rounded-full text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────
 
 export default function NewJobPage() {
   const router = useRouter();
@@ -322,17 +527,27 @@ export default function NewJobPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-10">
-      <div className="w-full max-w-2xl mx-auto">
-
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Create Job</h1>
-            {hasDraft && (
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-[#F2754A] border border-orange-100">
-                Draft saved
-              </span>
-            )}
+    <div className="min-h-screen w-full bg-[#FAF6F0] px-4 sm:px-6 py-8 sm:py-10">
+      <div className="w-full max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1
+                className="text-2xl sm:text-3xl font-bold text-gray-900"
+                style={{ fontFamily: "var(--font-fraunces, serif)" }}
+              >
+                Create Job
+              </h1>
+              {hasDraft && (
+                <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-orange-50 text-[#F2754A]">
+                  Draft saved
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-400 mt-1">
+              Describe the role and set who you want to reach. Each posting uses one credit.
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -340,35 +555,37 @@ export default function NewJobPage() {
               <button
                 type="button"
                 onClick={discardDraft}
-                className="text-xs font-semibold text-gray-400 hover:text-red-400 transition-colors"
+className="inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
               >
                 Discard draft
               </button>
             )}
-            <button
+            {/* <button
               type="button"
               onClick={() => router.push("/jobs")}
-              className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
             >
+              <ArrowLeft className="w-4 h-4" />
               Back to jobs
-            </button>
+            </button> */}
           </div>
         </div>
 
+        {/* Credits */}
         <div
-          className={`flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5 mb-6 border ${
+          className={`flex items-center justify-between gap-3 rounded-[20px] px-5 py-4 mb-6 border ${
             outOfCredits
               ? "bg-red-50 border-red-100"
               : "bg-white border-gray-100 shadow-sm"
           }`}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <div
-              className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                 outOfCredits ? "bg-red-100" : "bg-orange-50"
               }`}
             >
-              <Zap className={`w-4 h-4 ${outOfCredits ? "text-red-500" : "text-[#F2754A]"}`} />
+              <Zap className={`w-[18px] h-[18px] ${outOfCredits ? "text-red-500" : "text-[#F2754A]"}`} />
             </div>
             <p className="text-sm font-semibold text-gray-700">
               {balanceLoading ? (
@@ -377,7 +594,8 @@ export default function NewJobPage() {
                 <span className="text-red-600">You are out of job posting credits.</span>
               ) : (
                 <>
-                  <span className="font-black">{balance}</span> job posting credit{balance !== 1 ? "s" : ""} remaining
+                  <span className="font-black tabular-nums">{balance}</span> job posting credit
+                  {balance !== 1 ? "s" : ""} remaining
                 </>
               )}
             </p>
@@ -386,13 +604,15 @@ export default function NewJobPage() {
             <button
               type="button"
               onClick={() => router.push("/billing")}
-              className="text-xs font-bold px-3.5 py-2 rounded-full text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors flex-shrink-0"
+              className="text-xs font-bold px-4 py-2 rounded-full text-white shadow-md shadow-orange-100 transition hover:-translate-y-0.5 flex-shrink-0"
+              style={{ background: GRADIENT }}
             >
               Buy credits
             </button>
           )}
         </div>
 
+        {/* Banners */}
         {success && (
           <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-2xl px-5 py-3 mb-6">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
@@ -407,358 +627,369 @@ export default function NewJobPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 space-y-5">
+        <div className="space-y-6">
+          {/* ── Role basics ── */}
+          <SectionCard
+            title="Role basics"
+            subtitle="Start with a title, then let AI help with the rest"
+            icon={FileText}
+          >
+            <div className="space-y-5">
+              <div data-tour="job-title">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <label className="text-sm font-bold text-gray-900">
+                    Job Title<span className="ml-1 text-[#F2754A]">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    data-tour="job-autofill"
+                    onClick={openAutofillModal}
+                    disabled={autofilling || !form.title.trim()}
+                    className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-full border border-[#F2754A] text-[#F2754A] hover:bg-orange-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {autofilling ? (
+                      <>
+                        <span className="animate-spin inline-block w-3 h-3 border-2 border-[#F2754A] border-t-transparent rounded-full" />
+                        Filling…
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Auto-fill with AI
+                      </>
+                    )}
+                  </button>
+                </div>
+                <input
+                  className={inputClass}
+                  placeholder="e.g. Senior Backend Engineer"
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                />
+                {!autofilling && !form.title.trim() && (
+                  <Hint>Type a title above, then click Auto-fill to generate details.</Hint>
+                )}
+              </div>
 
-          <div data-tour="job-title">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-gray-900">
-                Job Title<span className="ml-1 text-red-500">*</span>
-              </label>
+              <div>
+                <Label>Description</Label>
+                <textarea
+                  className={textareaClass}
+                  placeholder="Describe the role, responsibilities, and what you're looking for..."
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                />
+              </div>
+
+              <div data-tour="job-tech-stack">
+                <Label>Required Tech Stack</Label>
+                <input
+                  className={inputClass}
+                  placeholder="React, Node, Python"
+                  value={form.required_tech_stack}
+                  onChange={(e) =>
+                    setForm({ ...form, required_tech_stack: e.target.value })
+                  }
+                />
+                <Hint>Separate each skill with a comma.</Hint>
+                {techTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {techTags.map((tech) => (
+                      <span
+                        key={tech}
+                        className="px-3 py-1 bg-orange-50 text-[#F2754A] text-xs font-bold rounded-full"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* ── Requirements ── */}
+          <SectionCard
+            title="Requirements"
+            subtitle="Experience and how soon someone needs to join"
+            icon={Clock3}
+          >
+            <div className="space-y-5">
+              {/* Experience range — stored as min_experience_years and
+                  max_experience_years so the backend/preview can show a
+                  real "X–Y years" range instead of a single number. */}
+              <div data-tour="job-experience">
+                <Label>Experience Range (years)</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="number"
+                    min={0}
+                    className={inputClass}
+                    placeholder="Min e.g. 3"
+                    value={minExpInput}
+                    onWheel={preventWheelChange}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setMinExpInput(raw);
+                      if (raw === "") return;
+                      const min = Number(raw);
+                      if (!Number.isNaN(min)) {
+                        setForm((prev) => ({
+                          ...prev,
+                          min_experience_years: min,
+                          experience_level: mapExperienceLevel(
+                            prev.max_experience_years || min
+                          ),
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (minExpInput === "") {
+                        setMinExpInput(
+                          form.min_experience_years
+                            ? String(form.min_experience_years)
+                            : ""
+                        );
+                      }
+                    }}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    className={inputClass}
+                    placeholder="Max e.g. 5"
+                    value={maxExpInput}
+                    onWheel={preventWheelChange}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setMaxExpInput(raw);
+                      if (raw === "") return;
+                      const max = Number(raw);
+                      if (!Number.isNaN(max)) {
+                        setForm((prev) => ({
+                          ...prev,
+                          max_experience_years: max,
+                          experience_level: mapExperienceLevel(
+                            max || prev.min_experience_years
+                          ),
+                        }));
+                      }
+                    }}
+                    onBlur={() => {
+                      if (maxExpInput === "") {
+                        setMaxExpInput(
+                          form.max_experience_years
+                            ? String(form.max_experience_years)
+                            : ""
+                        );
+                      }
+                    }}
+                  />
+                </div>
+                {(minExpInput !== "" || maxExpInput !== "") && (
+                  <p className="text-xs text-[#F2754A] font-bold mt-2 px-1 capitalize">
+                    Maps to: {form.experience_level} level
+                  </p>
+                )}
+                {form.max_experience_years > 0 &&
+                  form.min_experience_years > form.max_experience_years && (
+                    <FieldError>Max experience must be greater than min experience.</FieldError>
+                  )}
+              </div>
+
+              {/* Notice period — how quickly a candidate must be able to join.
+                  Feeds the notice_period match score on the backend; candidates
+                  needing longer than this score proportionally lower instead of
+                  being hard-excluded. */}
+              <div data-tour="job-notice-period">
+                <Label>Max Notice Period (days)</Label>
+                <input
+                  type="number"
+                  min={0}
+                  className={inputClass}
+                  placeholder="e.g. 7"
+                  value={noticePeriodInput}
+                  onWheel={preventWheelChange}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setNoticePeriodInput(raw);
+                    if (raw === "") {
+                      setForm((prev) => ({ ...prev, max_notice_period_days: 0 }));
+                      return;
+                    }
+                    const days = Number(raw);
+                    if (!Number.isNaN(days)) {
+                      setForm((prev) => ({ ...prev, max_notice_period_days: days }));
+                    }
+                  }}
+                  onBlur={() => {
+                    if (noticePeriodInput === "") {
+                      setNoticePeriodInput(
+                        form.max_notice_period_days
+                          ? String(form.max_notice_period_days)
+                          : ""
+                      );
+                    }
+                  }}
+                />
+                <Hint>
+                  How soon a candidate needs to be able to join. Leave blank if flexible.
+                </Hint>
+              </div>
+            </div>
+          </SectionCard>
+
+          {/* ── Compensation & location ── */}
+          <SectionCard
+            title="Compensation & location"
+            subtitle="Job type, salary range and where the role is based"
+            icon={IndianRupee}
+          >
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="sm:col-span-2">
+                  <Label>Job Type</Label>
+                  <select
+                    className={inputClass}
+                    value={form.job_type}
+                    onChange={(e) => setForm({ ...form, job_type: e.target.value })}
+                  >
+                    <option value="full_time">Full Time</option>
+                    <option value="part_time">Part Time</option>
+                    <option value="contract">Contract</option>
+                    <option value="internship">Internship</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label>Min Salary (LPA)</Label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    className={inputClass}
+                    placeholder="e.g. 8"
+                    value={salaryMinInput}
+                    onWheel={preventWheelChange}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setSalaryMinInput(raw);
+                      setForm((prev) => ({
+                        ...prev,
+                        salary_min: raw === "" ? 0 : lpaToRupees(Number(raw)),
+                      }));
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <Label>Max Salary (LPA)</Label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    className={inputClass}
+                    placeholder="e.g. 15"
+                    value={salaryMaxInput}
+                    onWheel={preventWheelChange}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setSalaryMaxInput(raw);
+                      setForm((prev) => ({
+                        ...prev,
+                        salary_max: raw === "" ? 0 : lpaToRupees(Number(raw)),
+                      }));
+                    }}
+                  />
+                  {form.salary_max > 0 && form.salary_min > form.salary_max && (
+                    <FieldError>Max salary must be greater than min salary.</FieldError>
+                  )}
+                </div>
+              </div>
+
+              <div data-tour="job-location">
+                <Label>Location</Label>
+                <CitySelect
+                  mode="single"
+                  value={form.location}
+                  onChange={(v) => setForm({ ...form, location: v as string })}
+                  placeholder="Select a city"
+                  disabled={form.is_remote}
+                />
+              </div>
+
               <button
                 type="button"
-                data-tour="job-autofill"
-                onClick={openAutofillModal}
-                disabled={autofilling || !form.title.trim()}
-                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-[#F2754A] text-[#F2754A] hover:bg-orange-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                role="switch"
+                aria-checked={form.is_remote}
+                onClick={() => setForm({ ...form, is_remote: !form.is_remote })}
+                className="flex items-center justify-between w-full rounded-2xl border border-gray-100 bg-[#FAF6F0] px-5 py-4 transition hover:border-gray-200"
               >
-                {autofilling ? (
-                  <>
-                    <span className="animate-spin inline-block w-3 h-3 border border-[#F2754A] border-t-transparent rounded-full" />
-                    Filling…
-                  </>
-                ) : (
-                  <>✦ Auto-fill with AI</>
-                )}
+                <span className="text-sm font-bold text-gray-900">Remote Position</span>
+                <div
+                  className={`w-11 h-6 rounded-full p-0.5 transition-colors ${
+                    form.is_remote ? "bg-[#F2754A]" : "bg-gray-300"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                      form.is_remote ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </div>
               </button>
             </div>
-            <input
-              className={inputClass}
-              placeholder="e.g. Senior Backend Engineer"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-            {!autofilling && !form.title.trim() && (
-              <p className="text-xs text-gray-400 mt-1.5 px-1">
-                Type a title above, then click Auto-fill to generate details.
-              </p>
-            )}
-          </div>
+          </SectionCard>
 
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Description
-            </label>
-            <textarea
-              className={textareaClass}
-              placeholder="Describe the role, responsibilities, and what you're looking for..."
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </div>
-
-          <div data-tour="job-tech-stack">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Required Tech Stack
-            </label>
-            <input
-              className={inputClass}
-              placeholder="React, Node, Python"
-              value={form.required_tech_stack}
-              onChange={(e) =>
-                setForm({ ...form, required_tech_stack: e.target.value })
-              }
-            />
-            <p className="text-xs text-gray-400 mt-2">
-              Separate each skill with a comma.
-            </p>
-            {techTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {techTags.map((tech) => (
-                  <span
-                    key={tech}
-                    className="px-3 py-1 bg-orange-50 text-[#F2754A] text-xs font-semibold rounded-full border border-orange-100"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Experience range — two inputs, stored as min_experience_years
-              and max_experience_years so the backend/preview can show a
-              real "X–Y years" range instead of a single number. */}
-          <div data-tour="job-experience">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Experience Range (years)
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <input
-                  type="number"
-                  min={0}
-                  className={inputClass}
-                  placeholder="Min e.g. 3"
-                  value={minExpInput}
-                  onWheel={preventWheelChange}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    setMinExpInput(raw);
-                    if (raw === "") return;
-                    const min = Number(raw);
-                    if (!Number.isNaN(min)) {
-                      setForm((prev) => ({
-                        ...prev,
-                        min_experience_years: min,
-                        experience_level: mapExperienceLevel(
-                          prev.max_experience_years || min
-                        ),
-                      }));
-                    }
-                  }}
-                  onBlur={() => {
-                    if (minExpInput === "") {
-                      setMinExpInput(
-                        form.min_experience_years
-                          ? String(form.min_experience_years)
-                          : ""
-                      );
-                    }
-                  }}
-                />
-              </div>
-              <div>
-                <input
-                  type="number"
-                  min={0}
-                  className={inputClass}
-                  placeholder="Max e.g. 5"
-                  value={maxExpInput}
-                  onWheel={preventWheelChange}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    setMaxExpInput(raw);
-                    if (raw === "") return;
-                    const max = Number(raw);
-                    if (!Number.isNaN(max)) {
-                      setForm((prev) => ({
-                        ...prev,
-                        max_experience_years: max,
-                        experience_level: mapExperienceLevel(
-                          max || prev.min_experience_years
-                        ),
-                      }));
-                    }
-                  }}
-                  onBlur={() => {
-                    if (maxExpInput === "") {
-                      setMaxExpInput(
-                        form.max_experience_years
-                          ? String(form.max_experience_years)
-                          : ""
-                      );
-                    }
-                  }}
-                />
-              </div>
-            </div>
-            {(minExpInput !== "" || maxExpInput !== "") && (
-              <p className="text-xs text-[#F2754A] font-semibold mt-1.5 px-1">
-                Maps to: {form.experience_level} level
-              </p>
-            )}
-            {form.max_experience_years > 0 &&
-              form.min_experience_years > form.max_experience_years && (
-                <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">
-                  Max experience must be greater than min experience.
-                </p>
-              )}
-          </div>
-
-          {/* Notice period — how quickly a candidate must be able to join.
-              Feeds the notice_period match score on the backend; candidates
-              needing longer than this score proportionally lower instead of
-              being hard-excluded. */}
-          <div data-tour="job-notice-period">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Max Notice Period (days)
-            </label>
-            <input
-              type="number"
-              min={0}
-              className={inputClass}
-              placeholder="e.g. 7"
-              value={noticePeriodInput}
-              onWheel={preventWheelChange}
-              onChange={(e) => {
-                const raw = e.target.value;
-                setNoticePeriodInput(raw);
-                if (raw === "") {
-                  setForm((prev) => ({ ...prev, max_notice_period_days: 0 }));
-                  return;
-                }
-                const days = Number(raw);
-                if (!Number.isNaN(days)) {
-                  setForm((prev) => ({ ...prev, max_notice_period_days: days }));
-                }
-              }}
-              onBlur={() => {
-                if (noticePeriodInput === "") {
-                  setNoticePeriodInput(
-                    form.max_notice_period_days
-                      ? String(form.max_notice_period_days)
-                      : ""
-                  );
-                }
-              }}
-            />
-            <p className="text-xs text-gray-400 mt-2">
-              How soon a candidate needs to be able to join. Leave blank if flexible.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Job Type
-              </label>
-              <select
-                className={inputClass}
-                value={form.job_type}
-                onChange={(e) => setForm({ ...form, job_type: e.target.value })}
-              >
-                <option value="full_time">Full Time</option>
-                <option value="part_time">Part Time</option>
-                <option value="contract">Contract</option>
-                <option value="internship">Internship</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Min Salary (LPA)
-              </label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                className={inputClass}
-                placeholder="e.g. 8"
-                value={salaryMinInput}
-                onWheel={preventWheelChange}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setSalaryMinInput(raw);
-                  setForm({
-                    ...form,
-                    salary_min: raw === "" ? 0 : lpaToRupees(Number(raw)),
-                  });
-                }}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Max Salary (LPA)
-              </label>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                className={inputClass}
-                placeholder="e.g. 15"
-                value={salaryMaxInput}
-                onWheel={preventWheelChange}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setSalaryMaxInput(raw);
-                  setForm({
-                    ...form,
-                    salary_max: raw === "" ? 0 : lpaToRupees(Number(raw)),
-                  });
-                }}
-              />
-              {form.salary_max > 0 && form.salary_min > form.salary_max && (
-                <p className="text-xs text-red-500 font-semibold mt-1.5 px-1">
-                  Max salary must be greater than min salary.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div data-tour="job-location">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Location
-            </label>
-            <CitySelect
-              mode="single"
-              value={form.location}
-              onChange={(v) => setForm({ ...form, location: v as string })}
-              placeholder="Select a city"
-              disabled={form.is_remote}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, is_remote: !form.is_remote })}
-            className="flex items-center justify-between w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4"
+          {/* ── Antyl score ── */}
+          <SectionCard
+            title="Antyl Score Range"
+            subtitle="Only match developers whose verified score falls in this range"
+            icon={Target}
           >
-            <span className="text-sm font-medium text-gray-900">
-              Remote Position
-            </span>
-            <div
-              className={`w-11 h-6 rounded-full p-0.5 transition-colors ${
-                form.is_remote ? "bg-[#F2754A]" : "bg-gray-300"
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                  form.is_remote ? "translate-x-5" : "translate-x-0"
-                }`}
+            <div data-tour="job-score-slider">
+              <TrustScoreSlider
+                minScore={form.min_score}
+                maxScore={form.max_score}
+                onMinChange={(value) => setForm({ ...form, min_score: value })}
+                onMaxChange={(value) => setForm({ ...form, max_score: value })}
               />
             </div>
-          </button>
+          </SectionCard>
 
-          <div data-tour="job-score-slider">
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
-              Antyl Score Range
-            </label>
-            <TrustScoreSlider
-              minScore={form.min_score}
-              maxScore={form.max_score}
-              onMinChange={(value) => setForm({ ...form, min_score: value })}
-              onMaxChange={(value) => setForm({ ...form, max_score: value })}
-            />
-          </div>
+          {/* ── Actions ── */}
+          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-full text-sm font-semibold text-gray-600 border border-gray-200 hover:border-gray-300 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                Preview
+              </button>
 
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowPreview(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-full font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <Eye className="w-4 h-4" />
-              Preview
-            </button>
-
-            <button
-              type="button"
-              data-tour="job-submit"
-              onClick={handleSubmit}
-              disabled={saving || outOfCredits}
-              title={outOfCredits ? "Buy more credits to post a job" : undefined}
-              className="flex-1 px-6 py-3.5 rounded-full font-semibold text-white transition-opacity disabled:opacity-50"
-              style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
-            >
-              {saving ? "Creating..." : outOfCredits ? "Out of credits" : "Create Job"}
-            </button>
+              <button
+                type="button"
+                data-tour="job-submit"
+                onClick={handleSubmit}
+                disabled={saving || outOfCredits}
+                title={outOfCredits ? "Buy more credits to post a job" : undefined}
+                className="flex-1 px-6 py-3.5 rounded-full text-sm font-bold text-white shadow-md shadow-orange-100 transition hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md"
+                style={{ background: GRADIENT }}
+              >
+                {saving ? "Creating..." : outOfCredits ? "Out of credits" : "Create Job"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Autofill modal */}
       {showAutofillModal && (
         <div
+          role="dialog"
+          aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
           onClick={closeAutofillModal}
@@ -768,21 +999,25 @@ export default function NewJobPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 p-6 pb-0">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  ✦ Tell us a bit more
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Give a quick 3-4 line summary of the role for{" "}
-                  <span className="font-semibold text-gray-700">
-                    {form.title || "this role"}
-                  </span>
-                  , and AI will fill in the rest.
-                </p>
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-5 h-5 text-[#F2754A]" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Tell us a bit more</h2>
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    Give a quick 3-4 line summary of the role for{" "}
+                    <span className="font-semibold text-gray-700">
+                      {form.title || "this role"}
+                    </span>
+                    , and AI will fill in the rest.
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={closeAutofillModal}
+                aria-label="Close"
                 className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
               >
                 <X className="w-5 h-5" />
@@ -802,17 +1037,13 @@ export default function NewJobPage() {
                   if (autofillSummaryError) setAutofillSummaryError("");
                 }}
               />
-              {autofillSummaryError && (
-                <p className="text-xs text-red-500 font-semibold px-1">
-                  {autofillSummaryError}
-                </p>
-              )}
+              {autofillSummaryError && <FieldError>{autofillSummaryError}</FieldError>}
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={closeAutofillModal}
-                  className="flex-1 px-6 py-3 rounded-full font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-6 py-3 rounded-full text-sm font-semibold text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors"
                 >
                   Cancel
                 </button>
@@ -820,8 +1051,8 @@ export default function NewJobPage() {
                   type="button"
                   onClick={handleAutofill}
                   disabled={autofilling}
-                  className="flex-1 px-6 py-3 rounded-full font-semibold text-white transition-opacity disabled:opacity-50"
-                  style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+                  className="flex-1 px-6 py-3 rounded-full text-sm font-bold text-white shadow-md shadow-orange-100 transition hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0"
+                  style={{ background: GRADIENT }}
                 >
                   {autofilling ? "Filling…" : "Generate"}
                 </button>
@@ -831,124 +1062,13 @@ export default function NewJobPage() {
         </div>
       )}
 
+      {/* Preview modal */}
       {showPreview && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(2px)" }}
-          onClick={() => setShowPreview(false)}
-        >
-          <div
-            className="bg-white rounded-[28px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 p-6 pb-0">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {form.title || "Untitled role"}
-                </h2>
-                <div className="flex flex-wrap items-center gap-3 mt-2">
-                  {(form.location || form.is_remote) && (
-                    <span className="flex items-center gap-1 text-sm text-gray-500">
-                      <MapPin className="w-3.5 h-3.5" />
-                      {form.is_remote ? "Remote" : form.location}
-                    </span>
-                  )}
-                  {form.is_remote && (
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
-                      Remote
-                    </span>
-                  )}
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-[#F2754A] capitalize">
-                    {form.job_type.replace(/_/g, " ")}
-                  </span>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">
-                    {form.experience_level}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowPreview(false)}
-                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                <IndianRupee className="w-4 h-4 text-[#F2754A]" />
-                {rupeesToLpaString(form.salary_min) || "0"} – {rupeesToLpaString(form.salary_max) || "0"} LPA
-                <span className="font-normal text-gray-400">/ year</span>
-              </div>
-
-              {form.description && (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                    Description
-                  </p>
-                  <p className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
-                    {form.description}
-                  </p>
-                </div>
-              )}
-
-              {techTags.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                    Tech Stack
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {techTags.map((tech) => (
-                      <span
-                        key={tech}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[#FAF6F0] text-gray-700 border border-gray-100"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                  Antyl Score Range
-                </p>
-                <span
-                  className="text-sm font-bold px-3 py-1.5 rounded-full text-white"
-                  style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
-                >
-                  {form.min_score} – {form.max_score}
-                </span>
-              </div>
-
-              {(form.min_experience_years > 0 || form.max_experience_years > 0) && (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Briefcase className="w-4 h-4" />
-                  {form.min_experience_years}–{form.max_experience_years} years ·{" "}
-                  <span className="capitalize">{form.experience_level} level</span>
-                </div>
-              )}
-
-              {form.max_notice_period_days > 0 && (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  Needs to join within {form.max_notice_period_days} day
-                  {form.max_notice_period_days !== 1 ? "s" : ""}
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setShowPreview(false)}
-                className="text-sm font-semibold px-5 py-2.5 rounded-full text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <PreviewModal
+          form={form}
+          techTags={techTags}
+          onClose={() => setShowPreview(false)}
+        />
       )}
 
       <OnboardingTour
