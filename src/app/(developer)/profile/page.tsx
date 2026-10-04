@@ -41,6 +41,7 @@ import {
   saveAutoApplyPreferences,
   AutoApplyStatus,
 } from "@/services/developer.service";
+import { getVerificationCooldown } from "@/services/verification.service";
 import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service";
 import { getMyStreak, StreakSummary } from "@/services/streak.service";
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
@@ -64,6 +65,10 @@ interface Profile {
   current_role?: string;
   years_experience?: number;
   tech_stack?: string[];
+  // Staged by the backend after the 7-day lock opens. Goes live only when the
+  // next verification is completed.
+  pending_tech_stack?: string[] | null;
+  pending_resume_url?: string | null;
   trust_score?: number;
   github_username?: string;
   linkedin_url?: string;
@@ -466,6 +471,10 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
+  // Time left until the next verification opens. While > 0, tech stack and
+  // resume are locked (the backend enforces this too and answers 423).
+  const [cooldown, setCooldown] = useState({ days: 0, hours: 0 });
+
   const [formData, setFormData] = useState({
     name: "",
     bio: "",
@@ -525,6 +534,10 @@ export default function ProfilePage() {
   // Danger zone starts collapsed so destructive actions aren't front-and-center.
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
 
+  // Derived lock state (plain values, no hooks, so safe before the early returns).
+  const locked = cooldown.days > 0 || cooldown.hours > 0;
+  const lockLabel = `${cooldown.days}d ${cooldown.hours}h`;
+
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -547,7 +560,8 @@ export default function ProfilePage() {
           years_experience: profileData.years_experience || 0,
           linkedin_url: profileData.linkedin_url || "",
           job_status: profileData.job_status || "not_looking",
-          tech_stack: profileData.tech_stack || [],
+          // If a change is already staged, edit that instead of the live stack.
+          tech_stack: profileData.pending_tech_stack ?? profileData.tech_stack ?? [],
           remote_ok: profileData.remote_ok || false,
           notice_period_days: profileData.notice_period_days ?? 0,
         });
@@ -555,6 +569,13 @@ export default function ProfilePage() {
         console.error(error);
       } finally {
         setLoading(false);
+      }
+
+      // Own try/catch so a cooldown failure doesn't break the rest of the page.
+      try {
+        setCooldown(await getVerificationCooldown());
+      } catch (error) {
+        console.error(error);
       }
 
       try {
@@ -636,13 +657,16 @@ export default function ProfilePage() {
     if (!profile) return;
     setSaveError("");
 
-    // Anything typed in the skill box but not yet added still counts.
-    const pendingSkill = skillInput.trim();
-    const finalTechStack = pendingSkill
+    // While locked the tech stack can't change, so it's left out entirely.
+    // Otherwise anything typed in the skill box but not yet added still counts.
+    const pendingSkill = locked ? "" : skillInput.trim();
+    const finalTechStack = locked
+      ? profile.tech_stack || []
+      : pendingSkill
       ? normalizeSkillList([...formData.tech_stack, pendingSkill])
       : formData.tech_stack;
 
-    if (finalTechStack.length === 0) {
+    if (!locked && finalTechStack.length === 0) {
       flagMissingTechStack();
       return;
     }
@@ -655,7 +679,9 @@ export default function ProfilePage() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const payload = { ...formData, tech_stack: finalTechStack };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { tech_stack: _omit, ...withoutStack } = formData;
+      const payload = locked ? withoutStack : { ...formData, tech_stack: finalTechStack };
 
       await Promise.all([
         updateProfile(payload),
@@ -669,8 +695,15 @@ export default function ProfilePage() {
         }),
       ]);
 
-      setFormData(payload);
-      setProfile({ ...profile, ...payload });
+      // Live and pending tech stacks can now differ, so take the server's
+      // version instead of merging the payload locally.
+      const refreshed = await getMyProfile();
+      setProfile(refreshed);
+      setFormData((f) => ({
+        ...f,
+        tech_stack: refreshed.pending_tech_stack ?? refreshed.tech_stack ?? [],
+      }));
+
       setSalaryRange({ min: autoApplyForm.salary_min, max: autoApplyForm.salary_max });
       setMatchPrefsSummary({
         minScore: autoApplyForm.min_similarity_score,
@@ -683,7 +716,8 @@ export default function ProfilePage() {
       setIsEditing(false);
     } catch (error) {
       console.error(error);
-      setSaveError("Couldn't save changes. Try again.");
+      // Show the server's message so a 423 lock error is readable.
+      setSaveError(error instanceof Error ? error.message : "Couldn't save changes. Try again.");
     } finally {
       setSaving(false);
     }
@@ -699,7 +733,7 @@ export default function ProfilePage() {
         years_experience: profile.years_experience || 0,
         linkedin_url: profile.linkedin_url || "",
         job_status: profile.job_status || "not_looking",
-        tech_stack: profile.tech_stack || [],
+        tech_stack: profile.pending_tech_stack ?? profile.tech_stack ?? [],
         remote_ok: profile.remote_ok || false,
         notice_period_days: profile.notice_period_days ?? 0,
       });
@@ -769,7 +803,7 @@ export default function ProfilePage() {
   };
 
   const handleResumeClick = () => {
-    if (resumeUploading) return;
+    if (resumeUploading || locked) return;
     resumeInputRef.current?.click();
   };
 
@@ -793,13 +827,15 @@ export default function ProfilePage() {
     setResumeUploading(true);
     try {
       await uploadResume(file);
-      // upload_resume awaits parsing before returning, so the profile's
-      // resume_parsed_data / resume_url should already be up to date
+      // upload_resume awaits parsing before returning. For a verified user the
+      // result is staged as pending_resume_*, so the live resume is unchanged
+      // until the next verification completes.
       const refreshed = await getMyProfile();
       setProfile(refreshed);
     } catch (error) {
       console.error(error);
-      setResumeError("Upload failed. Try again.");
+      // Show the server's message so a 423 lock or a parse failure is readable.
+      setResumeError(error instanceof Error ? error.message : "Upload failed. Try again.");
     } finally {
       setResumeUploading(false);
       e.target.value = "";
@@ -833,6 +869,7 @@ export default function ProfilePage() {
   // canonical spelling ("pyt" → "Python", "nodejs" → "Node.js"); unknown skills
   // are kept exactly as typed. Case-insensitive dedupe.
   const addSkill = (raw?: string) => {
+    if (locked) return;
     const skill = resolveSkill(raw ?? skillInput);
     if (!skill) return;
     if (!formData.tech_stack.some((t) => t.toLowerCase() === skill.toLowerCase())) {
@@ -847,6 +884,7 @@ export default function ProfilePage() {
   };
 
   const removeSkill = (skill: string) => {
+    if (locked) return;
     setFormData({
       ...formData,
       tech_stack: formData.tech_stack.filter((t) => t !== skill),
@@ -955,6 +993,8 @@ export default function ProfilePage() {
   const strengthDone = strengthChecks.filter((c) => c.done).length;
   const strength = Math.round((strengthDone / strengthChecks.length) * 100);
   const missing = strengthChecks.filter((c) => !c.done).map((c) => c.label);
+
+  const hasPendingChanges = !!profile.pending_tech_stack || !!profile.pending_resume_url;
 
   return (
     <div className="min-h-screen w-full md:flex bg-[#FAF6F0] overflow-x-hidden">
@@ -1312,15 +1352,22 @@ export default function ProfilePage() {
               title="Tech stack"
               subtitle="Skills shown to recruiters"
               sectionRef={techStackSectionRef}
-              highlight={isEditing && !!techStackError}
+              highlight={isEditing && !locked && !!techStackError}
               action={
-                isEditing ? (
+                isEditing && !locked ? (
                   <span className="text-[11px] font-bold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1 flex-shrink-0">
                     Required
                   </span>
                 ) : undefined
               }
             >
+              {isEditing && locked && (
+                <div className="flex items-start gap-2 mb-4 p-3 rounded-2xl bg-gray-50 text-xs font-semibold text-gray-500">
+                  <Clock className="w-4 h-4 flex-shrink-0 mt-px" />
+                  Tech stack is locked for {lockLabel}, until your next verification opens.
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 {(isEditing ? formData.tech_stack : profile.tech_stack || []).map((tech) => (
                   <span
@@ -1328,7 +1375,7 @@ export default function ProfilePage() {
                     className="flex items-center gap-1.5 text-xs font-semibold text-[#D9582F] bg-orange-50 rounded-full px-3 py-1.5"
                   >
                     {tech}
-                    {isEditing && (
+                    {isEditing && !locked && (
                       <button
                         type="button"
                         onClick={() => removeSkill(tech)}
@@ -1345,7 +1392,14 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {isEditing && (
+              {!isEditing && profile.pending_tech_stack && (
+                <p className="text-xs text-gray-400 mt-3">
+                  Pending: {profile.pending_tech_stack.join(", ")}. Applies after you complete
+                  verification.
+                </p>
+              )}
+
+              {isEditing && !locked && (
                 <div className="flex gap-2 mt-4">
                   {/* Input + autocomplete dropdown */}
                   <div ref={skillBoxRef} className="relative flex-1 min-w-0">
@@ -1446,7 +1500,7 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {isEditing && techStackError && (
+              {isEditing && !locked && techStackError && (
                 <div
                   role="alert"
                   className="flex items-start gap-2 mt-3 text-xs font-semibold text-[#D8452F]"
@@ -1471,7 +1525,9 @@ export default function ProfilePage() {
                     : "Not verified yet"}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {profile.trust_score != null
+                  {hasPendingChanges
+                    ? "You have changes waiting. Complete verification to apply them."
+                    : profile.trust_score != null
                     ? "Re-verify every 7 days to keep your score fresh"
                     : "Verify your skills to unlock matching and the leaderboard"}
                 </p>
@@ -1784,11 +1840,22 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={handleResumeClick}
-                  disabled={resumeUploading}
+                  disabled={resumeUploading || locked}
+                  title={locked ? `Locked for ${lockLabel}` : undefined}
                   className="flex items-center gap-1.5 text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
                 >
-                  <Upload className="w-3.5 h-3.5" />
-                  {resumeUploading ? "Uploading…" : profile.resume_url ? "Reupload" : "Upload"}
+                  {locked ? (
+                    <Clock className="w-3.5 h-3.5" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5" />
+                  )}
+                  {locked
+                    ? `Locked · ${lockLabel}`
+                    : resumeUploading
+                    ? "Uploading…"
+                    : profile.resume_url
+                    ? "Reupload"
+                    : "Upload"}
                 </button>
                 <input
                   ref={resumeInputRef}
@@ -1802,6 +1869,12 @@ export default function ProfilePage() {
           >
             {resumeError && (
               <p className="text-xs font-semibold text-[#D8452F] mb-4">{resumeError}</p>
+            )}
+
+            {profile.pending_resume_url && (
+              <p className="text-xs font-semibold text-[#D9582F] bg-orange-50 rounded-2xl px-3.5 py-2.5 mb-4">
+                New resume uploaded. It replaces your current one once you complete verification.
+              </p>
             )}
 
             {profile.resume_parsed_data ? (
