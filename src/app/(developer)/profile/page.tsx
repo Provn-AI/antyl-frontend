@@ -7,6 +7,7 @@ import {
   Trash2,
   Shield,
   AlertTriangle,
+  AlertCircle,
   Code2,
   Pencil,
   Save,
@@ -46,6 +47,13 @@ import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import { ShareBadgeModal, ShareBadgeData } from "@/components/ShareBadgeModal";
 import CitySelect from "@/components/citySelect";
+// Shared skill catalog + helpers (save the skills.ts file as src/lib/skills.ts)
+import {
+  findCatalogSkill,
+  getSkillSuggestions,
+  normalizeSkillList,
+  resolveSkill,
+} from "@/lib/skills";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,6 +83,8 @@ interface SalaryRange {
   max: number;
 }
 
+type SkillOption = { label: string; value: string; custom?: boolean };
+
 const JOB_STATUS_OPTIONS = [
   { value: "actively_looking", label: "Actively looking" },
   // { value: "open_to_opportunities", label: "Open to opportunities" },
@@ -82,289 +92,6 @@ const JOB_STATUS_OPTIONS = [
 ];
 
 const JOB_TYPES = ["full_time", "part_time", "contract", "internship"];
-
-// ── Skill catalog (canonical spelling/casing used for autocomplete) ──────────
-// Users can still add skills that aren't listed here — those are kept as typed.
-
-const SKILL_CATALOG: string[] = [
-  // Languages
-  "Python",
-  "JavaScript",
-  "TypeScript",
-  "Java",
-  "C",
-  "C++",
-  "C#",
-  "Go",
-  "Rust",
-  "Ruby",
-  "PHP",
-  "Swift",
-  "Kotlin",
-  "Dart",
-  "Scala",
-  "R",
-  "MATLAB",
-  "Perl",
-  "Elixir",
-  "Haskell",
-  "Lua",
-  "Solidity",
-  "Bash",
-  "SQL",
-  "HTML",
-  "CSS",
-  // Frontend
-  "React",
-  "Next.js",
-  "Vue.js",
-  "Nuxt.js",
-  "Angular",
-  "Svelte",
-  "SvelteKit",
-  "Remix",
-  "Astro",
-  "Redux",
-  "Zustand",
-  "React Query",
-  "Tailwind CSS",
-  "Bootstrap",
-  "Material UI",
-  "Chakra UI",
-  "shadcn/ui",
-  "Sass",
-  "Webpack",
-  "Vite",
-  "jQuery",
-  "Three.js",
-  "D3.js",
-  "Framer Motion",
-  "Storybook",
-  // Backend
-  "Node.js",
-  "Express.js",
-  "NestJS",
-  "Fastify",
-  "Django",
-  "Django REST Framework",
-  "Flask",
-  "FastAPI",
-  "Pydantic",
-  "Celery",
-  "Spring Boot",
-  "Hibernate",
-  "Ruby on Rails",
-  "Laravel",
-  "Symfony",
-  "ASP.NET",
-  ".NET",
-  "Gin",
-  "Fiber",
-  "GraphQL",
-  "REST APIs",
-  "gRPC",
-  "WebSockets",
-  "Microservices",
-  "tRPC",
-  // Mobile
-  "React Native",
-  "Flutter",
-  "Android",
-  "iOS",
-  "SwiftUI",
-  "Jetpack Compose",
-  "Expo",
-  // Databases
-  "PostgreSQL",
-  "MySQL",
-  "MongoDB",
-  "Redis",
-  "SQLite",
-  "Oracle",
-  "SQL Server",
-  "DynamoDB",
-  "Cassandra",
-  "Elasticsearch",
-  "Firebase",
-  "Supabase",
-  "Neo4j",
-  "ClickHouse",
-  "Snowflake",
-  "BigQuery",
-  "SQLAlchemy",
-  "Prisma",
-  "TypeORM",
-  "Alembic",
-  // Cloud & DevOps
-  "AWS",
-  "Azure",
-  "Google Cloud",
-  "Docker",
-  "Kubernetes",
-  "Terraform",
-  "Ansible",
-  "Jenkins",
-  "GitHub Actions",
-  "GitLab CI",
-  "CI/CD",
-  "Linux",
-  "Nginx",
-  "Git",
-  "Helm",
-  "Prometheus",
-  "Grafana",
-  "Datadog",
-  "Vercel",
-  "Heroku",
-  "Cloudflare",
-  "Serverless",
-  // Data / AI
-  "Machine Learning",
-  "Deep Learning",
-  "Data Science",
-  "Data Engineering",
-  "NLP",
-  "Computer Vision",
-  "LLMs",
-  "LangChain",
-  "LlamaIndex",
-  "RAG",
-  "OpenAI API",
-  "Hugging Face",
-  "TensorFlow",
-  "PyTorch",
-  "Keras",
-  "scikit-learn",
-  "Pandas",
-  "NumPy",
-  "SciPy",
-  "Matplotlib",
-  "Jupyter",
-  "Apache Spark",
-  "Apache Kafka",
-  "Apache Airflow",
-  "dbt",
-  "Power BI",
-  "Tableau",
-  // Messaging / Infra
-  "RabbitMQ",
-  "Kafka",
-  "Celery Beat",
-  // Testing
-  "Jest",
-  "Vitest",
-  "Cypress",
-  "Playwright",
-  "Selenium",
-  "Pytest",
-  "JUnit",
-  "React Testing Library",
-  // Security / Other
-  "OAuth",
-  "JWT",
-  "Cybersecurity",
-  "Blockchain",
-  "Web3",
-  "Figma",
-  "Agile",
-  "Scrum",
-  "System Design",
-  "Data Structures & Algorithms",
-];
-
-// Common shorthand → canonical skill. Lets "js" suggest JavaScript, "k8s" suggest Kubernetes, etc.
-const SKILL_ALIASES: Record<string, string[]> = {
-  JavaScript: ["js", "ecmascript", "es6"],
-  TypeScript: ["ts"],
-  Python: ["py", "python3"],
-  "Node.js": ["node", "nodejs"],
-  "Express.js": ["express", "expressjs"],
-  "Next.js": ["next", "nextjs"],
-  "Vue.js": ["vue", "vuejs"],
-  "Nuxt.js": ["nuxt", "nuxtjs"],
-  React: ["reactjs", "react.js"],
-  "React Native": ["rn"],
-  PostgreSQL: ["postgres", "psql", "pg"],
-  MongoDB: ["mongo"],
-  Kubernetes: ["k8s"],
-  "Google Cloud": ["gcp", "google cloud platform"],
-  "Tailwind CSS": ["tailwind"],
-  "Spring Boot": ["spring"],
-  "Ruby on Rails": ["rails", "ror"],
-  "C#": ["csharp", "c sharp"],
-  "C++": ["cpp"],
-  Go: ["golang"],
-  "Machine Learning": ["ml"],
-  "Deep Learning": ["dl"],
-  NLP: ["natural language processing"],
-  LLMs: ["llm", "large language models"],
-  "scikit-learn": ["sklearn"],
-  "CI/CD": ["cicd", "ci cd"],
-  "REST APIs": ["rest", "restful", "rest api"],
-  "Data Structures & Algorithms": ["dsa", "data structures", "algorithms"],
-  "Apache Spark": ["spark", "pyspark"],
-  "Apache Kafka": ["kafka"],
-  "Apache Airflow": ["airflow"],
-  "Material UI": ["mui"],
-  "shadcn/ui": ["shadcn"],
-  "D3.js": ["d3"],
-  "Three.js": ["three"],
-  "Hugging Face": ["huggingface", "hf"],
-  "Django REST Framework": ["drf"],
-  "SQL Server": ["mssql", "sqlserver"],
-  Elasticsearch: ["elastic", "es"],
-  ".NET": ["dotnet", "dot net"],
-};
-
-const MAX_SKILL_SUGGESTIONS = 8;
-
-type SkillOption = { label: string; value: string; custom?: boolean };
-
-function findCatalogSkill(raw: string): string | undefined {
-  const q = raw.trim().toLowerCase();
-  if (!q) return undefined;
-  const direct = SKILL_CATALOG.find((s) => s.toLowerCase() === q);
-  if (direct) return direct;
-  for (const [canonical, aliases] of Object.entries(SKILL_ALIASES)) {
-    if (aliases.some((a) => a === q)) return canonical;
-  }
-  return undefined;
-}
-
-// Returns the canonical spelling if we know the skill, otherwise the text as typed.
-function resolveSkill(raw: string): string {
-  const trimmed = raw.trim();
-  return findCatalogSkill(trimmed) ?? trimmed;
-}
-
-function rankSkillMatch(skill: string, q: string): number | null {
-  const name = skill.toLowerCase();
-  if (name === q) return 0;
-  if (name.startsWith(q)) return 1;
-
-  const aliases = SKILL_ALIASES[skill] || [];
-  if (aliases.some((a) => a === q)) return 2;
-  if (aliases.some((a) => a.startsWith(q))) return 3;
-
-  const words = name.split(/[^a-z0-9+#.]+/).filter(Boolean);
-  if (words.some((w) => w.startsWith(q))) return 4;
-
-  if (q.length >= 2 && name.includes(q)) return 5;
-  return null;
-}
-
-function getSkillSuggestions(query: string, alreadyAdded: string[]): string[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const taken = new Set(alreadyAdded.map((s) => s.toLowerCase()));
-
-  return SKILL_CATALOG.filter((s) => !taken.has(s.toLowerCase()))
-    .map((s) => ({ s, rank: rankSkillMatch(s, q) }))
-    .filter((x): x is { s: string; rank: number } => x.rank !== null)
-    .sort((a, b) => a.rank - b.rank || a.s.length - b.s.length || a.s.localeCompare(b.s))
-    .slice(0, MAX_SKILL_SUGGESTIONS)
-    .map((x) => x.s);
-}
 
 function jobStatusLabel(value: string | undefined) {
   return JOB_STATUS_OPTIONS.find((o) => o.value === value)?.label || "Not set";
@@ -390,6 +117,13 @@ function resolveBadgeFieldLabel(metadata?: Record<string, unknown>) {
   const fieldValue = metadata.field_label ?? metadata.field_of_work ?? metadata.field;
   return typeof fieldValue === "string" ? fieldValue : undefined;
 }
+
+// Number inputs change value when the mouse wheel scrolls over them while focused.
+// Blurring on wheel stops accidental changes (e.g. notice period jumping to 0)
+// and lets the page keep scrolling normally.
+const preventWheelChange = (e: React.WheelEvent<HTMLInputElement>) => {
+  e.currentTarget.blur();
+};
 
 // ── Score ring ────────────────────────────────────────────────────────────────
 
@@ -577,15 +311,28 @@ function SectionCard({
   subtitle,
   action,
   children,
+  sectionRef,
+  highlight,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  // Used to scroll a specific section into view (e.g. when a required field is missing).
+  sectionRef?: React.Ref<HTMLElement>;
+  // Draws a red outline around the card to flag a problem inside it.
+  highlight?: boolean;
 }) {
   return (
-    <section className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-7 mb-4">
+    <section
+      ref={sectionRef}
+      className={`bg-white rounded-[24px] border shadow-sm p-6 sm:p-7 mb-4 transition-all duration-300 ${
+        highlight
+          ? "border-[#E0533D] ring-4 ring-[#E0533D]/15 bg-red-50/30"
+          : "border-gray-100"
+      }`}
+    >
       <div className="flex items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
@@ -749,6 +496,12 @@ export default function ProfilePage() {
   const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
   const [skillActiveIndex, setSkillActiveIndex] = useState(0);
   const skillBoxRef = useRef<HTMLDivElement>(null);
+  const skillInputRef = useRef<HTMLInputElement>(null);
+
+  // Tech stack is required: saving with no skills is blocked, the card is
+  // highlighted and the page scrolls to it.
+  const [techStackError, setTechStackError] = useState("");
+  const techStackSectionRef = useRef<HTMLElement>(null);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
@@ -870,18 +623,42 @@ export default function ProfilePage() {
     return options;
   }, [skillInput, formData.tech_stack]);
 
+  // Flags the Tech stack card and brings it into view.
+  const flagMissingTechStack = () => {
+    setTechStackError("Add at least one skill before saving. Recruiters match you on your tech stack.");
+    setSaveError("Tech stack is required. Add at least one skill.");
+    techStackSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Focus after the smooth scroll has had a moment to land.
+    window.setTimeout(() => skillInputRef.current?.focus({ preventScroll: true }), 450);
+  };
+
   const handleSave = async () => {
     if (!profile) return;
-    setSaving(true);
     setSaveError("");
+
+    // Anything typed in the skill box but not yet added still counts.
+    const pendingSkill = skillInput.trim();
+    const finalTechStack = pendingSkill
+      ? normalizeSkillList([...formData.tech_stack, pendingSkill])
+      : formData.tech_stack;
+
+    if (finalTechStack.length === 0) {
+      flagMissingTechStack();
+      return;
+    }
+
+    setTechStackError("");
+    setSaving(true);
     try {
       const parsedTechStack = autoApplyForm.preferred_tech_stack
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const payload = { ...formData, tech_stack: finalTechStack };
+
       await Promise.all([
-        updateProfile(formData),
+        updateProfile(payload),
         saveAutoApplyPreferences({
           min_similarity_score: autoApplyForm.min_similarity_score,
           preferred_tech_stack: parsedTechStack,
@@ -892,7 +669,8 @@ export default function ProfilePage() {
         }),
       ]);
 
-      setProfile({ ...profile, ...formData });
+      setFormData(payload);
+      setProfile({ ...profile, ...payload });
       setSalaryRange({ min: autoApplyForm.salary_min, max: autoApplyForm.salary_max });
       setMatchPrefsSummary({
         minScore: autoApplyForm.min_similarity_score,
@@ -900,6 +678,8 @@ export default function ProfilePage() {
         jobTypes: autoApplyForm.job_type,
         locations: autoApplyForm.preferred_locations,
       });
+      setSkillInput("");
+      setSkillDropdownOpen(false);
       setIsEditing(false);
     } catch (error) {
       console.error(error);
@@ -937,6 +717,7 @@ export default function ProfilePage() {
     setSkillInput("");
     setSkillDropdownOpen(false);
     setSkillActiveIndex(0);
+    setTechStackError("");
     setSaveError("");
     setIsEditing(false);
   };
@@ -1057,6 +838,9 @@ export default function ProfilePage() {
     if (!formData.tech_stack.some((t) => t.toLowerCase() === skill.toLowerCase())) {
       setFormData((prev) => ({ ...prev, tech_stack: [...prev.tech_stack, skill] }));
     }
+    // A skill is in now, so the "missing" warning no longer applies.
+    setTechStackError("");
+    setSaveError("");
     setSkillInput("");
     setSkillActiveIndex(0);
     setSkillDropdownOpen(false);
@@ -1343,7 +1127,9 @@ export default function ProfilePage() {
                     </label>
                     <input
                       type="number"
+                      min={0}
                       value={formData.years_experience || ""}
+                      onWheel={preventWheelChange}
                       onChange={(e) =>
                         setFormData({ ...formData, years_experience: Number(e.target.value) })
                       }
@@ -1359,6 +1145,7 @@ export default function ProfilePage() {
                       type="number"
                       min={0}
                       value={formData.notice_period_days || ""}
+                      onWheel={preventWheelChange}
                       onChange={(e) =>
                         setFormData({ ...formData, notice_period_days: Number(e.target.value) })
                       }
@@ -1520,7 +1307,20 @@ export default function ProfilePage() {
 
           {/* ── Tech stack (your own skills) ── */}
           {(isEditing || (profile.tech_stack && profile.tech_stack.length > 0)) && (
-            <SectionCard icon={Code2} title="Tech stack" subtitle="Skills shown to recruiters">
+            <SectionCard
+              icon={Code2}
+              title="Tech stack"
+              subtitle="Skills shown to recruiters"
+              sectionRef={techStackSectionRef}
+              highlight={isEditing && !!techStackError}
+              action={
+                isEditing ? (
+                  <span className="text-[11px] font-bold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1 flex-shrink-0">
+                    Required
+                  </span>
+                ) : undefined
+              }
+            >
               <div className="flex flex-wrap gap-2">
                 {(isEditing ? formData.tech_stack : profile.tech_stack || []).map((tech) => (
                   <span
@@ -1550,6 +1350,7 @@ export default function ProfilePage() {
                   {/* Input + autocomplete dropdown */}
                   <div ref={skillBoxRef} className="relative flex-1 min-w-0">
                     <input
+                      ref={skillInputRef}
                       value={skillInput}
                       onChange={(e) => {
                         setSkillInput(e.target.value);
@@ -1560,13 +1361,16 @@ export default function ProfilePage() {
                         if (skillInput.trim()) setSkillDropdownOpen(true);
                       }}
                       onKeyDown={handleSkillKeyDown}
-                      className={inputCls}
+                      className={`${inputCls} ${
+                        techStackError ? "!border-[#E0533D] focus:!ring-[#E0533D]/15" : ""
+                      }`}
                       placeholder="Type a skill, e.g. Pyt → Python"
                       autoComplete="off"
                       role="combobox"
                       aria-expanded={skillDropdownOpen && skillOptions.length > 0}
                       aria-controls="skill-suggestions"
                       aria-autocomplete="list"
+                      aria-invalid={!!techStackError}
                     />
 
                     {skillDropdownOpen && skillOptions.length > 0 && (
@@ -1639,6 +1443,16 @@ export default function ProfilePage() {
                   >
                     Add
                   </button>
+                </div>
+              )}
+
+              {isEditing && techStackError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2 mt-3 text-xs font-semibold text-[#D8452F]"
+                >
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-px" />
+                  <span>{techStackError}</span>
                 </div>
               )}
             </SectionCard>
@@ -1834,7 +1648,9 @@ export default function ProfilePage() {
                           </span>
                           <input
                             type="number"
+                            min={0}
                             value={autoApplyForm.salary_min || ""}
+                            onWheel={preventWheelChange}
                             onChange={(e) =>
                               setAutoApplyForm({ ...autoApplyForm, salary_min: Number(e.target.value) })
                             }
@@ -1853,7 +1669,9 @@ export default function ProfilePage() {
                           </span>
                           <input
                             type="number"
+                            min={0}
                             value={autoApplyForm.salary_max || ""}
+                            onWheel={preventWheelChange}
                             onChange={(e) =>
                               setAutoApplyForm({ ...autoApplyForm, salary_max: Number(e.target.value) })
                             }
