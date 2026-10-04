@@ -1336,7 +1336,7 @@ export default function ProfilePage() {
                     />
                   </div> */}
 
-                  <div>
+                  {/* <div>
                     <EditSectionHeader title="Preferred tech stack to match" subtitle="Comma-separated — used to score job matches" />
                     <input
                       value={autoApplyForm.preferred_tech_stack}
@@ -1344,7 +1344,7 @@ export default function ProfilePage() {
                       className={inputCls}
                       placeholder="Python, React, PostgreSQL"
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <EditSectionHeader
