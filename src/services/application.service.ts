@@ -6,6 +6,26 @@ function getToken() {
   return localStorage.getItem("access_token");
 }
 
+// Pulls a company name out of whatever shape the API returns.
+function pickCompanyName(app: any): string | undefined {
+  const raw =
+    app.company_name ??
+    app.companyName ??
+    app.company ??
+    app.employer ??
+    app.organization ??
+    app.job?.company_name ??
+    app.job?.company ??
+    app.recruiter?.company_name ??
+    app.recruiter?.company;
+
+  // `company` may be an object like { id, name }
+  const name =
+    typeof raw === "string" ? raw : raw?.name ?? raw?.company_name;
+
+  return typeof name === "string" && name.trim() ? name.trim() : undefined;
+}
+
 export async function getAutoApplyLog() {
   const token = getToken();
 
@@ -78,7 +98,13 @@ export async function getApplications() {
     );
   }
 
-  return data.applications;
+  // Debug: uncomment once to see exactly what the backend sends
+  // console.log("applications payload", data.applications?.[0]);
+
+  return (data.applications ?? []).map((app: any) => ({
+    ...app,
+    company_name: pickCompanyName(app),
+  }));
 }
 
 export interface TodayApplication {

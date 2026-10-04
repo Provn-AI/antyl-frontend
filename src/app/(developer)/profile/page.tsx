@@ -5,7 +5,6 @@ import {
   MapPin,
   Briefcase,
   Trash2,
-  ExternalLink,
   Shield,
   AlertTriangle,
   Code2,
@@ -19,6 +18,11 @@ import {
   Upload,
   Share2,
   Clock,
+  Camera,
+  Award,
+  TrendingUp,
+  GraduationCap,
+  Link2,
 } from "lucide-react";
 
 import {
@@ -39,10 +43,8 @@ import { getMyBadges, Badge, BadgeCatalogEntry } from "@/services/badge.service"
 import { getMyStreak, StreakSummary } from "@/services/streak.service";
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
-import { BadgeIcon } from "../components/BadgeIcon";
 import { ShareBadgeModal, ShareBadgeData } from "@/components/ShareBadgeModal";
 import CitySelect from "@/components/citySelect";
-
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -105,32 +107,50 @@ function resolveBadgeFieldLabel(metadata?: Record<string, unknown>) {
   return typeof fieldValue === "string" ? fieldValue : undefined;
 }
 
-// ── Mini score ring ───────────────────────────────────────────────────────────
+// ── Score ring ────────────────────────────────────────────────────────────────
 
-function MiniScoreRing({ score }: { score: number }) {
-  const radius = 28;
+function ScoreRing({ score, size = 76 }: { score: number; size?: number }) {
+  const stroke = 6;
+  const radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
-  const offset = circ - (score / 100) * circ;
+  const offset = circ - (Math.max(0, Math.min(100, score)) / 100) * circ;
 
   return (
-    <div className="relative w-16 h-16 flex-shrink-0">
-      <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
-        <circle cx="32" cy="32" r={radius} strokeWidth="5" className="fill-none stroke-orange-100" />
-        <circle
-          cx="32" cy="32" r={radius} strokeWidth="5"
-          fill="none" stroke="url(#miniGrad)" strokeLinecap="round"
-          strokeDasharray={circ} strokeDashoffset={offset}
-        />
-        <defs>
-          <linearGradient id="miniGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#F2754A" />
-            <stop offset="100%" stopColor="#FFB347" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-sm font-black text-gray-900">{score}</span>
+    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg className="w-full h-full -rotate-90" viewBox={`0 0 ${size} ${size}`}>
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            strokeWidth={stroke}
+            fill="none"
+            className="stroke-orange-100"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            strokeWidth={stroke}
+            fill="none"
+            stroke="url(#scoreGrad)"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            className="transition-all duration-700"
+          />
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#F2754A" />
+              <stop offset="100%" stopColor="#FFB347" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-lg font-black text-gray-900 tabular-nums">{score}</span>
+        </div>
       </div>
+      <span className="text-[11px] font-bold text-gray-400">Antyl Score</span>
     </div>
   );
 }
@@ -147,32 +167,71 @@ type ConfirmState = {
 };
 
 const CONFIRM_CLOSED: ConfirmState = {
-  open: false, title: "", description: "", cta: "",
+  open: false,
+  title: "",
+  description: "",
+  cta: "",
   onConfirm: async () => {},
 };
 
 function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!state.open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [state.open, onClose]);
+
   if (!state.open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pb-6 sm:pb-0"
+    >
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-sm bg-white rounded-[24px] border border-gray-100 shadow-xl p-6">
-        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${state.danger ? "bg-red-50" : "bg-orange-50"}`}>
-          <AlertTriangle className={`w-5 h-5 ${state.danger ? "text-red-500" : "text-[#F2754A]"}`} />
+        <div
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${
+            state.danger ? "bg-[#E0533D]/10" : "bg-orange-50"
+          }`}
+        >
+          <AlertTriangle
+            className={`w-5 h-5 ${state.danger ? "text-[#E0533D]" : "text-[#F2754A]"}`}
+          />
         </div>
         <h3 className="text-base font-bold text-gray-900 mb-1">{state.title}</h3>
         <p className="text-sm text-gray-400 mb-6">{state.description}</p>
         <div className="flex gap-3">
-          <button type="button" onClick={onClose}
-            className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-full text-sm font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
             Cancel
           </button>
-          <button type="button" disabled={busy}
-            onClick={async () => { setBusy(true); try { await state.onConfirm(); } finally { setBusy(false); onClose(); } }}
-            className={`flex-1 py-2.5 rounded-full text-sm font-bold text-white transition-colors disabled:opacity-50 ${state.danger ? "bg-red-500 hover:bg-red-600" : "bg-[#F2754A] hover:bg-[#e0623a]"}`}>
-            {busy ? "…" : state.cta}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await state.onConfirm();
+              } finally {
+                setBusy(false);
+                onClose();
+              }
+            }}
+            className={`flex-1 py-2.5 rounded-full text-sm font-bold text-white transition-colors disabled:opacity-50 ${
+              state.danger ? "bg-[#E0533D] hover:bg-[#C9442F]" : "bg-[#F2754A] hover:bg-[#e0623a]"
+            }`}
+          >
+            {busy ? "Working…" : state.cta}
           </button>
         </div>
       </div>
@@ -180,7 +239,23 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
   );
 }
 
-// ── LinkedIn link ─────────────────────────────────────────────────────────────
+// ── Brand icons ───────────────────────────────────────────────────────────────
+
+function GitHubIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+    </svg>
+  );
+}
+
+function LinkedInIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M20.447 20.452h-3.555v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667h-3.554V9h3.414v1.561h.049c.476-.9 1.637-1.851 3.369-1.851 3.602 0 4.268 2.37 4.268 5.451v6.291zm-14.692-11.9c-1.146 0-2.075-.931-2.075-2.078 0-1.15.929-2.08 2.075-2.08 1.146 0 2.075.93 2.075 2.08 0 1.147-.929 2.078-2.075 2.078zm1.777 11.9H4.0V9h3.532v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.226.792 24 1.771 24h20.451C23.202 24 24 23.226 24 22.271V1.729C24 .774 23.202 0 22.225 0z" />
+    </svg>
+  );
+}
 
 function LinkedInLink({ url }: { url: string | undefined }) {
   if (!url) return <p className="text-sm font-semibold text-gray-800">Not added</p>;
@@ -210,36 +285,132 @@ function GitHubLink({ username }: { username?: string }) {
   );
 }
 
-function GitHubIcon({ className }: { className?: string }) {
+// ── Layout helpers ────────────────────────────────────────────────────────────
+
+function SectionCard({
+  icon: Icon,
+  title,
+  subtitle,
+  action,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-    </svg>
+    <section className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-7 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+            <Icon className="w-4 h-4 text-[#F2754A]" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+            {subtitle && <p className="text-xs text-gray-400 truncate">{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 
-function LinkedInIcon({ className }: { className?: string }) {
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string | number;
+  hint?: string;
+}) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M20.447 20.452h-3.555v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667h-3.554V9h3.414v1.561h.049c.476-.9 1.637-1.851 3.369-1.851 3.602 0 4.268 2.37 4.268 5.451v6.291zm-14.692-11.9c-1.146 0-2.075-.931-2.075-2.078 0-1.15.929-2.08 2.075-2.08 1.146 0 2.075.93 2.075 2.08 0 1.147-.929 2.078-2.075 2.078zm1.777 11.9H4.0V9h3.532v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.226.792 24 1.771 24h20.451C23.202 24 24 23.226 24 22.271V1.729C24 .774 23.202 0 22.225 0z" />
-    </svg>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center mb-3">
+        <Icon className="w-4 h-4 text-[#F2754A]" />
+      </div>
+      <p
+        className="text-2xl font-bold text-gray-900 tabular-nums leading-none"
+        style={{ fontFamily: "var(--font-fraunces, serif)" }}
+      >
+        {value}
+      </p>
+      <p className="text-xs font-semibold text-gray-500 mt-1.5">{label}</p>
+      {hint && <p className="text-[11px] text-gray-400 mt-0.5 truncate">{hint}</p>}
+    </div>
   );
 }
 
-// ── Section header (used inside the unified edit form) ────────────────────────
+function Pill({
+  children,
+  tone = "gray",
+}: {
+  children: React.ReactNode;
+  tone?: "gray" | "orange";
+}) {
+  return (
+    <span
+      className={`flex items-center gap-1 text-xs font-semibold rounded-full px-2.5 py-1 ${
+        tone === "orange" ? "text-[#F2754A] bg-orange-50" : "text-gray-500 bg-gray-50"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
 
+// Section header used inside the unified edit form
 function EditSectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="mb-4">
-      <p className="text-xs font-bold text-gray-700 uppercase tracking-widest">{title}</p>
+    <div className="mb-3">
+      <p className="text-sm font-bold text-gray-800">{title}</p>
       {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
 
+function Toggle({
+  checked,
+  onChange,
+  disabled,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      disabled={disabled}
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 disabled:opacity-50 ${
+        checked ? "bg-[#F2754A]" : "bg-gray-200"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
+
 // ── Input style ───────────────────────────────────────────────────────────────
 
-const inputCls = "w-full border border-gray-200 rounded-2xl px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] transition-colors bg-white";
+const inputCls =
+  "w-full border border-gray-200 rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#F2754A] focus:ring-4 focus:ring-orange-100 transition bg-white placeholder:font-normal placeholder:text-gray-300";
 
 const MAX_PHOTO_SIZE = 0.2 * 1024 * 1024; // 200kb
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -277,7 +448,7 @@ export default function ProfilePage() {
     notice_period_days: 0,
   });
 
-  // Auto-apply / match preferences — now edited inline alongside the rest
+  // Auto-apply / match preferences — edited inline alongside the rest
   // of the profile instead of on a separate /settings/auto-apply page.
   const [autoApplyForm, setAutoApplyForm] = useState({
     min_similarity_score: 70,
@@ -451,7 +622,7 @@ export default function ProfilePage() {
 
   const handleDisconnectGithub = async () => {
     await disconnectGithub();
-    setProfile((p) => p ? { ...p, github_username: undefined } : p);
+    setProfile((p) => (p ? { ...p, github_username: undefined } : p));
   };
 
   const handleDeleteAccount = async () => {
@@ -579,10 +750,22 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen w-full md:flex bg-[#FAF6F0] overflow-x-hidden">
         <DeveloperNavbar />
-        <div className="w-full md:flex-1 md:min-w-0 flex items-center justify-center min-h-[calc(100vh-68px)] md:min-h-screen">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-[#F2754A] border-t-transparent animate-spin" />
-            <p className="text-sm text-gray-400 font-medium">Loading profile…</p>
+        <div className="w-full md:flex-1 md:min-w-0 md:flex md:justify-center px-4 py-12">
+          <div className="w-full max-w-2xl md:mx-auto min-w-0 animate-pulse">
+            <div className="bg-white rounded-[28px] border border-gray-100 overflow-hidden mb-4">
+              <div className="h-28 bg-orange-100/60" />
+              <div className="px-8 pb-8">
+                <div className="w-24 h-24 rounded-3xl bg-gray-100 -mt-12 border-4 border-white" />
+                <div className="h-5 w-1/3 bg-gray-100 rounded-full mt-4" />
+                <div className="h-3 w-1/4 bg-gray-100 rounded-full mt-3" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="h-28 bg-white rounded-2xl border border-gray-100" />
+              ))}
+            </div>
+            <div className="h-40 bg-white rounded-[24px] border border-gray-100" />
           </div>
         </div>
       </div>
@@ -601,27 +784,78 @@ export default function ProfilePage() {
   }
 
   const initials = (formData.name || profile.name || "??")
-    .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const badgeCounts = badges.reduce((acc, b) => {
     acc[b.badge_key] = (acc[b.badge_key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
+  // Profile strength: how many of the key profile items are filled in.
+  const strengthChecks = [
+    { label: "Photo", done: !!profile.avatar_url },
+    { label: "Bio", done: !!profile.bio },
+    { label: "City", done: !!profile.city },
+    { label: "Current role", done: !!profile.current_role },
+    { label: "Skills", done: (profile.tech_stack?.length ?? 0) > 0 },
+    { label: "Resume", done: !!profile.resume_url },
+    { label: "GitHub", done: !!profile.github_username },
+    { label: "LinkedIn", done: !!profile.linkedin_url },
+    { label: "Verified score", done: profile.trust_score != null },
+  ];
+  const strengthDone = strengthChecks.filter((c) => c.done).length;
+  const strength = Math.round((strengthDone / strengthChecks.length) * 100);
+  const missing = strengthChecks.filter((c) => !c.done).map((c) => c.label);
+
   return (
     <div className="min-h-screen w-full md:flex bg-[#FAF6F0] overflow-x-hidden">
       <DeveloperNavbar />
       <ConfirmModal state={confirm} onClose={() => setConfirm(CONFIRM_CLOSED)} />
-      <ShareBadgeModal badge={sharedBadge} isOpen={Boolean(sharedBadge)} onClose={() => setSharedBadge(null)} />
+      <ShareBadgeModal
+        badge={sharedBadge}
+        isOpen={Boolean(sharedBadge)}
+        onClose={() => setSharedBadge(null)}
+      />
 
-      <div className="w-full md:flex-1 md:min-w-0 md:flex md:justify-center px-4 py-12">
+      <div className="w-full md:flex-1 md:min-w-0 md:flex md:justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-2xl md:mx-auto min-w-0">
-
-          {/* ── Hero card ── */}
-          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-            <div className="flex items-start gap-4">
+          {/* ── Hero ── */}
+          <div className="bg-white rounded-[28px] border border-gray-100 shadow-sm overflow-hidden mb-4">
+            {/* Banner */}
+            <div className="relative h-24 sm:h-28 bg-gradient-to-r from-[#F2754A] via-[#F59A6B] to-[#FFB347]">
               <div
-                className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center flex-shrink-0 shadow-md shadow-orange-100 relative overflow-hidden cursor-pointer group"
+                aria-hidden
+                className="absolute -right-8 -top-10 w-44 h-44 rounded-full bg-white/10"
+              />
+              <div
+                aria-hidden
+                className="absolute right-24 -bottom-12 w-32 h-32 rounded-full bg-white/10"
+              />
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="absolute top-4 right-4 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-white/95 text-[#F2754A] hover:bg-white transition-colors shadow-sm"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit profile
+                </button>
+              )}
+              {isEditing && (
+                <span className="absolute top-4 right-4 px-3.5 py-2 rounded-full text-xs font-bold bg-white/25 text-white">
+                  Editing profile
+                </span>
+              )}
+            </div>
+
+            <div className="px-6 sm:px-8 pb-6 sm:pb-8">
+              {/* Avatar overlapping the banner */}
+              <div
+                className="relative w-20 h-20 sm:w-24 sm:h-24 -mt-10 sm:-mt-12 rounded-3xl border-4 border-white bg-gradient-to-br from-[#F2754A] to-[#FFB347] flex items-center justify-center overflow-hidden cursor-pointer group shadow-md"
                 onClick={handlePhotoClick}
                 title="Change profile photo"
               >
@@ -632,18 +866,16 @@ export default function ProfilePage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-white font-black text-lg">{initials}</span>
+                  <span className="text-white font-black text-2xl">{initials}</span>
                 )}
 
-                {avatarUploading && (
+                {avatarUploading ? (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   </div>
-                )}
-
-                {!avatarUploading && (
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                    <Pencil className="w-4 h-4 text-white" />
+                ) : (
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/35 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <Camera className="w-5 h-5 text-white" />
                   </div>
                 )}
 
@@ -656,235 +888,290 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <div className="flex-1 min-w-0">
-                {isEditing ? (
-                  <div className="mb-2">
-                    <label className="block text-xs font-semibold text-gray-400 mb-1">Name</label>
-                    <input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={inputCls}
-                      placeholder="Your name"
-                    />
-                  </div>
-                ) : (
-                  <h2 className="text-xl font-bold text-gray-900 truncate">
-                    {profile.name || "Unnamed Developer"}
-                  </h2>
-                )}
+              {avatarError && (
+                <p className="text-xs font-semibold text-[#D8452F] mt-2">{avatarError}</p>
+              )}
 
-                {isEditing ? (
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-400 mb-1">Current role</label>
-                    <input
-                      value={formData.current_role}
-                      onChange={(e) => setFormData({ ...formData, current_role: e.target.value })}
-                      className={inputCls}
-                      placeholder="e.g. Senior Frontend Engineer"
-                    />
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400 mt-0.5">
-                    {profile.current_role || "Developer"}
-                  </p>
-                )}
-
-                {!isEditing && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {profile.city && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
-                        <MapPin className="w-3 h-3" />{profile.city}
-                      </span>
-                    )}
-                    {profile.years_experience != null && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
-                        <Briefcase className="w-3 h-3" />{profile.years_experience}y exp
-                      </span>
-                    )}
-                    {profile.notice_period_days != null && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
-                        <Clock className="w-3 h-3" />{noticePeriodLabel(profile.notice_period_days)}
-                      </span>
-                    )}
-                    {streak && streak.current_streak_days > 0 && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
-                        <Flame className="w-3 h-3" />
-                        {streak.current_streak_days}-day streak
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
-                      {jobStatusLabel(profile.job_status)}
-                    </span>
-                    {profile.remote_ok && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
-                        Remote OK
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {isEditing && (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 mb-1">City</label>
-                      <CitySelect
-                        mode="single"
-                        value={formData.city}
-                        onChange={(v) => setFormData({ ...formData, city: v as string })}
-                        placeholder="Select city"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 mb-1">Experience (years)</label>
-                      <input
-                        type="number"
-                        value={formData.years_experience || ""}
-                        onChange={(e) => setFormData({ ...formData, years_experience: Number(e.target.value) })}
-                        className={inputCls}
-                        placeholder="3"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 mb-1">Notice period (days)</label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={formData.notice_period_days || ""}
-                        onChange={(e) => setFormData({ ...formData, notice_period_days: Number(e.target.value) })}
-                        className={inputCls}
-                        placeholder="0"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {isEditing && (
-                  <div className="mt-2">
-                    <label className="block text-xs font-semibold text-gray-400 mb-1">
-                      Job search status
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {JOB_STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, job_status: opt.value })}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${
-                            formData.job_status === opt.value
-                              ? "bg-[#F2754A] text-white border-[#F2754A]"
-                              : "bg-white text-gray-500 border-gray-200"
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1.5">
-                      Controls whether jobs show up in your feed and auto-apply.
-                    </p>
-
-                    <div className="flex items-center justify-between mt-4">
+              <div className="flex items-start justify-between gap-4 mt-4">
+                <div className="flex-1 min-w-0">
+                  {isEditing ? (
+                    <div className="space-y-3">
                       <div>
-                        <p className="text-xs font-semibold text-gray-700">Open to remote roles</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          Include remote jobs in your feed and auto-apply matches.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, remote_ok: !formData.remote_ok })}
-                        role="switch"
-                        aria-checked={formData.remote_ok}
-                        aria-label="Toggle remote roles"
-                        className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
-                          formData.remote_ok ? "bg-[#F2754A]" : "bg-gray-200"
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                            formData.remote_ok ? "translate-x-5" : "translate-x-0"
-                          }`}
+                        <label className="block text-xs font-semibold text-gray-400 mb-1">Name</label>
+                        <input
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className={inputCls}
+                          placeholder="Your name"
                         />
-                      </button>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 mb-1">
+                          Current role
+                        </label>
+                        <input
+                          value={formData.current_role}
+                          onChange={(e) => setFormData({ ...formData, current_role: e.target.value })}
+                          className={inputCls}
+                          placeholder="e.g. Senior Frontend Engineer"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <h2
+                        className="text-xl sm:text-2xl font-bold text-gray-900 truncate"
+                        style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                      >
+                        {profile.name || "Unnamed Developer"}
+                      </h2>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {profile.current_role || "Developer"}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-3.5">
+                        {profile.city && (
+                          <Pill>
+                            <MapPin className="w-3 h-3" />
+                            {profile.city}
+                          </Pill>
+                        )}
+                        {profile.years_experience != null && (
+                          <Pill>
+                            <Briefcase className="w-3 h-3" />
+                            {profile.years_experience}y exp
+                          </Pill>
+                        )}
+                        {profile.notice_period_days != null && (
+                          <Pill>
+                            <Clock className="w-3 h-3" />
+                            {noticePeriodLabel(profile.notice_period_days)}
+                          </Pill>
+                        )}
+                        <Pill>{jobStatusLabel(profile.job_status)}</Pill>
+                        {profile.remote_ok && <Pill tone="orange">Remote OK</Pill>}
+                        {streak && streak.current_streak_days > 0 && (
+                          <Pill tone="orange">
+                            <Flame className="w-3 h-3" />
+                            {streak.current_streak_days}-day streak
+                          </Pill>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {!isEditing && profile.trust_score != null && (
+                  <ScoreRing score={profile.trust_score} />
                 )}
               </div>
 
-              {!isEditing && profile.trust_score != null && (
-                <div className="flex flex-col items-center gap-1 flex-shrink-0">
-                  <MiniScoreRing score={profile.trust_score} />
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Score</span>
+              {isEditing && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">City</label>
+                    <CitySelect
+                      mode="single"
+                      value={formData.city}
+                      onChange={(v) => setFormData({ ...formData, city: v as string })}
+                      placeholder="Select city"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">
+                      Experience (years)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.years_experience || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, years_experience: Number(e.target.value) })
+                      }
+                      className={inputCls}
+                      placeholder="3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">
+                      Notice period (days)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formData.notice_period_days || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, notice_period_days: Number(e.target.value) })
+                      }
+                      className={inputCls}
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
               )}
+
+              {isEditing && (
+                <div className="mt-5 pt-5 border-t border-gray-50">
+                  <label className="block text-xs font-semibold text-gray-400 mb-2">
+                    Job search status
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {JOB_STATUS_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, job_status: opt.value })}
+                        className={`text-xs font-bold px-3.5 py-2 rounded-full border transition-colors ${
+                          formData.job_status === opt.value
+                            ? "bg-[#F2754A] text-white border-[#F2754A]"
+                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Controls whether jobs show up in your feed and auto-apply.
+                  </p>
+
+                  <div className="flex items-center justify-between gap-4 mt-5 p-4 rounded-2xl bg-gray-50/70">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">Open to remote roles</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Include remote jobs in your feed and auto-apply matches.
+                      </p>
+                    </div>
+                    <Toggle
+                      checked={formData.remote_ok}
+                      onChange={() => setFormData({ ...formData, remote_ok: !formData.remote_ok })}
+                      label="Toggle remote roles"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isEditing ? (
+                <div className="mt-5">
+                  <label className="block text-xs font-semibold text-gray-400 mb-1">Bio</label>
+                  <textarea
+                    rows={3}
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    className={inputCls + " resize-none"}
+                    placeholder="Tell recruiters about yourself…"
+                  />
+                </div>
+              ) : (
+                profile.bio && (
+                  <p className="text-sm text-gray-500 leading-relaxed mt-5 pt-5 border-t border-gray-50">
+                    {profile.bio}
+                  </p>
+                )
+              )}
             </div>
+          </div>
 
-            {avatarError && (
-              <p className="text-xs font-semibold text-red-500 mt-3">{avatarError}</p>
-            )}
+          {/* ── Quick stats ── */}
+          {!isEditing && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <StatTile
+                icon={Shield}
+                label="Antyl Score"
+                value={profile.trust_score != null ? profile.trust_score : "–"}
+                hint={profile.trust_score != null ? "out of 100" : "Not verified yet"}
+              />
+              <StatTile
+                icon={Flame}
+                label="Day streak"
+                value={streak ? streak.current_streak_days : 0}
+                hint={streak ? `Longest ${streak.longest_streak_days} days` : undefined}
+              />
+              <StatTile
+                icon={Award}
+                label="Badges"
+                value={badges.length}
+                hint={`${Object.keys(badgeCounts).length} unique`}
+              />
+              {autoApply ? (
+                <StatTile
+                  icon={Zap}
+                  label="Auto-applied today"
+                  value={`${autoApply.used}/${autoApply.limit}`}
+                  hint={autoApply.is_enabled ? "Auto-apply is on" : "Auto-apply is off"}
+                />
+              ) : (
+                <StatTile
+                  icon={Briefcase}
+                  label="Experience"
+                  value={profile.years_experience ?? 0}
+                  hint="years"
+                />
+              )}
+            </div>
+          )}
 
-            {isEditing ? (
-              <div className="mt-4">
-                <label className="block text-xs font-semibold text-gray-400 mb-1">Bio</label>
-                <textarea
-                  rows={3}
-                  value={formData.bio}
-                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                  className={inputCls + " resize-none"}
-                  placeholder="Tell recruiters about yourself…"
+          {/* ── Profile strength ── */}
+          {!isEditing && strength < 100 && (
+            <section className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-7 mb-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Profile strength</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    A complete profile gets better matches and more recruiter views.
+                  </p>
+                </div>
+                <span
+                  className="text-2xl font-bold text-[#F2754A] tabular-nums"
+                  style={{ fontFamily: "var(--font-fraunces, serif)" }}
+                >
+                  {strength}%
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-orange-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#F2754A] to-[#FFB347] transition-all duration-700"
+                  style={{ width: `${strength}%` }}
                 />
               </div>
-            ) : (
-              profile.bio && (
-                <p className="text-sm text-gray-500 leading-relaxed mt-5 pt-5 border-t border-gray-50">
-                  {profile.bio}
-                </p>
-              )
-            )}
-
-            {!isEditing && (
-              <div className="flex gap-2 mt-5 pt-5 border-t border-gray-50">
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors"
-                >
-                  <Pencil className="w-4 h-4" />
-                  Edit profile
-                </button>
+              <div className="flex flex-wrap items-center gap-2 mt-4">
+                <span className="text-xs font-semibold text-gray-400">Still to add:</span>
+                {missing.map((m) => (
+                  <span
+                    key={m}
+                    className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-100 rounded-full px-2.5 py-1"
+                  >
+                    {m}
+                  </span>
+                ))}
               </div>
-            )}
-          </div>
+            </section>
+          )}
 
           {/* ── Score history ── */}
           {history.length > 0 && (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-5">
-                Score history
-              </p>
+            <SectionCard
+              icon={TrendingUp}
+              title="Score history"
+              subtitle="How your Antyl Score has changed"
+            >
               <ScoreHistoryChart data={history} />
-            </div>
+            </SectionCard>
           )}
 
           {/* ── Tech stack (your own skills) ── */}
           {(isEditing || (profile.tech_stack && profile.tech_stack.length > 0)) && (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-                Tech stack
-              </p>
-
+            <SectionCard icon={Code2} title="Tech stack" subtitle="Skills shown to recruiters">
               <div className="flex flex-wrap gap-2">
                 {(isEditing ? formData.tech_stack : profile.tech_stack || []).map((tech) => (
                   <span
                     key={tech}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-[#D9582F] bg-orange-50 rounded-full px-3 py-1.5"
                   >
                     {tech}
                     {isEditing && (
                       <button
                         type="button"
                         onClick={() => removeSkill(tech)}
-                        className="text-gray-400 hover:text-red-500"
+                        className="text-[#F2754A]/60 hover:text-[#E0533D]"
                         aria-label={`Remove ${tech}`}
                       >
                         <X className="w-3 h-3" />
@@ -914,106 +1201,103 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={addSkill}
-                    className="px-4 py-2.5 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors flex-shrink-0"
+                    className="px-5 py-2.5 rounded-full text-sm font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors flex-shrink-0"
                   >
                     Add
                   </button>
                 </div>
               )}
-            </div>
+            </SectionCard>
           )}
 
           {/* ── Verification ── */}
-          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-              Verification
-            </p>
-
+          <section className="rounded-[24px] border border-orange-100 bg-gradient-to-br from-orange-50 to-white shadow-sm p-6 sm:p-7 mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-white border border-orange-100 flex items-center justify-center flex-shrink-0">
                 <Shield className="w-5 h-5 text-[#F2754A]" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-gray-900">
                   {profile.trust_score != null
                     ? `Antyl Score: ${profile.trust_score}/100`
                     : "Not verified yet"}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-500 mt-0.5">
                   {profile.trust_score != null
                     ? "Re-verify every 7 days to keep your score fresh"
                     : "Verify your skills to unlock matching and the leaderboard"}
                 </p>
               </div>
+              <a
+                href="/verification"
+                className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-sm shadow-orange-100"
+              >
+                {profile.trust_score != null ? "Re-verify" : "Start verification"}
+              </a>
             </div>
+          </section>
 
-            <a href="/verification"
-              className="inline-block mt-4 text-xs font-bold text-[#F2754A] hover:underline"
-            >
-              {profile.trust_score != null ? "Re-verify →" : "Start verification →"}
-            </a>
-          </div>
-
-          {/* ── Auto-apply & match preferences (salary range now lives here too) ── */}
+          {/* ── Auto-apply & match preferences (salary range lives here too) ── */}
           {autoApply && (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                  Auto-apply & match preferences
-                </p>
-                <button
-                  type="button"
-                  onClick={handleToggleAutoApply}
+            <SectionCard
+              icon={Zap}
+              title="Auto-apply & match preferences"
+              subtitle={`${autoApply.used}/${autoApply.limit} auto-applied today, resets midnight IST`}
+              action={
+                <Toggle
+                  checked={autoApply.is_enabled}
+                  onChange={handleToggleAutoApply}
                   disabled={autoApplyToggling}
-                  role="switch"
-                  aria-checked={autoApply.is_enabled}
-                  className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
-                    autoApply.is_enabled ? "bg-[#F2754A]" : "bg-gray-200"
+                  label="Toggle auto-apply"
+                />
+              }
+            >
+              <div
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${
+                  autoApply.is_enabled ? "bg-orange-50" : "bg-gray-50"
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    autoApply.is_enabled ? "bg-[#F2754A]" : "bg-gray-300"
+                  }`}
+                />
+                <p
+                  className={`text-sm font-semibold ${
+                    autoApply.is_enabled ? "text-[#D9582F]" : "text-gray-500"
                   }`}
                 >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                      autoApply.is_enabled ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-4 mt-4">
-                <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-5 h-5 text-[#F2754A]" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    {autoApply.is_enabled ? "Actively applying for you" : "Turned off"}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {autoApply.used}/{autoApply.limit} auto-applied today · resets midnight IST
-                  </p>
-                </div>
+                  {autoApply.is_enabled ? "Actively applying for you" : "Turned off"}
+                </p>
               </div>
 
               {!isEditing ? (
                 <>
-                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-50">
-                    {matchPrefsSummary && matchPrefsSummary.minScore != null && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {/* {matchPrefsSummary && matchPrefsSummary.minScore != null && (
                       <span className="text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
                         Min match: {matchPrefsSummary.minScore}%
                       </span>
-                    )}
+                    )} */}
                     {matchPrefsSummary?.jobTypes.map((t) => (
-                      <span key={t} className="text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
-                        {t.replace("_", " ")}
-                      </span>
+                      <Pill key={t}>{t.replace("_", " ")}</Pill>
                     ))}
                     {matchPrefsSummary?.locations.map((loc) => (
-                      <span key={loc} className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
-                        <MapPin className="w-3 h-3" />{loc}
-                      </span>
+                      <Pill key={loc}>
+                        <MapPin className="w-3 h-3" />
+                        {loc}
+                      </Pill>
                     ))}
+                    {matchPrefsSummary &&
+                      matchPrefsSummary.jobTypes.length === 0 &&
+                      matchPrefsSummary.locations.length === 0 && (
+                        <p className="text-xs text-gray-400">
+                          No job type or location preferences set. Tap Edit profile to add some.
+                        </p>
+                      )}
                   </div>
 
-                  {matchPrefsSummary && matchPrefsSummary.techStack.length > 0 && (
+                  {/* {matchPrefsSummary && matchPrefsSummary.techStack.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {matchPrefsSummary.techStack.map((tech) => (
                         <span key={tech} className="text-xs font-semibold text-[#F2754A] bg-orange-50 rounded-full px-2.5 py-1">
@@ -1021,12 +1305,12 @@ export default function ProfilePage() {
                         </span>
                       ))}
                     </div>
-                  )}
+                  )} */}
 
                   {salaryRange && (
-                    <div className="mt-4 pt-4 border-t border-gray-50">
+                    <div className="mt-4 p-4 rounded-2xl bg-gray-50/70">
                       <p className="text-xs font-semibold text-gray-400">Salary range</p>
-                      <p className="text-sm font-bold text-gray-800 mt-0.5">
+                      <p className="text-base font-bold text-gray-800 mt-0.5">
                         {formatSalary(salaryRange.min)} – {formatSalary(salaryRange.max)}
                       </p>
                     </div>
@@ -1034,7 +1318,7 @@ export default function ProfilePage() {
                 </>
               ) : (
                 <div className="mt-5 pt-5 border-t border-gray-50 space-y-6">
-                  <div>
+                  {/* <div>
                     <EditSectionHeader
                       title={`Minimum match score (${autoApplyForm.min_similarity_score}%)`}
                       subtitle="Only apply to jobs scoring this or higher"
@@ -1050,9 +1334,9 @@ export default function ProfilePage() {
                       }
                       className="w-full accent-[#F2754A]"
                     />
-                  </div>
+                  </div> */}
 
-                  <div>
+                  {/* <div>
                     <EditSectionHeader title="Preferred tech stack to match" subtitle="Comma-separated — used to score job matches" />
                     <input
                       value={autoApplyForm.preferred_tech_stack}
@@ -1060,20 +1344,23 @@ export default function ProfilePage() {
                       className={inputCls}
                       placeholder="Python, React, PostgreSQL"
                     />
-                  </div>
+                  </div> */}
 
                   <div>
-                    <EditSectionHeader title="Job type" subtitle="Leave all unselected to match any job type" />
+                    <EditSectionHeader
+                      title="Job type"
+                      subtitle="Leave all unselected to match any job type"
+                    />
                     <div className="flex flex-wrap gap-2">
                       {JOB_TYPES.map((type) => (
                         <button
                           key={type}
                           type="button"
                           onClick={() => toggleJobType(type)}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${
+                          className={`text-xs font-bold px-3.5 py-2 rounded-full border transition-colors capitalize ${
                             autoApplyForm.job_type.includes(type)
                               ? "bg-[#F2754A] text-white border-[#F2754A]"
-                              : "bg-white text-gray-500 border-gray-200"
+                              : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
                           }`}
                         >
                           {type.replace("_", " ")}
@@ -1083,11 +1370,16 @@ export default function ProfilePage() {
                   </div>
 
                   <div>
-                    <EditSectionHeader title="Preferred locations" subtitle="Remote jobs always match regardless of location" />
+                    <EditSectionHeader
+                      title="Preferred locations"
+                      subtitle="Remote jobs always match regardless of location"
+                    />
                     <CitySelect
                       mode="multi"
                       value={autoApplyForm.preferred_locations}
-                      onChange={(v) => setAutoApplyForm({ ...autoApplyForm, preferred_locations: v as string[] })}
+                      onChange={(v) =>
+                        setAutoApplyForm({ ...autoApplyForm, preferred_locations: v as string[] })
+                      }
                       placeholder="Select cities"
                     />
                   </div>
@@ -1099,28 +1391,40 @@ export default function ProfilePage() {
                     />
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-semibold text-gray-400 block mb-1.5">Minimum</label>
+                        <label className="text-xs font-semibold text-gray-400 block mb-1.5">
+                          Minimum
+                        </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">₹</span>
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">
+                            ₹
+                          </span>
                           <input
                             type="number"
                             value={autoApplyForm.salary_min || ""}
-                            onChange={(e) => setAutoApplyForm({ ...autoApplyForm, salary_min: Number(e.target.value) })}
+                            onChange={(e) =>
+                              setAutoApplyForm({ ...autoApplyForm, salary_min: Number(e.target.value) })
+                            }
                             placeholder="0"
-                            className={inputCls + " pl-7"}
+                            className={inputCls + " pl-8"}
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-gray-400 block mb-1.5">Maximum</label>
+                        <label className="text-xs font-semibold text-gray-400 block mb-1.5">
+                          Maximum
+                        </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">₹</span>
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-semibold select-none">
+                            ₹
+                          </span>
                           <input
                             type="number"
                             value={autoApplyForm.salary_max || ""}
-                            onChange={(e) => setAutoApplyForm({ ...autoApplyForm, salary_max: Number(e.target.value) })}
+                            onChange={(e) =>
+                              setAutoApplyForm({ ...autoApplyForm, salary_max: Number(e.target.value) })
+                            }
                             placeholder="0"
-                            className={inputCls + " pl-7"}
+                            className={inputCls + " pl-8"}
                           />
                         </div>
                       </div>
@@ -1128,27 +1432,25 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
-            </div>
+            </SectionCard>
           )}
 
           {/* ── Streak & Badges ── */}
           {(streak || badges.length > 0) && (
-            <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-                Streak & Badges
-              </p>
-
+            <SectionCard icon={Award} title="Streak & badges" subtitle="Tap a badge to share it">
               {streak && (
-                <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-50">
-                  <div className="w-11 h-11 rounded-2xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-orange-50/70 mb-5">
+                  <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center flex-shrink-0">
                     <Flame className="w-5 h-5 text-[#F2754A]" />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-gray-900">
-                      {streak.current_streak_days} day{streak.current_streak_days === 1 ? "" : "s"} streak
+                      {streak.current_streak_days} day{streak.current_streak_days === 1 ? "" : "s"}{" "}
+                      streak
                     </p>
-                    <p className="text-xs text-gray-400">
-                      Longest: {streak.longest_streak_days} days · {streak.days_to_week_bonus} days to next bonus
+                    <p className="text-xs text-gray-500">
+                      Longest: {streak.longest_streak_days} days · {streak.days_to_week_bonus} days
+                      to next bonus
                     </p>
                   </div>
                 </div>
@@ -1161,8 +1463,12 @@ export default function ProfilePage() {
                     if (!meta) return null;
 
                     const badgeRecord = badges.find((b) => b.badge_key === key);
-                    const rank = resolveBadgeRank(badgeRecord?.metadata as Record<string, unknown> | undefined);
-                    const fieldLabel = resolveBadgeFieldLabel(badgeRecord?.metadata as Record<string, unknown> | undefined);
+                    const rank = resolveBadgeRank(
+                      badgeRecord?.metadata as Record<string, unknown> | undefined
+                    );
+                    const fieldLabel = resolveBadgeFieldLabel(
+                      badgeRecord?.metadata as Record<string, unknown> | undefined
+                    );
 
                     return (
                       <button
@@ -1179,7 +1485,7 @@ export default function ProfilePage() {
                             fieldLabel,
                           })
                         }
-                        className="group relative flex flex-col items-center text-center gap-2 rounded-2xl border border-gray-100 bg-white p-3 text-left transition-transform hover:-translate-y-0.5 hover:shadow-sm"
+                        className="group relative flex flex-col items-center text-center gap-2 rounded-2xl border border-gray-100 p-3 transition-transform hover:-translate-y-0.5 hover:shadow-sm"
                         style={{ backgroundColor: `${meta.color}14` }}
                       >
                         <div className="absolute right-2 top-2 opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100 scale-90">
@@ -1189,11 +1495,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/60 bg-white/60">
-                          <img
-                            src={meta.image}
-                            alt={meta.label}
-                            className="h-full w-full object-contain"
-                          />
+                          <img src={meta.image} alt={meta.label} className="h-full w-full object-contain" />
                         </div>
                         <div className="w-full">
                           <p className="text-xs font-bold text-gray-800">{meta.label}</p>
@@ -1206,16 +1508,16 @@ export default function ProfilePage() {
               ) : (
                 <p className="text-xs text-gray-400">No badges yet - keep your streak going!</p>
               )}
-            </div>
+            </SectionCard>
           )}
 
           {/* ── Resume ── */}
-          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-            <div className="flex items-center justify-between mb-5">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                Resume
-              </p>
-              <div className="flex items-center gap-2">
+          <SectionCard
+            icon={FileText}
+            title="Resume"
+            subtitle={profile.resume_url ? "Parsed from your uploaded file" : "PDF or DOCX, up to 100kb"}
+            action={
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {profile.resume_url && (
                   <a
                     href={profile.resume_url}
@@ -1224,7 +1526,7 @@ export default function ProfilePage() {
                     className="flex items-center gap-1.5 text-xs font-bold text-[#F2754A] bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-full transition-colors"
                   >
                     <FileText className="w-3.5 h-3.5" />
-                    View PDF
+                    View
                   </a>
                 )}
                 <button
@@ -1234,7 +1536,7 @@ export default function ProfilePage() {
                   className="flex items-center gap-1.5 text-xs font-bold text-gray-500 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  {resumeUploading ? "Uploading…" : profile.resume_url ? "Reupload" : "Upload resume"}
+                  {resumeUploading ? "Uploading…" : profile.resume_url ? "Reupload" : "Upload"}
                 </button>
                 <input
                   ref={resumeInputRef}
@@ -1244,73 +1546,78 @@ export default function ProfilePage() {
                   className="hidden"
                 />
               </div>
-            </div>
-
+            }
+          >
             {resumeError && (
-              <p className="text-xs font-semibold text-red-500 mb-4">{resumeError}</p>
+              <p className="text-xs font-semibold text-[#D8452F] mb-4">{resumeError}</p>
             )}
 
             {profile.resume_parsed_data ? (
               <>
-                {profile.resume_parsed_data.work_history && profile.resume_parsed_data.work_history.length > 0 && (
-                  <div className="mb-6">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                      Experience
-                    </p>
-                    <div className="space-y-3">
-                      {profile.resume_parsed_data.work_history.map((job, i) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                {profile.resume_parsed_data.work_history &&
+                  profile.resume_parsed_data.work_history.length > 0 && (
+                    <div className="mb-6">
+                      <p className="text-xs font-bold text-gray-500 mb-3">Experience</p>
+                      <div className="space-y-2.5">
+                        {profile.resume_parsed_data.work_history.map((job, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-3 p-3.5 rounded-2xl bg-gray-50/70"
+                          >
+                            <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+                              <Briefcase className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900">{job.role}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {job.company} · {job.duration}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-900">{job.role}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">{job.company} · {job.duration}</p>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {profile.resume_parsed_data.education && profile.resume_parsed_data.education.length > 0 && (
-                  <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
-                      Education
-                    </p>
-                    <div className="space-y-3">
-                      {profile.resume_parsed_data.education.map((edu, i) => (
-                        <div key={i} className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <FileText className="w-3.5 h-3.5 text-gray-400" />
+                {profile.resume_parsed_data.education &&
+                  profile.resume_parsed_data.education.length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 mb-3">Education</p>
+                      <div className="space-y-2.5">
+                        {profile.resume_parsed_data.education.map((edu, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-3 p-3.5 rounded-2xl bg-gray-50/70"
+                          >
+                            <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+                              <GraduationCap className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {edu.institution} · {edu.year}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-900">{edu.degree}</p>
-                            <p className="text-xs text-gray-400 mt-0.5">{edu.institution} · {edu.year}</p>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </>
             ) : (
               <p className="text-xs text-gray-400">No resume uploaded yet.</p>
             )}
-          </div>
+          </SectionCard>
 
           {/* ── Links ── */}
-          <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-6 sm:p-8 mb-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-              Links
-            </p>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
+          <SectionCard icon={Link2} title="Links" subtitle="Where recruiters can find you">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gray-50/70">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
                     <GitHubIcon className="w-4 h-4 text-black" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold text-gray-400">GitHub</p>
                     <GitHubLink username={profile.github_username || undefined} />
                   </div>
@@ -1330,52 +1637,55 @@ export default function ProfilePage() {
                         onConfirm: handleDisconnectGithub,
                       })
                     }
-                    className="text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
+                    className="text-xs font-bold text-[#D8452F] bg-[#E0533D]/10 hover:bg-[#E0533D]/20 px-3 py-1.5 rounded-full transition-colors flex-shrink-0"
                   >
                     Disconnect
                   </button>
                 ) : (
-                  <a href="/onboarding/github"
-                    className="text-xs font-bold text-[#F2754A] hover:underline"
+                  <a
+                    href="/onboarding/github"
+                    className="text-xs font-bold text-[#F2754A] hover:underline flex-shrink-0"
                   >
                     Connect →
                   </a>
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center">
-                    <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-semibold text-gray-400">LinkedIn</p>
-                    {isEditing ? (
-                      <input
-                        value={formData.linkedin_url}
-                        onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
-                        className={inputCls + " mt-1"}
-                        placeholder="https://linkedin.com/in/yourname"
-                      />
-                    ) : (
-                      <LinkedInLink url={profile.linkedin_url} />
-                    )}
-                  </div>
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50/70">
+                <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+                  <LinkedInIcon className="w-4 h-4 text-[#0A66C2]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-400">LinkedIn</p>
+                  {isEditing ? (
+                    <input
+                      value={formData.linkedin_url}
+                      onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                      className={inputCls + " mt-1"}
+                      placeholder="https://linkedin.com/in/yourname"
+                    />
+                  ) : (
+                    <LinkedInLink url={profile.linkedin_url} />
+                  )}
                 </div>
               </div>
             </div>
-          </div>
+          </SectionCard>
 
           {/* ── Unified save/cancel bar — appears once, covers every section above ── */}
           {isEditing && (
-            <div className="sticky bottom-4 z-10 bg-white rounded-[24px] border border-gray-100 shadow-lg p-4 sm:p-5 mb-4 flex items-center gap-3">
+            <div className="sticky bottom-4 z-10 bg-white/95 backdrop-blur rounded-[24px] border border-gray-100 shadow-lg p-4 sm:p-5 mb-4 flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold bg-[#F2754A] text-white hover:bg-[#e0623a] disabled:opacity-50 transition-colors shadow-md shadow-orange-100"
               >
-                <Save className="w-4 h-4" />
+                {saving ? (
+                  <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 {saving ? "Saving…" : "Save changes"}
               </button>
               <button
@@ -1388,29 +1698,30 @@ export default function ProfilePage() {
                 Cancel
               </button>
               {saveError && (
-                <span className="text-xs font-semibold text-red-500 ml-1">{saveError}</span>
+                <span className="text-xs font-semibold text-[#D8452F] ml-1">{saveError}</span>
               )}
             </div>
           )}
 
           {/* ── Danger zone (collapsible) ── */}
-          <div className="bg-white rounded-[24px] border border-red-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-[24px] border border-[#E0533D]/20 shadow-sm overflow-hidden">
             <button
               type="button"
               onClick={() => setDangerZoneOpen((v) => !v)}
               aria-expanded={dangerZoneOpen}
-              className="w-full flex items-center justify-between gap-2 p-6 sm:p-8 text-left"
+              className="w-full flex items-center justify-between gap-2 p-6 sm:p-7 text-left"
             >
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
-                  <Shield className="w-3.5 h-3.5 text-red-500" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#E0533D]/10 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-[#E0533D]" />
                 </div>
-                <p className="text-xs font-semibold text-red-400 uppercase tracking-widest">
-                  Danger zone
-                </p>
+                <div>
+                  <p className="text-sm font-bold text-[#D8452F]">Danger zone</p>
+                  <p className="text-xs text-gray-400">Account deletion</p>
+                </div>
               </div>
               <ChevronDown
-                className={`w-4 h-4 text-red-300 transition-transform duration-200 flex-shrink-0 ${
+                className={`w-4 h-4 text-[#E0533D]/60 transition-transform duration-200 flex-shrink-0 ${
                   dangerZoneOpen ? "rotate-180" : ""
                 }`}
               />
@@ -1422,8 +1733,8 @@ export default function ProfilePage() {
               }`}
             >
               <div className="overflow-hidden">
-                <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 border-t border-red-50">
-                  <div className="flex items-center justify-between mt-4">
+                <div className="px-6 sm:px-7 pb-6 sm:pb-7 pt-2 border-t border-[#E0533D]/10">
+                  <div className="flex items-center justify-between gap-4 mt-4">
                     <div>
                       <p className="text-sm font-semibold text-gray-800">Delete account</p>
                       <p className="text-xs text-gray-400 mt-0.5">
@@ -1432,15 +1743,18 @@ export default function ProfilePage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setConfirm({
-                        open: true,
-                        title: "Delete account?",
-                        description: "This action cannot be undone. Your profile, score, and all data will be permanently erased.",
-                        cta: "Delete account",
-                        danger: true,
-                        onConfirm: handleDeleteAccount,
-                      })}
-                      className="flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-full transition-colors flex-shrink-0"
+                      onClick={() =>
+                        setConfirm({
+                          open: true,
+                          title: "Delete account?",
+                          description:
+                            "This action cannot be undone. Your profile, score, and all data will be permanently erased.",
+                          cta: "Delete account",
+                          danger: true,
+                          onConfirm: handleDeleteAccount,
+                        })
+                      }
+                      className="flex items-center gap-1.5 text-xs font-bold text-[#D8452F] bg-[#E0533D]/10 hover:bg-[#E0533D]/20 px-3.5 py-2 rounded-full transition-colors flex-shrink-0"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       Delete
@@ -1450,7 +1764,6 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
