@@ -10,6 +10,7 @@ import {
   AntylMessage,
   RECRUITER_QUICK_REPLIES,
 } from "@/services/message.service";
+import { linkify } from "@/lib/linkify";
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -343,7 +344,7 @@ export default function RecruiterMessagesPage() {
                           : undefined
                       }
                     >
-                      <p>{m.content}</p>
+                      <p className="whitespace-pre-wrap break-words">{linkify(m.content)}</p>
                       <p
                         className={`text-[10px] mt-1 ${
                           m.sender_role === "recruiter"

@@ -18,6 +18,7 @@ import {
   Conversation,
   AntylMessage,
 } from "@/services/message.service";
+import { linkify } from "@/lib/linkify";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const AVATAR_TINTS = ["#F2754A", "#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ec4899"];
@@ -538,7 +539,7 @@ export default function DeveloperMessagesPage() {
                                     : undefined
                                 }
                               >
-                                <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                                <p className="whitespace-pre-wrap break-words">{linkify(m.content)}</p>
                                 {lastInGroup && (
                                   <p
                                     className={`text-[10px] mt-1 ${
