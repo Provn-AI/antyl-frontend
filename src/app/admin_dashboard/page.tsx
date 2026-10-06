@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchAdminMetrics, adminLogout, DashboardMetrics } from "@/lib/adminDashboard";
+import {
+  fetchAdminMetrics,
+  adminLogout,
+  downloadLeaderboardCsv,
+  DashboardMetrics,
+} from "@/lib/adminDashboard";
 import LoginForm from "./_components/LoginForm";
 import MetricCard from "./_components/MetricCard";
 import MonthlyLineChart from "./_components/MonthlyLineChart";
@@ -12,6 +17,8 @@ export default function AdminDashboardPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [checked, setChecked] = useState(false);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
 
   async function loadMetrics() {
     const data = await fetchAdminMetrics();
@@ -22,6 +29,19 @@ export default function AdminDashboardPage() {
       setAuthenticated(false);
     }
     setChecked(true);
+  }
+
+  async function handleDownload() {
+    setDownloading(true);
+    setDownloadError(false);
+    try {
+      const ok = await downloadLeaderboardCsv();
+      if (!ok) setDownloadError(true);
+    } catch {
+      setDownloadError(true);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   useEffect(() => {
@@ -35,17 +55,30 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-5xl space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-gray-900">Antyl Dashboard</h1>
-          <button
-            onClick={async () => {
-              await adminLogout();
-              setAuthenticated(false);
-            }}
-            className="text-sm text-gray-500 hover:text-gray-800"
-          >
-            Log out
-          </button>
+          <div className="flex items-center gap-4">
+            {downloadError && (
+              <span className="text-xs text-red-500">Download failed, try again</span>
+            )}
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ background: "linear-gradient(90deg, #F2754A 0%, #F8B36B 100%)" }}
+            >
+              {downloading ? "Preparing…" : "Download leaderboard CSV"}
+            </button>
+            <button
+              onClick={async () => {
+                await adminLogout();
+                setAuthenticated(false);
+              }}
+              className="text-sm text-gray-500 hover:text-gray-800"
+            >
+              Log out
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

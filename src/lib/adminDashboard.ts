@@ -82,3 +82,25 @@ export async function fetchAdminMetrics(): Promise<DashboardMetrics | null> {
   if (!res.ok) return null;
   return res.json();
 }
+
+// Downloads the developer leaderboard as a CSV. The file is generated
+// server-side (so github_token and other private columns never reach
+// the browser) and saved via a temporary blob URL.
+export async function downloadLeaderboardCsv(): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/api/admin/leaderboard/export`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!res.ok) return false;
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `antyl-leaderboard-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return true;
+}
