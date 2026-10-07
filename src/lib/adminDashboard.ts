@@ -58,7 +58,7 @@ export interface DashboardMetrics {
 }
 
 export async function adminLogin(username: string, password: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/api/admin/login`, {
+  const res = await fetch(`${API_BASE}/admin/login`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -68,14 +68,14 @@ export async function adminLogin(username: string, password: string): Promise<bo
 }
 
 export async function adminLogout(): Promise<void> {
-  await fetch(`${API_BASE}/api/admin/logout`, {
+  await fetch(`${API_BASE}/admin/logout`, {
     method: "POST",
     credentials: "include",
   });
 }
 
 export async function fetchAdminMetrics(): Promise<DashboardMetrics | null> {
-  const res = await fetch(`${API_BASE}/api/admin/metrics`, {
+  const res = await fetch(`${API_BASE}/admin/metrics`, {
     method: "GET",
     credentials: "include",
   });
@@ -87,7 +87,7 @@ export async function fetchAdminMetrics(): Promise<DashboardMetrics | null> {
 // server-side (so github_token and other private columns never reach
 // the browser) and saved via a temporary blob URL.
 export async function downloadLeaderboardCsv(): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/api/admin/leaderboard/export`, {
+  const res = await fetch(`${API_BASE}/admin/leaderboard/export`, {
     method: "GET",
     credentials: "include",
   });
