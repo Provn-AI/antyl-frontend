@@ -24,6 +24,58 @@ import WeekTimer from "../components/WeekTimer";
 import { ShareBadgeModal, ShareBadgeData } from "@/components/ShareBadgeModal";
 
 // ─────────────────────────────────────────────
+// Field normalizer — tolerates different API shapes
+// ─────────────────────────────────────────────
+
+function pickLabel(value: unknown, fallback: string): string {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    const label = o.label ?? o.name ?? o.title ?? o.display_name;
+    if (typeof label === "string") return label;
+  }
+  return fallback;
+}
+
+function normalizeFields(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw) return out;
+
+  // Wrapped response, e.g. { fields: [...] } or { fields: {...} }
+  if (!Array.isArray(raw) && typeof raw === "object") {
+    const wrapped = (raw as Record<string, unknown>).fields;
+    if (wrapped && typeof wrapped === "object") {
+      return normalizeFields(wrapped);
+    }
+  }
+
+  // Array shape: ["ai_strategist", ...] or [{ key, label }, ...]
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (typeof item === "string") {
+        out[item] = item;
+      } else if (item && typeof item === "object") {
+        const o = item as Record<string, unknown>;
+        const key = o.key ?? o.value ?? o.id ?? o.field_of_work ?? o.slug;
+        if (typeof key === "string") {
+          out[key] = pickLabel(item, key);
+        }
+      }
+    }
+    return out;
+  }
+
+  // Map shape: { key: "Label" } or { key: { label: "Label" } }
+  if (typeof raw === "object") {
+    for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+      out[key] = pickLabel(val, key);
+    }
+  }
+
+  return out;
+}
+
+// ─────────────────────────────────────────────
 // Rank movement badge
 // ─────────────────────────────────────────────
 
@@ -254,7 +306,9 @@ function FieldSelector({
 
   const fieldList = Object.entries(fields);
   const filtered = fieldList.filter(([, label]) =>
-    label.toLowerCase().includes(query.toLowerCase())
+    String(label ?? "")
+      .toLowerCase()
+      .includes(query.toLowerCase())
   );
 
   const currentLabel = selectedField
@@ -357,7 +411,7 @@ export default function LeaderboardPage() {
           getMyRank(),
           getMyBadges(),
         ]);
-        setFields(fieldsData);
+        setFields(normalizeFields(fieldsData));
         setMyRank(rank);
         setBadges(badgeData.badges);
         setBadgeCatalog(badgeData.catalog);

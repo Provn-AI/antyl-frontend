@@ -21,6 +21,17 @@ export interface MyRank {
   score?: number;
   rank?: number;
   previous_rank?: number | null;
+  overall?: {
+    rank: number;
+    previous_rank: number | null;
+    score: number;
+  } | null;
+}
+
+export interface LeaderboardField {
+  key: string;
+  label: string;
+  count: number;
 }
 
 export async function getLeaderboard(field?: string) {
@@ -36,7 +47,7 @@ export async function getLeaderboard(field?: string) {
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || "Failed to load leaderboard");
 
-  return data as { field: string; entries: LeaderboardEntry[] };
+  return data as { field: string; label: string; entries: LeaderboardEntry[] };
 }
 
 export async function getMyRank() {
@@ -52,6 +63,8 @@ export async function getMyRank() {
   return data.rank as MyRank;
 }
 
+// Returns only boards that have members, already ordered:
+// "All Developers" first, "Other" last.
 export async function getLeaderboardFields() {
   const token = localStorage.getItem("access_token");
 
@@ -62,5 +75,5 @@ export async function getLeaderboardFields() {
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || "Failed to load fields");
 
-  return data.fields as Record<string, string>;
+  return data.fields as LeaderboardField[];
 }

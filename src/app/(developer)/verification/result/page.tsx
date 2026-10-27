@@ -47,6 +47,13 @@ const DIMENSIONS = [
   { key: "communication",      label: "Communication"      },
 ] as const;
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Use monospace only when the text looks like code; habits/practices are prose.
+function looksLikeCode(text: string) {
+  return text.includes("\n") || text.includes("`") || /[{};]|=>|\(\)/.test(text);
+}
+
 // ── Score ring ────────────────────────────────────────────────────────────────
 
 function ScoreRing({ score }: { score: number }) {
@@ -123,6 +130,8 @@ function SuggestionCard({ suggestion, index }: { suggestion: Suggestion | string
     );
   }
 
+  const content = tab === "before" ? suggestion.before : suggestion.after;
+
   return (
     <div className="rounded-2xl border border-gray-100 overflow-hidden">
       {/* Header */}
@@ -138,7 +147,7 @@ function SuggestionCard({ suggestion, index }: { suggestion: Suggestion | string
         </div>
       </div>
 
-      {/* Before / After toggle */}
+      {/* Instead of / Try this toggle */}
       <div className="flex border-t border-gray-100">
         <button
           type="button"
@@ -149,7 +158,7 @@ function SuggestionCard({ suggestion, index }: { suggestion: Suggestion | string
               : "text-gray-400 hover:text-gray-600"
           }`}
         >
-          Before
+          Instead of
         </button>
         <button
           type="button"
@@ -160,17 +169,17 @@ function SuggestionCard({ suggestion, index }: { suggestion: Suggestion | string
               : "text-gray-400 hover:text-gray-600"
           }`}
         >
-          After
+          Try this
         </button>
       </div>
 
       {/* Content */}
       <div
-        className={`px-5 py-4 text-xs font-mono leading-relaxed whitespace-pre-wrap ${
-          tab === "before" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"
-        }`}
+        className={`px-5 py-4 text-xs leading-relaxed whitespace-pre-wrap ${
+          looksLikeCode(content) ? "font-mono" : "font-sans"
+        } ${tab === "before" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-800"}`}
       >
-        {tab === "before" ? suggestion.before : suggestion.after}
+        {content}
       </div>
     </div>
   );
