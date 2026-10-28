@@ -49,6 +49,7 @@ import { getMyStreak, StreakSummary } from "@/services/streak.service";
 import ScoreHistoryChart from "@/components/verification/ScoreHistoryChart";
 import DeveloperNavbar from "../components/DeveloperNavbar";
 import { ShareBadgeModal, ShareBadgeData } from "@/components/ShareBadgeModal";
+import { ShareScoreModal } from "@/components/ShareScoreModal";
 import CitySelect from "@/components/citySelect";
 // Shared skill catalog + helpers (save the skills.ts file as src/lib/skills.ts)
 import {
@@ -537,6 +538,7 @@ export default function ProfilePage() {
     locations: string[];
   } | null>(null);
   const [sharedBadge, setSharedBadge] = useState<ShareBadgeData | null>(null);
+  const [shareScoreOpen, setShareScoreOpen] = useState(false);
 
   // Danger zone starts collapsed so destructive actions aren't front-and-center.
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
@@ -1033,6 +1035,20 @@ export default function ProfilePage() {
         isOpen={Boolean(sharedBadge)}
         onClose={() => setSharedBadge(null)}
       />
+      <ShareScoreModal
+        isOpen={shareScoreOpen}
+        onClose={() => setShareScoreOpen(false)}
+        data={
+          profile.trust_score != null
+            ? {
+                score: profile.trust_score,
+                name: profile.name,
+                role: profile.current_role,
+                skills: profile.tech_stack ?? [],
+              }
+            : null
+        }
+      />
 
       <div className="w-full md:flex-1 md:min-w-0 md:flex md:justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-2xl md:mx-auto min-w-0">
@@ -1174,7 +1190,17 @@ export default function ProfilePage() {
                 </div>
 
                 {!isEditing && profile.trust_score != null && (
-                  <ScoreRing score={profile.trust_score} />
+                  <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                    <ScoreRing score={profile.trust_score} />
+                    <button
+                      type="button"
+                      onClick={() => setShareScoreOpen(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold bg-orange-50 text-[#F2754A] hover:bg-orange-100 transition-colors"
+                    >
+                      <Share2 className="w-3 h-3" />
+                      Share
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -1619,12 +1645,24 @@ export default function ProfilePage() {
                     : "Verify your skills to unlock matching and the leaderboard"}
                 </p>
               </div>
-              <a
-                href="/verification"
-                className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-sm shadow-orange-100"
-              >
-                {profile.trust_score != null ? "Re-verify" : "Start verification"}
-              </a>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                {profile.trust_score != null && (
+                  <button
+                    type="button"
+                    onClick={() => setShareScoreOpen(true)}
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold bg-white border border-orange-100 text-[#F2754A] hover:bg-orange-50 transition-colors"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share score
+                  </button>
+                )}
+                <a
+                  href="/verification"
+                  className="px-4 py-2 rounded-full text-xs font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-sm shadow-orange-100"
+                >
+                  {profile.trust_score != null ? "Re-verify" : "Start verification"}
+                </a>
+              </div>
             </div>
           </section>
 
