@@ -378,3 +378,61 @@ export async function getResumeStatus() {
 
   return data as ResumeJob;
 }
+
+// ─────────────────────────────────────────────
+// SHARE SCORE (new)
+// ─────────────────────────────────────────────
+
+export interface PublicScore {
+  name: string | null;
+  current_role: string | null;
+  city: string | null;
+  avatar_url: string | null;
+  trust_score: number;
+  top_skills: string[];
+  years_experience: number | null;
+}
+
+// Authenticated: creates/returns the share slug
+export async function enableScoreShare(): Promise<string> {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/share/score`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to enable sharing");
+  return data.slug as string;
+}
+
+// Authenticated: revokes the public link
+export async function disableScoreShare() {
+  const token = localStorage.getItem("access_token");
+
+  const res = await fetch(`${API_URL}/developer/share/score`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to disable sharing");
+  return data;
+}
+
+// Public: used by the server-rendered share page and OG image.
+// No token and no localStorage, so it is safe to run on the server.
+export async function getPublicScore(slug: string): Promise<PublicScore | null> {
+  try {
+    const res = await fetch(
+      `${API_URL}/developer/public/score/${encodeURIComponent(slug)}`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.score as PublicScore;
+  } catch {
+    return null;
+  }
+}
