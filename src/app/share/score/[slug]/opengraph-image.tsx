@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getPublicScore } from "@/services/developer.service";
+import { assetUrl, MASCOT_PATH } from "@/lib/shareAssests";
 
 export const alt = "Antyl score";
 export const size = { width: 1200, height: 630 };
@@ -11,7 +12,9 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const name = s?.name ?? "Antyl Developer";
   const score = s?.trust_score ?? "--";
-  const initial = name.trim().charAt(0).toUpperCase();
+  const mascot = assetUrl(MASCOT_PATH)!;
+  const badges = (s?.badges ?? []).slice(0, 4);
+  const skills = (s?.top_skills ?? []).slice(0, 4);
 
   return new ImageResponse(
     (
@@ -22,76 +25,63 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: 64,
+          padding: "44px 56px",
           background: "linear-gradient(135deg, #fffaf5 0%, #ffe8d6 55%, #ffd9a8 100%)",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", fontSize: 34, fontWeight: 800, color: "#F2754A" }}>
-          Antyl
-          <span style={{ marginLeft: 16, fontSize: 22, color: "#6b7280", fontWeight: 600 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ fontSize: 34, fontWeight: 800, color: "#F2754A" }}>Antyl</div>
+          <div style={{ marginLeft: 16, fontSize: 22, color: "#6b7280", fontWeight: 600 }}>
             Verified developer score
-          </span>
+          </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center" }}>
+          <img
+            src={mascot}
+            width={290}
+            height={290}
+            style={{ objectFit: "contain", marginRight: 36 }}
+          />
+
           <div
             style={{
-              width: 300,
-              height: 300,
-              borderRadius: 150,
-              border: "24px solid #F2754A",
+              width: 230,
+              height: 230,
+              borderRadius: 115,
+              border: "20px solid #F2754A",
               background: "white",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 120,
+              fontSize: 96,
               fontWeight: 900,
               color: "#111827",
+              flexShrink: 0,
             }}
           >
             {score}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", marginLeft: 56, flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  background: "#F2754A",
-                  color: "white",
-                  fontSize: 34,
-                  fontWeight: 800,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 20,
-                }}
-              >
-                {initial}
-              </div>
-              <div style={{ fontSize: 56, fontWeight: 900, color: "#111827" }}>{name}</div>
-            </div>
-
-            {s?.current_role && (
-              <div style={{ fontSize: 30, color: "#4b5563", marginTop: 12 }}>{s.current_role}</div>
-            )}
-
-            <div style={{ display: "flex", flexWrap: "wrap", marginTop: 28 }}>
-              {(s?.top_skills ?? []).slice(0, 5).map((skill) => (
+          <div style={{ display: "flex", flexDirection: "column", marginLeft: 44, flex: 1 }}>
+            <div style={{ fontSize: 50, fontWeight: 900, color: "#111827" }}>{name}</div>
+            {s?.current_role ? (
+              <div style={{ fontSize: 26, color: "#4b5563", marginTop: 8 }}>{s.current_role}</div>
+            ) : null}
+            <div style={{ display: "flex", flexWrap: "wrap", marginTop: 22 }}>
+              {skills.map((skill) => (
                 <div
                   key={skill}
                   style={{
                     background: "white",
                     color: "#F2754A",
-                    fontSize: 26,
+                    fontSize: 22,
                     fontWeight: 700,
-                    padding: "8px 22px",
+                    padding: "6px 18px",
                     borderRadius: 999,
-                    marginRight: 12,
-                    marginBottom: 12,
+                    marginRight: 10,
+                    marginBottom: 10,
                   }}
                 >
                   {skill}
@@ -101,8 +91,35 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           </div>
         </div>
 
-        <div style={{ fontSize: 24, color: "#6b7280" }}>
-          Verified from real code and GitHub work · antyl.org
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            {badges.map((b) => {
+              const img = assetUrl(b.image);
+              return (
+                <div
+                  key={b.key}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    background: "white",
+                    border: `3px solid ${b.color}`,
+                    borderRadius: 999,
+                    padding: "6px 22px 6px 8px",
+                    marginRight: 14,
+                  }}
+                >
+                  {img ? (
+                    <img src={img} width={52} height={52} style={{ objectFit: "contain" }} />
+                  ) : null}
+                  <div style={{ fontSize: 22, fontWeight: 700, color: "#374151", marginLeft: 10 }}>
+                    {b.label}
+                    {b.count > 1 ? ` ×${b.count}` : ""}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 22, color: "#6b7280" }}>antyl.org</div>
         </div>
       </div>
     ),

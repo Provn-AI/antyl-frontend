@@ -71,14 +71,14 @@ export function ShareScoreModal({
     }
   };
 
-  const shareLinkedIn = async () => {
-    // LinkedIn cannot prefill text, so copy the caption first and tell the user to paste it
-    await copy(caption, "caption");
+    const shareLinkedIn = () => {
+    // Open first (popup blockers), then copy the caption for pasting
     window.open(
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
       "_blank",
       "noopener,noreferrer"
     );
+    void copy(caption, "caption");
   };
 
   const shareWhatsApp = () =>

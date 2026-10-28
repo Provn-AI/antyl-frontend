@@ -6,15 +6,14 @@ import {
   Copy,
   Download,
   Globe,
-  MessageCircle,
   Send,
-  Share2,
   Sparkles,
   X,
 } from "lucide-react";
 import ConfettiBurst from "@/components/ConfettiBurst";
+import { enableScoreShare } from "@/services/developer.service";
 
-
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "";
 
 export interface ShareBadgeData {
   badgeKey: string;
@@ -40,26 +39,48 @@ export function ShareBadgeModal({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [slug, setSlug] = useState<string | null>(null);
+  const [shareError, setShareError] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
       setCopied(false);
+      setShareError("");
+      return;
     }
-  }, [isOpen]);
+    if (slug) return;
+
+    let cancelled = false;
+    enableScoreShare()
+      .then((s) => {
+        if (!cancelled) setSlug(s);
+      })
+      .catch((e) => {
+        if (!cancelled) setShareError(e?.message || "Could not create share link");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, slug]);
 
   const shareText = useMemo(() => {
     if (!badge) return "";
     const rankText = typeof badge.rank === "number" ? ` · Rank #${badge.rank}` : "";
     const fieldText = badge.fieldLabel ? ` · ${badge.fieldLabel}` : "";
-    return `${badge.label}${rankText}${fieldText}\n${badge.description}`;
+    return `I just earned the ${badge.label} badge on Antyl${rankText}${fieldText}\n${badge.description}`;
   }, [badge]);
 
+  // Public page that LinkedIn / WhatsApp can read (no login needed)
   const shareUrl = useMemo(() => {
-    if (typeof window === "undefined") return "https://antyl.org";
-    return `${window.location.origin}/profile`;
-  }, []);
+    if (!slug || !badge) return "";
+    const origin =
+      SITE_URL || (typeof window !== "undefined" ? window.location.origin : "https://antyl.org");
+    return `${origin}/share/badge/${slug}/${badge.badgeKey}`;
+  }, [slug, badge]);
 
   if (!isOpen || !badge) return null;
+
+  const ready = Boolean(shareUrl);
 
   const handleCopy = async () => {
     try {
@@ -82,11 +103,19 @@ export function ShareBadgeModal({
   };
 
   const openShareLink = (platform: "linkedin" | "whatsapp" | "instagram") => {
+    if (platform !== "instagram" && !ready) return;
+
     const encodedText = encodeURIComponent(`${shareText}\n${shareUrl}`);
     const encodedUrl = encodeURIComponent(shareUrl);
 
     if (platform === "linkedin") {
-      window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, "_blank", "noopener,noreferrer");
+      // Open first (browsers block popups that come after an await), then copy the caption.
+      window.open(
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      void handleCopy();
       return;
     }
 
@@ -97,6 +126,9 @@ export function ShareBadgeModal({
 
     window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
   };
+
+  const actionBtn =
+    "flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-3 py-2.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
@@ -141,7 +173,7 @@ export function ShareBadgeModal({
         style={{ animation: "modal-pop 320ms cubic-bezier(0.2, 0.8, 0.2, 1)" }}
       >
         <div className="absolute inset-0 z-[200] pointer-events-none">
-          <ConfettiBurst  />
+          <ConfettiBurst />
         </div>
         <div className="relative z-[1]">
           <button
@@ -161,10 +193,16 @@ export function ShareBadgeModal({
                   background: badge.color
                     ? `linear-gradient(135deg, ${badge.color}22 0%, ${badge.color}44 100%)`
                     : "linear-gradient(135deg, rgba(242,117,74,0.18), rgba(255,196,86,0.30))",
-                  boxShadow: badge.color ? `0 12px 26px ${badge.color}44, 0 0 0 4px ${badge.color}20` : "0 12px 26px rgba(242,117,74,0.28), 0 0 0 4px rgba(242,117,74,0.16)",
+                  boxShadow: badge.color
+                    ? `0 12px 26px ${badge.color}44, 0 0 0 4px ${badge.color}20`
+                    : "0 12px 26px rgba(242,117,74,0.28), 0 0 0 4px rgba(242,117,74,0.16)",
                 }}
               >
-                <img src={badge.image} alt={badge.label} className="h-14 w-14 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)]" />
+                <img
+                  src={badge.image}
+                  alt={badge.label}
+                  className="h-14 w-14 object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.18)]"
+                />
               </div>
 
               <div className="mt-4">
@@ -183,68 +221,72 @@ export function ShareBadgeModal({
 
           <p className="text-center text-sm text-gray-500">{badge.description}</p>
 
-        {(badge.rank || badge.fieldLabel) && (
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-[11px] font-semibold text-gray-500">
-            {typeof badge.rank === "number" && (
-              <span className="rounded-full bg-orange-50 px-2 py-1 text-[#F2754A]">Rank #{badge.rank}</span>
-            )}
-            {badge.fieldLabel && (
-              <span className="rounded-full bg-gray-50 px-2 py-1">{badge.fieldLabel}</span>
-            )}
+          {(badge.rank || badge.fieldLabel) && (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-center text-[11px] font-semibold text-gray-500">
+              {typeof badge.rank === "number" && (
+                <span className="rounded-full bg-orange-50 px-2 py-1 text-[#F2754A]">
+                  Rank #{badge.rank}
+                </span>
+              )}
+              {badge.fieldLabel && (
+                <span className="rounded-full bg-gray-50 px-2 py-1">{badge.fieldLabel}</span>
+              )}
+            </div>
+          )}
+
+          {shareError && (
+            <p className="mt-3 text-center text-xs font-semibold text-red-500">{shareError}</p>
+          )}
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => openShareLink("linkedin")}
+              disabled={!ready}
+              className={actionBtn}
+            >
+              <Globe className="h-4 w-4 text-[#0A66C2]" />
+              LinkedIn
+            </button>
+
+            <button
+              type="button"
+              onClick={() => openShareLink("whatsapp")}
+              disabled={!ready}
+              className={actionBtn}
+            >
+              <Send className="h-4 w-4 text-[#25D366]" />
+              WhatsApp
+            </button>
+
+            <button
+              type="button"
+              onClick={() => openShareLink("instagram")}
+              className={actionBtn}
+            >
+              <Sparkles className="h-4 w-4 text-[#E1306C]" />
+              Instagram
+            </button>
+
+            <button type="button" onClick={handleDownload} className={actionBtn}>
+              <Download className="h-4 w-4 text-[#F2754A]" />
+              Download
+            </button>
           </div>
-        )}
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => openShareLink("linkedin")}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-3 py-2.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <Globe className="h-4 w-4 text-[#0A66C2]" />
-            LinkedIn
-          </button>
 
           <button
             type="button"
-            onClick={() => openShareLink("whatsapp")}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-3 py-2.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
+            onClick={handleCopy}
+            disabled={!ready}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2754A] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e0623a] disabled:opacity-50"
           >
-            <Send className="h-4 w-4 text-[#25D366]" />
-            WhatsApp
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? "Copied" : "Copy link"}
           </button>
 
-          <button
-            type="button"
-            onClick={() => openShareLink("instagram")}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-3 py-2.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <Sparkles className="h-4 w-4 text-[#E1306C]" />
-            Instagram
-          </button>
-
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white px-3 py-2.5 text-sm font-bold text-gray-700 transition-colors hover:bg-gray-50"
-          >
-            <Download className="h-4 w-4 text-[#F2754A]" />
-            Download
-          </button>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F2754A] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#e0623a]"
-        >
-          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          {copied ? "Copied" : "Copy link"}
-        </button>
-
-          {/* <div className="mt-4 flex items-center gap-2 rounded-2xl bg-gray-50 px-3 py-2">
-            <Share2 className="h-4 w-4 text-gray-400" />
-            <p className="truncate text-xs text-gray-500">{shareUrl}</p>
-          </div> */}
+          <p className="mt-3 text-center text-[11px] text-gray-400">
+            Tapping LinkedIn also copies your caption. Paste it into the post box.
+          </p>
         </div>
       </div>
     </div>
