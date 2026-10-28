@@ -380,8 +380,16 @@ export async function getResumeStatus() {
 }
 
 // ─────────────────────────────────────────────
-// SHARE SCORE (new)
+// SHARE SCORE / BADGE
 // ─────────────────────────────────────────────
+
+export interface PublicBadge {
+  key: string;
+  label: string;
+  color: string;
+  image: string;
+  count: number;
+}
 
 export interface PublicScore {
   name: string | null;
@@ -391,6 +399,22 @@ export interface PublicScore {
   trust_score: number;
   top_skills: string[];
   years_experience: number | null;
+  badges: PublicBadge[];
+}
+
+export interface PublicBadgeShare {
+  name: string | null;
+  current_role: string | null;
+  badge: {
+    key: string;
+    label: string;
+    description: string;
+    color: string;
+    image: string;
+    count: number;
+    rank: number | null;
+    field_label: string | null;
+  };
 }
 
 // Authenticated: creates/returns the share slug
@@ -421,7 +445,7 @@ export async function disableScoreShare() {
   return data;
 }
 
-// Public: used by the server-rendered share page and OG image.
+// Public: used by the server-rendered share pages and OG images.
 // No token and no localStorage, so it is safe to run on the server.
 export async function getPublicScore(slug: string): Promise<PublicScore | null> {
   try {
@@ -432,6 +456,23 @@ export async function getPublicScore(slug: string): Promise<PublicScore | null> 
     if (!res.ok) return null;
     const data = await res.json();
     return data.score as PublicScore;
+  } catch {
+    return null;
+  }
+}
+
+export async function getPublicBadge(
+  slug: string,
+  badgeKey: string
+): Promise<PublicBadgeShare | null> {
+  try {
+    const res = await fetch(
+      `${API_URL}/developer/public/badge/${encodeURIComponent(slug)}/${encodeURIComponent(badgeKey)}`,
+      { next: { revalidate: 300 } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.badge as PublicBadgeShare;
   } catch {
     return null;
   }
