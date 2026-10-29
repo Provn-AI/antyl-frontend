@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Download, Globe, Loader2, Send, X } from "lucide-react";
 import ConfettiBurst from "@/components/ConfettiBurst";
+import { ScoreCardView } from "@/components/ScoreCardView";
 import { enableScoreShare, disableScoreShare } from "@/services/developer.service";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "";
@@ -71,7 +72,7 @@ export function ShareScoreModal({
     }
   };
 
-    const shareLinkedIn = () => {
+  const shareLinkedIn = () => {
     // Open first (popup blockers), then copy the caption for pasting
     window.open(
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
@@ -117,8 +118,8 @@ export function ShareScoreModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative z-40 w-full max-w-md overflow-hidden rounded-[28px] border border-gray-200/80 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
-        <div className="absolute inset-0 z-[200] pointer-events-none">
+      <div className="relative z-40 max-h-[94vh] w-full max-w-md overflow-y-auto rounded-[28px] border border-gray-200/80 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.12)]">
+        <div className="pointer-events-none absolute inset-0 z-[200]">
           <ConfettiBurst />
         </div>
 
@@ -126,19 +127,19 @@ export function ShareScoreModal({
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             aria-label="Close share score modal"
           >
             <X className="h-4 w-4" />
           </button>
 
-          <div className="mb-4 rounded-[24px] border border-orange-100 bg-gradient-to-br from-[#fffaf5] via-[#fff5ee] to-[#fff3dd] p-5 text-center">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400">Antyl Score</p>
-            <div className="mx-auto mt-3 flex h-28 w-28 items-center justify-center rounded-full border-[8px] border-[#F2754A] bg-white">
-              <span className="text-4xl font-black text-gray-900">{data.score}</span>
-            </div>
-            {data.name && <p className="mt-3 text-lg font-black text-gray-900">{data.name}</p>}
-            {data.role && <p className="text-xs text-gray-500">{data.role}</p>}
+          <div className="mb-4">
+            <ScoreCardView
+              score={data.score}
+              name={data.name}
+              role={data.role}
+              artMaxWidth={280}
+            />
           </div>
 
           {error && <p className="mb-3 text-center text-xs font-semibold text-red-500">{error}</p>}
@@ -173,7 +174,7 @@ export function ShareScoreModal({
           </button>
 
           <p className="mt-3 text-center text-[11px] text-gray-400">
-            Tapping LinkedIn copies your caption. Paste it into the post box.
+            Tapping LinkedIn also copies your caption. Paste it into the post box.
           </p>
           {slug && (
             <button

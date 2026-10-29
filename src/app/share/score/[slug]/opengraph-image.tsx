@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getPublicScore } from "@/services/developer.service";
-import { assetUrl, MASCOT_PATH } from "@/lib/shareAssests";
+import { scoreArtDataUri, SCORE_ART_RATIO, SCORE_ART_RING_CENTER_Y } from "@/lib/scoreArt";
 
 export const alt = "Antyl score";
 export const size = { width: 1200, height: 630 };
@@ -11,10 +11,13 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const s = await getPublicScore(slug);
 
   const name = s?.name ?? "Antyl Developer";
-  const score = s?.trust_score ?? "--";
-  const mascot = assetUrl(MASCOT_PATH)!;
-  const badges = (s?.badges ?? []).slice(0, 4);
-  const skills = (s?.top_skills ?? []).slice(0, 4);
+  const role = s?.current_role ?? "";
+  const score = String(s?.trust_score ?? "--");
+
+  const ART_H = 350;
+  const ART_W = Math.round(ART_H * SCORE_ART_RATIO);
+  const NUM_SIZE = 120;
+  const numTop = Math.round(SCORE_ART_RING_CENTER_Y * ART_H - NUM_SIZE * 0.62);
 
   return new ImageResponse(
     (
@@ -23,103 +26,89 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "44px 56px",
-          background: "linear-gradient(135deg, #fffaf5 0%, #ffe8d6 55%, #ffd9a8 100%)",
+          background: "#ffffff",
+          padding: 22,
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <div style={{ fontSize: 34, fontWeight: 800, color: "#F2754A" }}>Antyl</div>
-          <div style={{ marginLeft: 16, fontSize: 22, color: "#6b7280", fontWeight: 600 }}>
-            Verified developer score
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <img
-            src={mascot}
-            width={290}
-            height={290}
-            style={{ objectFit: "contain", marginRight: 36 }}
-          />
-
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            height: "100%",
+            borderRadius: 56,
+            border: "2px solid #FBE3D0",
+            background: "linear-gradient(135deg, #FFF3E6 0%, #FFFAF4 55%, #FFF6EC 100%)",
+          }}
+        >
           <div
             style={{
-              width: 230,
-              height: 230,
-              borderRadius: 115,
-              border: "20px solid #F2754A",
-              background: "white",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              fontSize: 96,
-              fontWeight: 900,
-              color: "#111827",
-              flexShrink: 0,
+              background: "#FCE9DE",
+              borderRadius: 999,
+              padding: "10px 40px",
             }}
           >
-            {score}
+            <div style={{ width: 34, height: 4, borderRadius: 2, background: "#F2754A" }} />
+            <div
+              style={{
+                margin: "0 22px",
+                fontSize: 28,
+                fontWeight: 800,
+                letterSpacing: 8,
+                color: "#3B4A63",
+              }}
+            >
+              ANTYL SCORE
+            </div>
+            <div style={{ width: 34, height: 4, borderRadius: 2, background: "#F2754A" }} />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", marginLeft: 44, flex: 1 }}>
-            <div style={{ fontSize: 50, fontWeight: 900, color: "#111827" }}>{name}</div>
-            {s?.current_role ? (
-              <div style={{ fontSize: 26, color: "#4b5563", marginTop: 8 }}>{s.current_role}</div>
-            ) : null}
-            <div style={{ display: "flex", flexWrap: "wrap", marginTop: 22 }}>
-              {skills.map((skill) => (
-                <div
-                  key={skill}
-                  style={{
-                    background: "white",
-                    color: "#F2754A",
-                    fontSize: 22,
-                    fontWeight: 700,
-                    padding: "6px 18px",
-                    borderRadius: 999,
-                    marginRight: 10,
-                    marginBottom: 10,
-                  }}
-                >
-                  {skill}
-                </div>
-              ))}
+          <div style={{ display: "flex", position: "relative", width: ART_W, height: ART_H, marginTop: 6 }}>
+            <img src={scoreArtDataUri()} width={ART_W} height={ART_H} />
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: numTop,
+                width: ART_W,
+                height: NUM_SIZE + 20,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: NUM_SIZE,
+                fontWeight: 900,
+                color: "#14213D",
+              }}
+            >
+              {score}
             </div>
           </div>
-        </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            {badges.map((b) => {
-              const img = assetUrl(b.image);
-              return (
-                <div
-                  key={b.key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    background: "white",
-                    border: `3px solid ${b.color}`,
-                    borderRadius: 999,
-                    padding: "6px 22px 6px 8px",
-                    marginRight: 14,
-                  }}
-                >
-                  {img ? (
-                    <img src={img} width={52} height={52} style={{ objectFit: "contain" }} />
-                  ) : null}
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#374151", marginLeft: 10 }}>
-                    {b.label}
-                    {b.count > 1 ? ` ×${b.count}` : ""}
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ display: "flex", fontSize: 54, fontWeight: 800, color: "#14213D", marginTop: 2 }}>
+            {name}
           </div>
-          <div style={{ fontSize: 22, color: "#6b7280" }}>antyl.org</div>
+
+          {role ? (
+            <div
+              style={{
+                display: "flex",
+                marginTop: 12,
+                background: "#FCE8DC",
+                color: "#475569",
+                fontSize: 28,
+                fontWeight: 600,
+                padding: "8px 38px",
+                borderRadius: 999,
+              }}
+            >
+              {role}
+            </div>
+          ) : null}
         </div>
       </div>
     ),
