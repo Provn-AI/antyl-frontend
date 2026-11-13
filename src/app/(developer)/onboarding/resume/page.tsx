@@ -8,6 +8,9 @@ import ResumeUpload from "@/components/developer/ResumeUpload";
 import OnboardingStepper from "@/components/developer/OnboardingStepper";
 import { uploadResume } from "@/services/resume.service";
 
+const MAX_RESUME_SIZE_KB = 100;
+const MAX_RESUME_SIZE_BYTES = MAX_RESUME_SIZE_KB * 1024;
+
 export default function ResumePage() {
   const router = useRouter();
 
@@ -15,8 +18,28 @@ export default function ResumePage() {
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  const handleFileSelect = (selected: File | null) => {
+    if (selected && selected.size > MAX_RESUME_SIZE_BYTES) {
+      setFile(null);
+      setSubmitError(
+        `Your resume is too large. Please upload a file under ${MAX_RESUME_SIZE_KB} KB.`
+      );
+      return;
+    }
+
+    setSubmitError("");
+    setFile(selected);
+  };
+
   const handleContinue = async () => {
     if (!file) return;
+
+    if (file.size > MAX_RESUME_SIZE_BYTES) {
+      setSubmitError(
+        `Your resume is too large. Please upload a file under ${MAX_RESUME_SIZE_KB} KB.`
+      );
+      return;
+    }
 
     try {
       setLoading(true);
@@ -52,12 +75,15 @@ export default function ResumePage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Upload your resume
           </h2>
-          <p className="text-gray-400 mb-8">
+          <p className="text-gray-400 mb-2">
             We will pull your experience and skills automatically - you can
             review and edit everything before your profile goes live.
           </p>
+          <p className="text-sm text-gray-400 mb-8">
+            Maximum file size: {MAX_RESUME_SIZE_KB} KB.
+          </p>
 
-          <ResumeUpload onFileSelect={setFile} />
+          <ResumeUpload onFileSelect={handleFileSelect} />
 
           {submitError && (
             <div className="mt-4 flex items-center gap-2 text-sm text-red-500">
