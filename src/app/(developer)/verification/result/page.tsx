@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, Clock, Lightbulb, ChevronRight } from "lucide-react";
+import { Trophy, Clock, Lightbulb, ChevronRight, TrendingUp } from "lucide-react";
 
 import {
   getVerificationScore,
@@ -22,6 +22,9 @@ interface Suggestion {
 interface ScoreData {
   overall_score: number;
   tier: string;
+  percentile?: number | null; // % of other verified developers you scored higher than
+  ahead_of?: number | null;   // actual number of developers you are ahead of
+  pool_size?: number | null;  // verified developers compared against
   dimensions: {
     technical_depth: number;
     code_quality: number;
@@ -52,6 +55,38 @@ const DIMENSIONS = [
 // Use monospace only when the text looks like code; habits/practices are prose.
 function looksLikeCode(text: string) {
   return text.includes("\n") || text.includes("`") || /[{};]|=>|\(\)/.test(text);
+}
+
+// Builds the percentile callout from real counts returned by the backend.
+// Returns null when the backend didn't send stats (no score, or pool too small).
+function getPercentileCopy(score: ScoreData) {
+  const { percentile, ahead_of, pool_size } = score;
+
+  if (
+    percentile == null ||
+    ahead_of == null ||
+    pool_size == null ||
+    Number.isNaN(percentile)
+  ) {
+    return null;
+  }
+
+  const topPercent = Math.max(1, Math.ceil(100 - percentile));
+  const people = ahead_of === 1 ? "developer" : "developers";
+
+  if (topPercent <= 50) {
+    return {
+      headline: `You're in the top ${topPercent}% of developers`,
+      sub: `Ahead of ${ahead_of} of ${pool_size} verified developers on Antyl`,
+    };
+  }
+
+  if (ahead_of < 1) return null;
+
+  return {
+    headline: `You're ahead of ${ahead_of} ${people}`,
+    sub: `Out of ${pool_size} verified developers on Antyl`,
+  };
 }
 
 // ── Score ring ────────────────────────────────────────────────────────────────
@@ -231,6 +266,7 @@ export default function VerificationResultPage() {
   }
 
   const tier = TIER_CONFIG[score.tier] ?? TIER_CONFIG.Mid;
+  const percentileCopy = getPercentileCopy(score);
 
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 py-12">
@@ -263,7 +299,22 @@ export default function VerificationResultPage() {
             </span>
           </div>
 
-          <p className="text-xs text-gray-400 font-medium mt-3">
+          {/* Percentile callout (real data, hidden when pool is too small) */}
+          {percentileCopy && (
+            <div className="mt-5 mx-auto max-w-sm rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+              <div className="flex items-center justify-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <p className="text-sm font-bold text-emerald-700">
+                  {percentileCopy.headline}
+                </p>
+              </div>
+              <p className="text-xs text-emerald-600/80 mt-1">
+                {percentileCopy.sub}
+              </p>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-400 font-medium mt-4">
             Your Antyl Score is now live on your profile.
           </p>
         </div>
