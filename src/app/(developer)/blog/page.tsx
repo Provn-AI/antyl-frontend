@@ -1,7 +1,7 @@
 "use client";
 
 import DeveloperNavbar from "../components/DeveloperNavbar";
-import WeeklyBlogView from "../components/WeeklyBlogView";
+import BlogList from "../components/BlogList";
 
 export default function DeveloperBlogPage() {
   return (
@@ -10,7 +10,6 @@ export default function DeveloperBlogPage() {
 
       <div className="w-full md:flex-1 md:min-w-0 md:flex md:justify-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-2xl md:mx-auto min-w-0">
-          {/* Page header */}
           <div className="mb-6">
             <p
               className="text-xl sm:text-2xl font-bold text-gray-900 truncate mb-1"
@@ -19,11 +18,11 @@ export default function DeveloperBlogPage() {
               Weekly roundup
             </p>
             <p className="text-gray-400 text-sm">
-              The community&apos;s highlights, fresh every Monday.
+              The community&apos;s highlights, fresh every Monday. Every past edition lives here too.
             </p>
           </div>
 
-          <WeeklyBlogView />
+          <BlogList />
         </div>
       </div>
     </div>

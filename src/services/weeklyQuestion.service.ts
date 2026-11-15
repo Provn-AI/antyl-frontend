@@ -48,10 +48,49 @@ export async function dismissQuestion(questionId: string) {
   return res.json();
 }
 
+// ── Blogs ──
+
+export interface BlogSummary {
+  id: string;
+  title: string;
+  excerpt: string;
+  published_at: string;
+  read_minutes: number;
+}
+
+export interface BlogFull {
+  id: string;
+  title: string;
+  content: string;
+  published_at: string;
+}
+
 export async function getActiveBlog() {
   const res = await fetch(`${API_URL}/weekly-blog/active`, {
     headers: authHeaders(),
   });
+  const data = await res.json();
+  return data.blog || null;
+}
+
+export async function getBlogArchive(
+  limit = 10,
+  offset = 0
+): Promise<{ blogs: BlogSummary[]; total: number }> {
+  const res = await fetch(
+    `${API_URL}/weekly-blog/archive?limit=${limit}&offset=${offset}`,
+    { headers: authHeaders() }
+  );
+  if (!res.ok) throw new Error("Failed to load blogs");
+  return res.json();
+}
+
+export async function getBlogById(id: string): Promise<BlogFull | null> {
+  const res = await fetch(`${API_URL}/weekly-blog/${id}`, {
+    headers: authHeaders(),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to load blog");
   const data = await res.json();
   return data.blog || null;
 }
