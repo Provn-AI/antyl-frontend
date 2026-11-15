@@ -113,3 +113,34 @@ export function logout(): void {
   localStorage.removeItem("user")
   window.location.href = "/"
 }
+
+// ── Google sign-in ────────────────────────────
+// credential = Google ID token from the Google button
+// signup: googleAuth(credential, "signup", role)
+// login:  googleAuth(credential, "login")
+
+export async function googleAuth(
+  credential: string,
+  mode: "login" | "signup",
+  role?: "developer" | "recruiter"
+): Promise<{ user: AuthUser; access_token: string; is_new: boolean }> {
+  const body: Record<string, string> = { credential, mode }
+  if (mode === "signup" && role) {
+    body.role = role
+  }
+
+  const res = await fetch(`${API_URL}/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || "Google sign-in failed. Please try again.")
+
+  localStorage.setItem("access_token", data.access_token)
+  localStorage.setItem("refresh_token", data.refresh_token)
+  localStorage.setItem("user", JSON.stringify(data.user))
+
+  return data
+}

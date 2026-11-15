@@ -34,7 +34,7 @@ export default function BlogDetailView({ id }: { id: string }) {
 
   const back = (
     <Link
-      href="/developer/blog"
+      href="/blog"
       className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-[#F2754A] transition-colors mb-5"
     >
       <ArrowLeft className="w-4 h-4" />
