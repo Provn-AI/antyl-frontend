@@ -6,7 +6,13 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { getBlogById, BlogFull } from "@/services/weeklyQuestion.service";
 import BlogArticle from "./BlogArticle";
 
-export default function BlogDetailView({ id }: { id: string }) {
+export default function BlogDetailView({
+  id,
+  basePath = "/developer/blog",
+}: {
+  id: string;
+  basePath?: string;
+}) {
   const [blog, setBlog] = useState<BlogFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -34,7 +40,7 @@ export default function BlogDetailView({ id }: { id: string }) {
 
   const back = (
     <Link
-      href="/blog"
+      href={basePath}
       className="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-[#F2754A] transition-colors mb-5"
     >
       <ArrowLeft className="w-4 h-4" />

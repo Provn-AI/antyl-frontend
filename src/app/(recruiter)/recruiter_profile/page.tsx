@@ -7,13 +7,16 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Gift,
   Globe,
   Info,
   MapPin,
   Pencil,
   Rocket,
+  Shield,
   Target,
+  Trash2,
   Users,
   Wifi,
   X,
@@ -107,6 +110,76 @@ function LinkedInIcon({ className }: { className?: string }) {
     >
       <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
     </svg>
+  );
+}
+
+// ─── Confirm dialog ───────────────────────────────────────────────────
+
+interface ConfirmState {
+  open: boolean;
+  title: string;
+  description: string;
+  cta: string;
+  danger?: boolean;
+  onConfirm: () => void | Promise<void>;
+}
+
+const closedConfirm: ConfirmState = {
+  open: false,
+  title: "",
+  description: "",
+  cta: "",
+  onConfirm: () => {},
+};
+
+function ConfirmDialog({
+  state,
+  loading,
+  onCancel,
+}: {
+  state: ConfirmState;
+  loading: boolean;
+  onCancel: () => void;
+}) {
+  if (!state.open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div
+        className="absolute inset-0 bg-black/40"
+        onClick={loading ? undefined : onCancel}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-md bg-white rounded-[24px] shadow-xl p-6 sm:p-7"
+      >
+        <h3 className="text-base font-bold text-gray-900">{state.title}</h3>
+        <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+          {state.description}
+        </p>
+        <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 rounded-full py-3 text-sm font-semibold text-gray-500 border border-gray-200 hover:border-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={state.onConfirm}
+            disabled={loading}
+            className={`flex-1 rounded-full py-3 text-sm font-bold text-white transition disabled:opacity-40 disabled:cursor-not-allowed ${
+              state.danger ? "bg-[#D8452F] hover:bg-[#C23C28]" : "bg-[#F2754A]"
+            }`}
+          >
+            {loading ? "Deleting..." : state.cta}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -253,6 +326,10 @@ export default function RecruiterProfilePage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [dangerZoneOpen, setDangerZoneOpen] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmState>(closedConfirm);
+  const [deleting, setDeleting] = useState(false);
 
   const websiteValid =
     form.website.trim() === "" || URL_REGEX.test(form.website.trim());
@@ -447,6 +524,42 @@ export default function RecruiterProfilePage() {
     }
   }
 
+  async function handleDeleteAccount() {
+    try {
+      setDeleting(true);
+      setError("");
+
+      const token = localStorage.getItem("access_token");
+
+      const res = await fetch(`${API_URL}/recruiter/profile`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          data.detail || "We couldn't delete your account. Please try again."
+        );
+      }
+
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      // Stay in the "Deleting..." state until the redirect completes.
+      router.push("/");
+    } catch (err) {
+      console.error(err);
+      setDeleting(false);
+      setConfirm(closedConfirm);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "We couldn't delete your account. Please try again."
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
+
   if (initialLoading) {
     return <ProfileSkeleton />;
   }
@@ -466,6 +579,12 @@ export default function RecruiterProfilePage() {
 
   return (
     <div className="min-h-screen w-full bg-[#FAF6F0] px-4 sm:px-6 py-8 sm:py-10">
+      <ConfirmDialog
+        state={confirm}
+        loading={deleting}
+        onCancel={() => setConfirm(closedConfirm)}
+      />
+
       <div className="w-full max-w-5xl mx-auto">
         {/* Hero card */}
         <div className="bg-white rounded-[24px] border-2 border-[#F2754A]/25 shadow-sm p-6 sm:p-8 mb-6">
@@ -562,40 +681,104 @@ export default function RecruiterProfilePage() {
 
         {!isEditing ? (
           /* ── View mode ─────────────────────────────────────────── */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <SectionCard title="About company" subtitle="Who you are and what makes you unique" icon={Info}>
-                <TextBlock value={p.about} emptyText="Add a short description so developers know who you are." />
-              </SectionCard>
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <SectionCard title="About company" subtitle="Who you are and what makes you unique" icon={Info}>
+                  <TextBlock value={p.about} emptyText="Add a short description so developers know who you are." />
+                </SectionCard>
 
-              <SectionCard title="Company vision" subtitle="What you're building towards" icon={Target}>
-                <TextBlock value={p.company_vision} emptyText="Share your mission and where the company is headed." />
-              </SectionCard>
+                <SectionCard title="Company vision" subtitle="What you're building towards" icon={Target}>
+                  <TextBlock value={p.company_vision} emptyText="Share your mission and where the company is headed." />
+                </SectionCard>
 
-              <SectionCard title="Perks & benefits" subtitle="Why developers will want to join" icon={Gift}>
-                <TextBlock value={p.perks_benefits} emptyText="List the perks that set you apart." />
-              </SectionCard>
+                <SectionCard title="Perks & benefits" subtitle="Why developers will want to join" icon={Gift}>
+                  <TextBlock value={p.perks_benefits} emptyText="List the perks that set you apart." />
+                </SectionCard>
+              </div>
+
+              <div className="h-fit">
+                <SectionCard title="Company details" icon={Building2}>
+                  <div className="space-y-4">
+                    <InfoRow icon={Users} label="Company size" value={companySizeLabel} />
+                    <InfoRow icon={CalendarDays} label="Founded" value={p.founded_year} />
+                    <InfoRow icon={Rocket} label="Funding stage" value={fundingLabel} />
+                    <InfoRow icon={MapPin} label="Location" value={p.location} />
+                    <InfoRow icon={Wifi} label="Remote policy" value={remoteLabel} />
+                    <InfoRow icon={Globe} label="Website" value={p.website} href={p.website || undefined} />
+                    <InfoRow
+                      icon={LinkedInIcon}
+                      label="LinkedIn"
+                      value={p.linkedin_url}
+                      href={p.linkedin_url || undefined}
+                    />
+                  </div>
+                </SectionCard>
+              </div>
             </div>
 
-            <div className="h-fit">
-              <SectionCard title="Company details" icon={Building2}>
-                <div className="space-y-4">
-                  <InfoRow icon={Users} label="Company size" value={companySizeLabel} />
-                  <InfoRow icon={CalendarDays} label="Founded" value={p.founded_year} />
-                  <InfoRow icon={Rocket} label="Funding stage" value={fundingLabel} />
-                  <InfoRow icon={MapPin} label="Location" value={p.location} />
-                  <InfoRow icon={Wifi} label="Remote policy" value={remoteLabel} />
-                  <InfoRow icon={Globe} label="Website" value={p.website} href={p.website || undefined} />
-                  <InfoRow
-                    icon={LinkedInIcon}
-                    label="LinkedIn"
-                    value={p.linkedin_url}
-                    href={p.linkedin_url || undefined}
-                  />
+            {/* ── Danger zone (collapsible) ── */}
+            <div className="mt-6 bg-white rounded-[24px] border border-[#E0533D]/20 shadow-sm overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setDangerZoneOpen((v) => !v)}
+                aria-expanded={dangerZoneOpen}
+                className="w-full flex items-center justify-between gap-2 p-6 sm:p-7 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#E0533D]/10 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-[#E0533D]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#D8452F]">Danger zone</p>
+                    <p className="text-xs text-gray-400">Account deletion</p>
+                  </div>
                 </div>
-              </SectionCard>
+                <ChevronDown
+                  className={`w-4 h-4 text-[#E0533D]/60 transition-transform duration-200 flex-shrink-0 ${
+                    dangerZoneOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              <div
+                className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${
+                  dangerZoneOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="px-6 sm:px-7 pb-6 sm:pb-7 pt-2 border-t border-[#E0533D]/10">
+                    <div className="flex items-center justify-between gap-4 mt-4">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">Delete account</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Permanently deletes your account, company profile, jobs, and all related data.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setConfirm({
+                            open: true,
+                            title: "Delete account?",
+                            description:
+                              "This action cannot be undone. Your account, company profile, job postings, applications received, credits, and all related data will be permanently erased. You can sign up again afterwards with a fresh account.",
+                            cta: "Delete account",
+                            danger: true,
+                            onConfirm: handleDeleteAccount,
+                          })
+                        }
+                        className="flex items-center gap-1.5 text-xs font-bold text-[#D8452F] bg-[#E0533D]/10 hover:bg-[#E0533D]/20 px-3.5 py-2 rounded-full transition-colors flex-shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         ) : (
           /* ── Edit mode ─────────────────────────────────────────── */
           <div className="space-y-6">

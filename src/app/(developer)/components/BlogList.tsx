@@ -15,7 +15,11 @@ function formatDate(iso: string) {
   });
 }
 
-export default function BlogList() {
+export default function BlogList({
+  basePath = "/developer/blog",
+}: {
+  basePath?: string;
+}) {
   const [blogs, setBlogs] = useState<BlogSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -116,7 +120,7 @@ export default function BlogList() {
     <div className="space-y-8">
       {/* Latest */}
       <Link
-        href={`/blog/${latest.id}`}
+        href={`${basePath}/${latest.id}`}
         className="group relative block bg-gradient-to-br from-orange-50 via-orange-50/40 to-white rounded-[28px] border border-orange-100/60 shadow-sm overflow-hidden px-6 sm:px-10 py-8 sm:py-10 hover:shadow-md transition-shadow"
       >
         <div aria-hidden className="absolute -right-10 -top-12 w-44 h-44 rounded-full bg-[#F2754A]/10" />
@@ -156,7 +160,7 @@ export default function BlogList() {
             {older.map((b) => (
               <Link
                 key={b.id}
-                href={`/blog/${b.id}`}
+                href={`${basePath}/${b.id}`}
                 className="group block bg-white rounded-2xl border border-gray-100 shadow-sm px-5 sm:px-6 py-5 hover:border-orange-200 hover:shadow-md transition-all"
               >
                 <h4
