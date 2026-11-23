@@ -20,6 +20,8 @@ import {
   CheckCircle2,
   ChevronRight,
   RefreshCcw,
+  CalendarDays,
+  Clock,
 } from "lucide-react";
 import {
   getRecruiterJobs,
@@ -33,6 +35,8 @@ interface Job {
   title: string;
   status: string;
   applicant_count: number;
+  created_at: string;
+  expires_at: string | null;
 }
 
 interface JobDetail {
@@ -52,6 +56,8 @@ interface JobDetail {
   max_score: number;
   status: string;
   applicant_count: number;
+  created_at: string;
+  expires_at: string | null;
 }
 
 interface StatusAction {
@@ -73,6 +79,51 @@ const statusActions: StatusAction[] = [
   { status: "paused", label: "Pause", icon: PauseCircle, activeColor: "#CA8A04" },
   { status: "closed", label: "Close", icon: XCircle, activeColor: "#DC2626" },
 ];
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+
+// Supabase can return timestamps without a timezone suffix. Treat those as
+// UTC so the displayed time isn't shifted.
+function parseDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const hasTz = /([zZ]|[+-]\d{2}:?\d{2})$/.test(value);
+  const d = new Date(hasTz ? value : `${value}Z`);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// e.g. "29 Sep 2026, 9:42 pm" (shown in the viewer's local timezone)
+function formatDateTime(value?: string | null): string | null {
+  const d = parseDate(value);
+  if (!d) return null;
+  return d.toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function timeAgo(value?: string | null): string | null {
+  const d = parseDate(value);
+  if (!d) return null;
+  const mins = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
+  const months = Math.floor(days / 30);
+  return `${months} month${months === 1 ? "" : "s"} ago`;
+}
+
+function daysLeft(value?: string | null): number | null {
+  const d = parseDate(value);
+  if (!d) return null;
+  return Math.ceil((d.getTime() - Date.now()) / 86400000);
+}
 
 export default function JobsPage() {
   const router = useRouter();
@@ -167,11 +218,21 @@ export default function JobsPage() {
   async function repost(jobId: string) {
     try {
       setUpdatingId(jobId);
-      await repostJob(jobId);
+      const updated = await repostJob(jobId);
 
+      // repostJob returns the updated job row, so pick up the new
+      // expires_at as well (otherwise the old expiry date would show
+      // until the page is reloaded).
       setJobs((prev) =>
         prev.map((job) =>
-          job.id === jobId ? { ...job, status: "active" } : job
+          job.id === jobId
+            ? {
+              ...job,
+              status: "active",
+              expires_at: updated?.expires_at ?? job.expires_at,
+              created_at: updated?.created_at ?? job.created_at,
+              }
+            : job
         )
       );
 
@@ -328,6 +389,7 @@ export default function JobsPage() {
             {visibleJobs.map((vJob) => {
               const job = jobs.find((j) => j.id === vJob.id) ?? vJob;
               const isExpired = job.status === "expired";
+              const remaining = daysLeft(job.expires_at);
 
               return (
                 <div
@@ -384,6 +446,43 @@ export default function JobsPage() {
                         {job.applicant_count}{" "}
                         {job.applicant_count === 1 ? "applicant" : "applicants"}
                       </button>
+
+                      {/* Posted date/time + expiry info */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-gray-400">
+                        {formatDateTime(job.created_at) && (
+                          <span
+                            className="flex items-center gap-1.5"
+                            title={formatDateTime(job.created_at) ?? undefined}
+                          >
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            Posted {formatDateTime(job.created_at)}
+                            <span className="text-gray-300">•</span>
+                            <span>{timeAgo(job.created_at)}</span>
+                          </span>
+                        )}
+
+                        {isExpired ? (
+                          formatDateTime(job.expires_at) && (
+                            <span className="flex items-center gap-1.5 text-red-400">
+                              <Clock className="w-3.5 h-3.5" />
+                              Expired on {formatDateTime(job.expires_at)}
+                            </span>
+                          )
+                        ) : job.status === "active" && remaining !== null ? (
+                          <span
+                            className={`flex items-center gap-1.5 ${
+                              remaining <= 3 ? "text-amber-500 font-semibold" : ""
+                            }`}
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                            {remaining > 0
+                              ? `Expires in ${remaining} day${
+                                  remaining === 1 ? "" : "s"
+                                }`
+                              : "Expires today"}
+                          </span>
+                        ) : null}
+                      </div>
 
                       <div className="flex items-center gap-4 mt-2">
                         {/* Read more — opens full job preview modal */}
@@ -544,6 +643,23 @@ function JobPreviewModal({
             </div>
 
             <div className="p-6 space-y-5">
+              {/* Posted / expiry dates */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-500">
+                {formatDateTime(job.created_at) && (
+                  <span className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-[#F2754A]" />
+                    Posted on {formatDateTime(job.created_at)}
+                  </span>
+                )}
+                {formatDateTime(job.expires_at) && (
+                  <span className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#F2754A]" />
+                    {job.status === "expired" ? "Expired on" : "Expires on"}{" "}
+                    {formatDateTime(job.expires_at)}
+                  </span>
+                )}
+              </div>
+
               {/* Salary */}
               <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <IndianRupee className="w-4 h-4 text-[#F2754A]" />
