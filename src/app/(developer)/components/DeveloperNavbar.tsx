@@ -56,7 +56,7 @@ const TABS = [
   { label: "Jobs for you!",         href: "/feed",         icon: Newspaper,       tourId: "nav-feed" },
   { label: "Dashboard",    href: "/developer_dashboard", icon: LayoutDashboard, tourId: "nav-dashboard" },
   { label: "Leaderboard",  href: "/leaderboard",  icon: Trophy,          tourId: "nav-leaderboard" },
-  { label: "Applications", href: "/applications", icon: FileText,        tourId: "nav-applications" },
+  { label: "My Applications", href: "/applications", icon: FileText,        tourId: "nav-applications" },
   { label: "My Saved Jobs", href: "/bookmarks",    icon: Heart,           tourId: "nav-bookmarks" },
   { label: "Messages",     href: "/messages",     icon: MessageCircle,   tourId: "nav-messages" },
   { label: "Blog",         href: "/blog",         icon: BookOpen,        tourId: "nav-blog" },
