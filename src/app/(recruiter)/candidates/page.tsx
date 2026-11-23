@@ -11,6 +11,7 @@ import {
   TrendingUp,
   AlertCircle,
 } from "lucide-react";
+import { jobSlug } from "@/lib/jobSlug";
 
 interface Job {
   id: string;
@@ -216,7 +217,7 @@ export default function CandidatesIndexPage() {
                   <button
                     key={job.id}
                     type="button"
-                    onClick={() => router.push(`/candidates/${job.id}`)}
+                    onClick={() => router.push(`/candidates/${jobSlug(job)}`)}
                     className="group w-full text-left bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6 transition hover:border-[#F2754A]/60 hover:shadow-md hover:-translate-y-0.5"
                   >
                     <div className="flex items-center justify-between gap-4">

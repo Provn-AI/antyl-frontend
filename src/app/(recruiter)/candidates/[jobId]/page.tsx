@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   getJobCandidates,
@@ -9,6 +9,7 @@ import {
   trackResumeViewed,
 } from "@/services/recruiter-job.service";
 import { updateCandidateStatus } from "@/services/update-candidate.service";
+import { findJobBySlug, jobSlug } from "@/lib/jobSlug";
 import {
   MapPin,
   Briefcase,
@@ -26,6 +27,8 @@ import {
   MessageCircle,
   Clock,
 } from "lucide-react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Candidate {
   application_id: string;
@@ -141,7 +144,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function CandidatesPage() {
   const params = useParams();
-  const jobId = params.jobId as string;
+  const router = useRouter();
+  // The URL segment is now a readable role slug (e.g.
+  // senior-backend-engineer-3f9a2b1c), not the raw job id. We resolve it to
+  // the real job id below and use that id for every API call.
+  const slug = params.jobId as string;
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobTitle, setJobTitle] = useState("");
+  const [jobNotFound, setJobNotFound] = useState(false);
+
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Candidate | null>(null);
@@ -184,10 +195,57 @@ export default function CandidatesPage() {
     };
   }, []);
 
+  // Resolve the URL slug to the real job (id + title). Uses the recruiter's
+  // own jobs list, so a slug for someone else's job simply won't be found.
+  // Also accepts a full job id (old links) and redirects to the readable URL.
   useEffect(() => {
+    let cancelled = false;
+
+    async function resolveJob() {
+      try {
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`${API_URL}/recruiter/jobs`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to load jobs");
+        const data = await res.json();
+        const jobs: { id: string; title: string }[] = data.jobs || [];
+        const match = findJobBySlug(jobs, slug);
+        if (cancelled) return;
+
+        if (!match) {
+          setJobNotFound(true);
+          setLoading(false);
+          return;
+        }
+
+        setJobId(match.id);
+        setJobTitle(match.title);
+
+        // Old UUID links, or a job whose title changed: move to the canonical URL.
+        const canonical = jobSlug(match);
+        if (canonical !== slug) router.replace(`/candidates/${canonical}`);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) {
+          setJobNotFound(true);
+          setLoading(false);
+        }
+      }
+    }
+
+    resolveJob();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, router]);
+
+  // Load candidates once the real job id is known.
+  useEffect(() => {
+    if (!jobId) return;
     async function load() {
       try {
-        const data = await getJobCandidates(jobId);
+        const data = await getJobCandidates(jobId as string);
         setCandidates(data);
       } finally {
         setLoading(false);
@@ -203,7 +261,7 @@ export default function CandidatesPage() {
   const filtered = topN === "all" ? sortedByScore : sortedByScore.slice(0, topN);
 
   const handleSaveNote = async () => {
-    if (!selected) return;
+    if (!selected || !jobId) return;
     setNoteSaving(true);
     try {
       await saveCandidateNote(selected.developer_id, jobId, note);
@@ -278,6 +336,28 @@ export default function CandidatesPage() {
     setSelected(null);
   };
 
+  if (jobNotFound) {
+    return (
+      <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center px-4">
+        <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm p-10 text-center max-w-sm w-full">
+          <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="w-6 h-6 text-gray-300" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Job not found</h2>
+          <p className="text-sm text-gray-400 mb-6">
+            This job doesn&apos;t exist or isn&apos;t one of yours.
+          </p>
+          <Link
+            href="/candidates"
+            className="inline-block px-6 py-2.5 rounded-full font-bold text-white text-sm bg-[#F2754A] hover:bg-[#e0623a] transition-colors"
+          >
+            Back to jobs
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center">
@@ -304,9 +384,12 @@ export default function CandidatesPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Candidates</h2>
+            <Link href="/candidates" className="text-xs font-bold text-[#F2754A] hover:underline">
+              ← All jobs
+            </Link>
+            <h2 className="text-3xl font-bold text-gray-900 mt-1">{jobTitle || "Candidates"}</h2>
             <p className="text-sm text-gray-400 mt-1">
-              {filtered.length} of {candidates.length} shown
+              Candidates · {filtered.length} of {candidates.length} shown
             </p>
           </div>
 
@@ -712,7 +795,7 @@ export default function CandidatesPage() {
               <button
                 type="button"
                 onClick={async () => {
-                  if (!selected) return;
+                  if (!selected || !jobId) return;
                   const candidate = selected;
                   try {
                     await updateCandidateStatus(candidate.application_id, "matched");
