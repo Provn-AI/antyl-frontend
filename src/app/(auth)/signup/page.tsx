@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { sendOtp } from "@/services/auth.services";
 import GoogleButton from "@/components/GoogleButton";
+import { isPersonalEmail } from "@/lib/emailDomains";
 
 type Role = "developer" | "recruiter" | null;
 
@@ -16,7 +17,11 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
 
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSubmit = !!role && emailValid && !loading;
+  const isRecruiter = role === "recruiter";
+  // Recruiters must use a company email. Developers are unaffected, and this
+  // page is signup-only, so login with personal emails keeps working.
+  const personalEmailBlocked = isRecruiter && emailValid && isPersonalEmail(email);
+  const canSubmit = !!role && emailValid && !personalEmailBlocked && !loading;
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,6 +248,16 @@ export default function SignupPage() {
           box-shadow: 0 0 0 3px rgba(255,107,77,0.12);
         }
         .email-input.role-chosen { border-color: #FF6B4D; }
+        .email-input.has-error { border-color: #E5484D; margin-bottom: 0.5rem; }
+        .email-input.has-error:focus { box-shadow: 0 0 0 3px rgba(229,72,77,0.12); }
+
+        .field-error {
+          font-size: 12.5px;
+          color: #E5484D;
+          font-weight: 500;
+          line-height: 1.4;
+          margin-bottom: 1.125rem;
+        }
 
         .btn-send-otp {
           width: 100%;
@@ -292,21 +307,30 @@ export default function SignupPage() {
           <h1 className="card-title">Create your account</h1>
           <p className="card-sub">Start your verified dev journey</p>
 
-          {/* ── Google OAuth ── */}
+          {/* ── Google OAuth ──
+              Disabled for recruiters: Google returns whatever account the
+              user picks (including Gmail), so recruiters use the work-email
+              form below instead. */}
           <GoogleButton
             mode="signup"
             role={role}
-            disabled={!role}
+            disabled={!role || isRecruiter}
             onDisabledClick={() =>
-              alert("Please choose Developer or Recruiter below first.")
+              alert(
+                !role
+                  ? "Please choose Developer or Recruiter below first."
+                  : "Recruiters sign up with their work email. Please use the email option below."
+              )
             }
             onSuccess={handleGoogleSuccess}
             onError={(message) => alert(message)}
           />
           <p className="google-note">
-            {role
-              ? "Sign up with your Google account"
-              : "Choose your role below to use Google"}
+            {!role
+              ? "Choose your role below to use Google"
+              : isRecruiter
+              ? "Recruiters sign up with a work email below"
+              : "Sign up with your Google account"}
           </p>
 
           <div className="divider">
@@ -367,16 +391,27 @@ export default function SignupPage() {
               </button>
             </div>
 
-            <label className="email-label" htmlFor="email">Email</label>
+            <label className="email-label" htmlFor="email">
+              {isRecruiter ? "Work email" : "Email"}
+            </label>
             <input
               id="email"
-              className={`email-input${role ? " role-chosen" : ""}`}
+              className={`email-input${role ? " role-chosen" : ""}${
+                personalEmailBlocked ? " has-error" : ""
+              }`}
               type="email"
-              placeholder="abc@gmail.com"
+              placeholder={isRecruiter ? "you@yourcompany.com" : "abc@gmail.com"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              aria-invalid={personalEmailBlocked}
             />
+            {personalEmailBlocked && (
+              <p className="field-error">
+                Please use your work email. Personal addresses like Gmail or
+                Yahoo can&apos;t be used for recruiter accounts.
+              </p>
+            )}
 
             <button type="submit" className="btn-send-otp" disabled={!canSubmit}>
               {loading ? <span className="spinner" /> : "Send OTP"}
