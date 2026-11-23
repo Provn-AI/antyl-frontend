@@ -59,6 +59,15 @@ export const developerTourSteps: TourStep[] = [
   },
 ];
 
+// Mobile version of the developer tour. The desktop sidebar (which owns the
+// plain data-tour="nav-*" anchors) is hidden below md, so the mobile menu and
+// mobile bell use "m-" prefixed anchors, e.g. data-tour="m-nav-feed".
+// Steps are derived from the desktop list so copy stays in sync.
+export const developerTourStepsMobile: TourStep[] = developerTourSteps.map((s) => ({
+  ...s,
+  target: s.target.replace('data-tour="', 'data-tour="m-'),
+}));
+
 export const RECRUITER_TOUR_KEY = "antyl_tour_seen_recruiter";
 
 export const recruiterTourSteps: TourStep[] = [

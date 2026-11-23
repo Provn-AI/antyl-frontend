@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Sparkles, X } from "lucide-react";
 
 export interface TourStep {
@@ -29,18 +29,19 @@ const CARD_WIDTH = 300;
 const CARD_HEIGHT_ESTIMATE = 190;
 const GAP = 16;
 // How much clearance a target needs from the viewport edges to count as
-// "already visible" — leaves room for the tooltip card itself, so we don't
-// scroll a target that's technically on-screen but has no room to show its
-// card without immediately needing to scroll again.
+// "already visible" on desktop — leaves room for the tooltip card itself, so
+// we don't scroll a target that's technically on-screen but has no room to
+// show its card without immediately needing to scroll again.
 const VIEWPORT_MARGIN = 100;
-// Smooth-scroll settle time before we trust getBoundingClientRect() again.
+// Smooth-scroll settle time before we trust getBoundingClientRect() again
+// (desktop only; mobile uses an instant scroll).
 const SCROLL_SETTLE_MS = 450;
+// If a target isn't in the DOM yet (e.g. the mobile menu is still opening),
+// wait this long once and look again before giving up on the step.
+const TARGET_RETRY_MS = 250;
 
-// Spotlight tour only runs on desktop widths — the sidebar (where all
-// data-tour targets live) is hidden below md, and the mobile tab bar
-// duplicates the same items without unique anchors.
-function isDesktopViewport() {
-  return typeof window !== "undefined" && window.innerWidth >= 768;
+function isMobileWidth() {
+  return typeof window !== "undefined" && window.innerWidth < 768;
 }
 
 function prefersReducedMotion() {
@@ -101,25 +102,25 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
   // getBoundingClientRect() — measuring mid-scroll (or pre-scroll) produces
   // an off-screen rect, which renders as a full black backdrop with no
   // visible cutout. Every setState call here happens inside an async
-  // callback (the initial setTimeout, or the scroll-settle setTimeout
-  // nested inside it) — never synchronously in the effect body itself.
+  // callback (the initial setTimeout, or the nested timeouts) — never
+  // synchronously in the effect body itself.
   useEffect(() => {
     if (!active) return;
 
     let cancelled = false;
     let scrollTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const t = setTimeout(() => {
+    const t = setTimeout(async () => {
       if (cancelled) return;
 
-      if (!isDesktopViewport()) {
-        // No usable spotlight target on mobile — end the tour instead of
-        // showing a broken/empty state.
-        finish();
-        return;
-      }
+      let el = document.querySelector(step.target) as HTMLElement | null;
 
-      const el = document.querySelector(step.target) as HTMLElement | null;
+      if (!el) {
+        // The sidebar / mobile menu may still be mounting — retry once.
+        await new Promise((resolve) => setTimeout(resolve, TARGET_RETRY_MS));
+        if (cancelled) return;
+        el = document.querySelector(step.target) as HTMLElement | null;
+      }
 
       if (!el) {
         // Target isn't on the page for this user (e.g. admin-only tab) —
@@ -142,6 +143,16 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
         setRect(measured);
         setReadyIndex(stepIndex);
       };
+
+      if (isMobileWidth()) {
+        // On phones the targets live in a sticky header and a scrollable
+        // dropdown menu. "nearest" only scrolls when the target is actually
+        // clipped (by the menu's own overflow or the page), and an instant
+        // scroll means we can measure right away without a settle delay.
+        el.scrollIntoView({ behavior: "auto", block: "nearest" });
+        scrollTimeoutId = setTimeout(finalize, 50);
+        return;
+      }
 
       if (isInViewport(el)) {
         finalize();
@@ -169,7 +180,6 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
     if (!active) return;
 
     function handleResize() {
-      if (!isDesktopViewport()) return;
       const measured = measureTarget(step.target);
       if (measured) setRect(measured);
     }
@@ -192,11 +202,14 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
 
   const back = () => setStepIndex((i) => Math.max(0, i - 1));
 
+  // Shrink the card on very narrow phones so it never overflows the screen.
+  const cardWidth = Math.min(CARD_WIDTH, window.innerWidth - 24);
+
   let cardTop = rect.top + rect.height + GAP;
   if (cardTop + CARD_HEIGHT_ESTIMATE > window.innerHeight - 12) {
     cardTop = Math.max(rect.top - CARD_HEIGHT_ESTIMATE - GAP, 12);
   }
-  const cardLeft = Math.min(Math.max(rect.left, 12), window.innerWidth - CARD_WIDTH - 12);
+  const cardLeft = Math.min(Math.max(rect.left, 12), window.innerWidth - cardWidth - 12);
 
   return (
     <div className="fixed inset-0 z-[200]">
@@ -216,7 +229,7 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
       {/* Tooltip card */}
       <div
         className="absolute bg-white rounded-[20px] shadow-2xl p-5 transition-all duration-300 ease-out"
-        style={{ top: cardTop, left: cardLeft, width: CARD_WIDTH }}
+        style={{ top: cardTop, left: cardLeft, width: cardWidth }}
       >
         <div className="flex items-start justify-between mb-2">
           <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">

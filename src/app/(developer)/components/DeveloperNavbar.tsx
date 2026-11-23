@@ -33,7 +33,7 @@ import { pingStreak } from "@/services/streak.service";
 import { checkIsAdmin } from "@/services/weeklyQuestion.service";
 import WeeklyQuestionPopup from "./WeeklyQuestionPopup";
 import OnboardingTour from "@/components/OnboardingTour";
-import { developerTourSteps, DEVELOPER_TOUR_KEY } from "@/lib/tourSteps";
+import { developerTourSteps, developerTourStepsMobile, DEVELOPER_TOUR_KEY } from "@/lib/tourSteps";
 
 interface AntylNotification {
   id: string;
@@ -422,22 +422,31 @@ function NotificationPanel({
 // ── Mobile nav menu — replaces the old horizontally-scrolling tab strip.
 // Opens as a full-width dropdown sheet right below the sticky mobile
 // header so every tab is reachable with a single tap, no side-scrolling.
+// Each tab carries a "m-" prefixed data-tour anchor so the onboarding tour
+// can spotlight it on phones (the desktop sidebar anchors are hidden).
 function MobileNavMenu({
   isAdmin,
   pathname,
   unreadMessagesTotal,
   onNavigate,
   onClose,
+  locked,
+  onStartTour,
 }: {
   isAdmin: boolean;
   pathname: string;
   unreadMessagesTotal: number;
   onNavigate: () => void;
   onClose: () => void;
+  // True while the onboarding tour is running: the menu must stay open and
+  // ignore outside taps, otherwise the tour would lose its targets.
+  locked: boolean;
+  onStartTour: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (locked) return;
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
@@ -445,25 +454,27 @@ function MobileNavMenu({
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [onClose]);
+  }, [onClose, locked]);
 
   return (
     <>
       {/* Dim the page behind the menu so it reads as a dropdown, not
-          just more page content. */}
-      <div className="fixed inset-0 bg-black/20 z-40 md:hidden" />
+          just more page content. Hidden during the tour, which brings
+          its own dimming. */}
+      {!locked && <div className="fixed inset-0 bg-black/20 z-40 md:hidden" />}
       <div
         ref={menuRef}
         className="absolute left-0 right-0 top-full bg-white border-b border-gray-100 shadow-xl z-50 md:hidden max-h-[75vh] overflow-y-auto"
       >
         <nav className="flex flex-col py-2.5">
-          {TABS.map(({ label, href, icon: Icon }) => {
+          {TABS.map(({ label, href, icon: Icon, tourId }) => {
             const active = pathname === href;
             const isMessages = href === "/messages";
             return (
               <Link
                 key={href}
                 href={href}
+                data-tour={`m-${tourId}`}
                 onClick={onNavigate}
                 className={`flex items-center gap-3.5 px-5 py-3.5 text-[15px] font-semibold transition-colors ${
                   active ? "bg-orange-50 text-[#F2754A]" : "text-gray-600 hover:bg-gray-50"
@@ -500,6 +511,15 @@ function MobileNavMenu({
               Admin
             </Link>
           )}
+
+          <button
+            type="button"
+            onClick={onStartTour}
+            className="flex items-center gap-3.5 px-5 py-3.5 text-[15px] font-semibold text-gray-600 hover:bg-gray-50 text-left transition-colors"
+          >
+            <HelpCircle className="w-[18px] h-[18px] flex-shrink-0 text-gray-400" />
+            Take a tour
+          </button>
         </nav>
       </div>
     </>
@@ -519,7 +539,13 @@ export default function DeveloperNavbar() {
   const shownCelebrationIds = useRef<Set<string>>(new Set());
   const [isAdmin, setIsAdmin] = useState(false);
   const [tourActive, setTourActive] = useState(false);
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  // Lazy initializer so the very first render already has the right value
+  // on a phone (the tour picks desktop vs mobile steps from this). It only
+  // affects things that render after mount (tour, toast), so there's no
+  // hydration mismatch.
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < 768
+  );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Sidebar collapse — persisted so it survives navigation/reloads.
@@ -547,8 +573,8 @@ export default function DeveloperNavbar() {
   }, []);
 
   // Tracks whether we're below the md breakpoint so mobile-only UI (the
-  // new-message toast placement) can react to viewport/orientation
-  // changes instead of only checking window.innerWidth once at render.
+  // new-message toast placement, the mobile tour) can react to viewport/
+  // orientation changes instead of only checking window.innerWidth once.
   useEffect(() => {
     const check = () => setIsMobileViewport(window.innerWidth < 768);
     check();
@@ -560,6 +586,13 @@ export default function DeveloperNavbar() {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  // The mobile tour spotlights items inside the hamburger menu, so the menu
+  // has to be open for the whole tour and is closed again when it ends.
+  useEffect(() => {
+    if (!isMobileViewport) return;
+    setMobileMenuOpen(tourActive);
+  }, [tourActive, isMobileViewport]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -590,10 +623,9 @@ export default function DeveloperNavbar() {
     checkIsAdmin().then(setIsAdmin);
   }, []);
 
-  // First-login onboarding tour — desktop only, since the sidebar (where
-  // every data-tour anchor lives) is hidden below md.
+  // First-login onboarding tour — runs on desktop (sidebar anchors) and on
+  // mobile (hamburger menu + header bell anchors).
   useEffect(() => {
-    if (window.innerWidth < 768) return;
     if (!localStorage.getItem(DEVELOPER_TOUR_KEY)) {
       const t = setTimeout(() => setTourActive(true), 500);
       return () => clearTimeout(t);
@@ -961,13 +993,15 @@ export default function DeveloperNavbar() {
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <BellButton
-              mobile
-              buttonRef={mobileBellRef}
-              unreadCount={unreadCount}
-              panelOpen={panelOpen}
-              onClick={() => openPanel(mobileBellRef)}
-            />
+            <div data-tour="m-nav-bell">
+              <BellButton
+                mobile
+                buttonRef={mobileBellRef}
+                unreadCount={unreadCount}
+                panelOpen={panelOpen}
+                onClick={() => openPanel(mobileBellRef)}
+              />
+            </div>
             {isAdmin && (
               <Link
                 href="/admin/weekly-question"
@@ -994,6 +1028,8 @@ export default function DeveloperNavbar() {
             unreadMessagesTotal={unreadMessagesTotal}
             onNavigate={() => setMobileMenuOpen(false)}
             onClose={() => setMobileMenuOpen(false)}
+            locked={tourActive}
+            onStartTour={() => setTourActive(true)}
           />
         )}
       </header>
@@ -1036,10 +1072,11 @@ export default function DeveloperNavbar() {
           server-side from the JWT, no prop needed. */}
       <WeeklyQuestionPopup />
 
-      {/* First-login onboarding tour — desktop only, replayable via the
-          "Take a tour" sidebar button. */}
+      {/* Onboarding tour — desktop uses the sidebar anchors, mobile uses
+          the "m-" anchors in the hamburger menu and header. Replayable via
+          the "Take a tour" button on both layouts. */}
       <OnboardingTour
-        steps={developerTourSteps}
+        steps={isMobileViewport ? developerTourStepsMobile : developerTourSteps}
         storageKey={DEVELOPER_TOUR_KEY}
         active={tourActive}
         onFinish={() => setTourActive(false)}
