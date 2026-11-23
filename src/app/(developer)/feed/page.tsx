@@ -17,6 +17,9 @@ import {
   ChevronRight,
   AlertTriangle,
   Zap,
+  MapPin,
+  Briefcase,
+  Building2,
 } from "lucide-react";
 
 import JobCard from "@/components/jobs/JobCard";
@@ -248,6 +251,118 @@ function SkipConfirmModal({
 }
 
 /* ------------------------------------------------------------------ */
+/* Sample job shown ONLY while the onboarding tour is running and the  */
+/* feed has no real current job (empty feed, or all caught up). It     */
+/* replaces the empty / caught-up state for the duration of the tour   */
+/* and gives the tour something to point at. Purely visual: no clicks, */
+/* no API calls, and it disappears the moment the tour ends.           */
+/* ------------------------------------------------------------------ */
+function TourDemoDeck() {
+  return (
+    <div className="w-full mb-6 pointer-events-none select-none" aria-hidden="true">
+      <div
+        data-tour="feed-card"
+        className="bg-white border border-gray-100 rounded-[32px] shadow-xl overflow-hidden"
+      >
+        <div
+          className="relative px-6 pt-6 pb-14"
+          style={{ background: "linear-gradient(135deg, #F2754A 0%, #FFB347 100%)" }}
+        >
+          <div className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            92% match
+          </div>
+          <span className="absolute top-5 right-5 text-[11px] font-black tracking-widest text-white bg-white/20 rounded-full px-3 py-1.5">
+            SAMPLE JOB
+          </span>
+          <div className="absolute -bottom-7 left-6 w-14 h-14 rounded-2xl bg-white shadow-lg flex items-center justify-center">
+            <span className="text-xl font-black text-[#F2754A]">A</span>
+          </div>
+        </div>
+
+        <div className="px-6 pt-10 pb-5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Building2 className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+            <p className="text-xs font-semibold text-gray-400 truncate">Acme Labs · Fintech</p>
+          </div>
+          <h3 className="text-xl font-black text-gray-900 leading-tight mb-3">
+            Backend Engineer
+          </h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+              <MapPin className="w-3 h-3" />
+              Bengaluru
+            </span>
+            <span className="flex items-center gap-1 text-xs font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+              <Briefcase className="w-3 h-3" />
+              full time
+            </span>
+          </div>
+          <p className="text-2xl font-black text-gray-900 mb-4">
+            ₹18L
+            <span className="text-gray-300 mx-1 font-light">–</span>
+            ₹28L
+            <span className="text-sm font-semibold text-gray-400 ml-1">/ yr</span>
+          </p>
+          <div className="flex flex-wrap gap-1.5 mb-5">
+            {["Python", "FastAPI", "PostgreSQL"].map((t) => (
+              <span
+                key={t}
+                className="px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100 text-[11px] font-semibold text-gray-600"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+
+          <div className="pt-4 border-t border-gray-50 space-y-1.5 text-center">
+            <p className="text-[11px] font-bold text-gray-400">
+              Swipe right to apply · Swipe left to skip
+            </p>
+            <p className="text-[11px] font-semibold text-[#F2754A]">
+              Or turn on auto-apply and Antyl swipes for you
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Mock browse control */}
+      <div className="flex justify-center mt-6">
+        <div
+          data-tour="feed-browse"
+          className="flex items-center gap-1 bg-white border border-gray-100 rounded-full p-1 shadow-sm"
+        >
+          <span className="flex items-center gap-1 pl-2.5 pr-3.5 py-1.5 text-sm font-semibold text-gray-300">
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </span>
+          <span className="px-3 text-xs font-bold text-gray-400 tabular-nums">1 / 1</span>
+          <span className="flex items-center gap-1 pl-3.5 pr-2.5 py-1.5 text-sm font-semibold text-gray-500">
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </span>
+        </div>
+      </div>
+
+      {/* Mock decision buttons */}
+      <div
+        data-tour="feed-actions"
+        className="flex items-center justify-center gap-3 sm:gap-4 mt-5 w-full"
+      >
+        <div className="flex-1 sm:flex-none sm:min-w-[140px] flex items-center justify-center gap-2 h-12 px-6 rounded-full border border-gray-200 bg-white text-gray-600 text-sm font-bold shadow-sm">
+          <X className="w-4 h-4" />
+          Skip
+        </div>
+        <div className="flex-1 sm:flex-none sm:min-w-[140px] flex items-center justify-center gap-2 h-12 px-6 rounded-full bg-gradient-to-r from-[#F2754A] to-[#F8B36B] text-white text-sm font-bold shadow-md shadow-orange-200">
+          <CheckCircle2 className="w-4 h-4" />
+          Apply
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Mascot-driven empty state — used when there are no jobs in the feed */
 /* at all. Fully responsive: sizes/spacing/decoration scale down       */
 /* step-by-step from mobile → tablet → desktop.                        */
@@ -352,6 +467,10 @@ export default function FeedPage() {
   // Which way the current card should fly out on its next exit.
   // Defaults to "right" (Apply); Skip/Back explicitly set "left".
   const [exitDirection, setExitDirection] = useState<ExitDirection>("right");
+
+  // True while the onboarding tour (owned by DeveloperNavbar) is running.
+  // Used to show a sample job when the feed has nothing to point at.
+  const [tourActive, setTourActive] = useState(false);
 
   useEffect(() => {
     async function loadJobs() {
@@ -483,13 +602,17 @@ export default function FeedPage() {
   const progressPct = jobs.length ? Math.min((currentIndex / jobs.length) * 100, 100) : 0;
   const quotaUsedPct = applyLimit ? Math.min(((applyLimit - applyRemaining) / applyLimit) * 100, 100) : 0;
 
-  // Only the "no jobs" state gets extra width — the swipe deck and the
-  // "all caught up" card stay at the page's normal max-w-2xl.
-  const isEmptyState = !loading && jobs.length === 0;
+  // Tour needs something to point at: when there is no real current job
+  // (empty feed or all caught up), show ONLY the sample job while it runs.
+  const showTourDemo = tourActive && !loading && !currentJob;
+
+  // Only the "no jobs" state gets extra width — the swipe deck, the
+  // "all caught up" card and the tour's sample job stay at max-w-2xl.
+  const isEmptyState = !loading && jobs.length === 0 && !showTourDemo;
 
   return (
     <div className="md:flex">
-      <DeveloperNavbar />
+      <DeveloperNavbar tourReady={!loading} onTourActiveChange={setTourActive} />
 
       <main className="flex-1 min-w-0">
         <NotLookingModal
@@ -564,6 +687,7 @@ export default function FeedPage() {
 
               {statusLoaded && (
                 <div
+                  data-tour="feed-quota"
                   className={`flex items-center gap-3 self-start sm:self-auto rounded-2xl border px-3.5 py-2 ${
                     applyDisabled
                       ? "bg-gray-50 border-gray-100"
@@ -596,6 +720,10 @@ export default function FeedPage() {
 
             {loading ? (
               <DeckSkeleton />
+            ) : showTourDemo ? (
+              // While the tour runs on an empty / finished feed, show ONLY
+              // the sample job. The normal empty state returns when it ends.
+              <TourDemoDeck />
             ) : jobs.length === 0 ? (
               <NoJobsState />
             ) : hasFinishedFeed ? (
@@ -656,7 +784,11 @@ export default function FeedPage() {
                   />
                 </div>
 
-                <div className="relative w-full" style={{ minHeight: 420 }}>
+                <div
+                  data-tour="feed-card"
+                  className="relative w-full"
+                  style={{ minHeight: 420 }}
+                >
                   <AnimatePresence mode="popLayout">
                     <SwipeCard
                       key={currentJob.id}
@@ -670,7 +802,10 @@ export default function FeedPage() {
                 </div>
 
                 {/* Back / counter / Next browsing control */}
-                <div className="flex items-center gap-1 mt-6 bg-white border border-gray-100 rounded-full p-1 shadow-sm">
+                <div
+                  data-tour="feed-browse"
+                  className="flex items-center gap-1 mt-6 bg-white border border-gray-100 rounded-full p-1 shadow-sm"
+                >
                   <button
                     type="button"
                     onClick={handleBack}
@@ -697,7 +832,10 @@ export default function FeedPage() {
                 </div>
 
                 {/* Decision buttons */}
-                <div className="flex items-center justify-center gap-3 sm:gap-4 mt-5 w-full">
+                <div
+                  data-tour="feed-actions"
+                  className="flex items-center justify-center gap-3 sm:gap-4 mt-5 w-full"
+                >
                   <button
                     type="button"
                     onClick={handleRequestSkip}

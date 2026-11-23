@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Newspaper,
   FileText,
@@ -32,8 +32,13 @@ import { getConversations, Conversation } from "@/services/message.service";
 import { pingStreak } from "@/services/streak.service";
 import { checkIsAdmin } from "@/services/weeklyQuestion.service";
 import WeeklyQuestionPopup from "./WeeklyQuestionPopup";
-import OnboardingTour from "@/components/OnboardingTour";
-import { developerTourSteps, developerTourStepsMobile, DEVELOPER_TOUR_KEY } from "@/lib/tourSteps";
+import OnboardingTour, { type TourStep } from "@/components/OnboardingTour";
+import {
+  developerFeedSteps,
+  developerNavSteps,
+  developerNavStepsMobile,
+  DEVELOPER_TOUR_KEY,
+} from "@/lib/tourSteps";
 
 interface AntylNotification {
   id: string;
@@ -526,7 +531,16 @@ function MobileNavMenu({
   );
 }
 
-export default function DeveloperNavbar() {
+export default function DeveloperNavbar({
+  tourReady = true,
+  onTourActiveChange,
+}: {
+  // Pages whose tour targets load asynchronously (the feed) pass false until
+  // ready, so the first-login tour doesn't start on a loading skeleton.
+  tourReady?: boolean;
+  // Lets a page react while the tour is running (the feed shows a sample job).
+  onTourActiveChange?: (active: boolean) => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [notifications, setNotifications] = useState<AntylNotification[]>([]);
@@ -547,6 +561,19 @@ export default function DeveloperNavbar() {
     () => typeof window !== "undefined" && window.innerWidth < 768
   );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [tourTarget, setTourTarget] = useState("");
+  const handleTourStep = useCallback((s: TourStep) => setTourTarget(s.target), []);
+
+  // Feed-page steps only run on /feed. Elsewhere they would be skipped one by
+  // one, leaving a visible pause before the first sidebar step.
+  const tourSteps = useMemo(() => {
+    const nav = isMobileViewport ? developerNavStepsMobile : developerNavSteps;
+    return pathname === "/feed" ? [...developerFeedSteps, ...nav] : nav;
+  }, [pathname, isMobileViewport]);
+
+  useEffect(() => {
+    onTourActiveChange?.(tourActive);
+  }, [tourActive, onTourActiveChange]);
 
   // ── Sidebar collapse — persisted so it survives navigation/reloads.
   // Now honored on every route (not just the dashboard), so the toggle
@@ -587,12 +614,12 @@ export default function DeveloperNavbar() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  // The mobile tour spotlights items inside the hamburger menu, so the menu
-  // has to be open for the whole tour and is closed again when it ends.
+  // Open the hamburger menu only while a step points at an item inside it
+  // (the "m-" anchors). Feed-page steps need the page visible, so it closes.
   useEffect(() => {
     if (!isMobileViewport) return;
-    setMobileMenuOpen(tourActive);
-  }, [tourActive, isMobileViewport]);
+    setMobileMenuOpen(tourActive && tourTarget.includes('data-tour="m-'));
+  }, [tourActive, tourTarget, isMobileViewport]);
 
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
@@ -624,13 +651,15 @@ export default function DeveloperNavbar() {
   }, []);
 
   // First-login onboarding tour — runs on desktop (sidebar anchors) and on
-  // mobile (hamburger menu + header bell anchors).
+  // mobile (hamburger menu + header bell anchors). Waits for tourReady so
+  // pages with async targets don't start the tour on a loading skeleton.
   useEffect(() => {
+    if (!tourReady) return;
     if (!localStorage.getItem(DEVELOPER_TOUR_KEY)) {
       const t = setTimeout(() => setTourActive(true), 500);
       return () => clearTimeout(t);
     }
-  }, []);
+  }, [tourReady]);
 
   useEffect(() => {
     // Restore previously-shown/dismissed milestone celebration ids from
@@ -1076,10 +1105,14 @@ export default function DeveloperNavbar() {
           the "m-" anchors in the hamburger menu and header. Replayable via
           the "Take a tour" button on both layouts. */}
       <OnboardingTour
-        steps={isMobileViewport ? developerTourStepsMobile : developerTourSteps}
+        steps={tourSteps}
         storageKey={DEVELOPER_TOUR_KEY}
         active={tourActive}
-        onFinish={() => setTourActive(false)}
+        onStepChange={handleTourStep}
+        onFinish={() => {
+          setTourActive(false);
+          setTourTarget("");
+        }}
       />
     </>
   );

@@ -2,7 +2,44 @@ import { TourStep } from "@/components/OnboardingTour";
 
 export const DEVELOPER_TOUR_KEY = "antyl_tour_seen_developer";
 
-export const developerTourSteps: TourStep[] = [
+// ── Feed page steps ─────────────────────────────────────────────────────────
+// These anchors live in the page body (not the hidden sidebar), so desktop and
+// mobile share them. The navbar only includes them when the user is on /feed.
+export const developerFeedSteps: TourStep[] = [
+  {
+    id: "page-card",
+    target: '[data-tour="feed-card"]',
+    title: "Swipe to decide",
+    content: "Swipe a job right to apply, left to skip. Tap the card to open the full details.",
+  },
+  {
+    id: "page-actions",
+    target: '[data-tour="feed-actions"]',
+    title: "Or use the buttons",
+    content: "Apply sends your application. Skip removes the job from your feed for good, so we ask you to confirm first.",
+  },
+  {
+    id: "page-browse",
+    target: '[data-tour="feed-browse"]',
+    title: "Take your time",
+    content: "Back and Next let you look through roles without applying to or skipping any of them.",
+  },
+  {
+    id: "page-quota",
+    target: '[data-tour="feed-quota"]',
+    title: "Daily applies",
+    content: "This shows how many applies you have left today. The counter resets at midnight IST.",
+  },
+  {
+    id: "page-auto",
+    target: '[data-tour="feed-quota"]',
+    title: "Auto-apply",
+    content: "Short on time? Turn on auto-apply in your profile preferences and Antyl applies to matching roles for you. It needs your tech stack filled in on your profile.",
+  },
+];
+
+// ── Navigation steps (desktop sidebar) ──────────────────────────────────────
+export const developerNavSteps: TourStep[] = [
   {
     id: "feed",
     target: '[data-tour="nav-feed"]',
@@ -59,14 +96,17 @@ export const developerTourSteps: TourStep[] = [
   },
 ];
 
-// Mobile version of the developer tour. The desktop sidebar (which owns the
+// Mobile version of the navigation steps. The desktop sidebar (which owns the
 // plain data-tour="nav-*" anchors) is hidden below md, so the mobile menu and
 // mobile bell use "m-" prefixed anchors, e.g. data-tour="m-nav-feed".
-// Steps are derived from the desktop list so copy stays in sync.
-export const developerTourStepsMobile: TourStep[] = developerTourSteps.map((s) => ({
+export const developerNavStepsMobile: TourStep[] = developerNavSteps.map((s) => ({
   ...s,
   target: s.target.replace('data-tour="', 'data-tour="m-'),
 }));
+
+// Backwards-compatible aliases for any file still importing the old names.
+export const developerTourSteps = developerNavSteps;
+export const developerTourStepsMobile = developerNavStepsMobile;
 
 export const RECRUITER_TOUR_KEY = "antyl_tour_seen_recruiter";
 

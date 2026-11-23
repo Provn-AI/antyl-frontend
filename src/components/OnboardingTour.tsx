@@ -15,6 +15,7 @@ interface OnboardingTourProps {
   storageKey: string;
   active: boolean;
   onFinish: () => void;
+  onStepChange?: (step: TourStep) => void;
 }
 
 interface Rect {
@@ -70,7 +71,7 @@ function isInViewport(el: HTMLElement): boolean {
   );
 }
 
-export default function OnboardingTour({ steps, storageKey, active, onFinish }: OnboardingTourProps) {
+export default function OnboardingTour({ steps, storageKey, active, onFinish, onStepChange }: OnboardingTourProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   // Tracks which step index `rect` was measured for, so we can tell a
@@ -95,6 +96,12 @@ export default function OnboardingTour({ steps, storageKey, active, onFinish }: 
     localStorage.setItem(storageKey, "1");
     onFinish();
   }, [storageKey, onFinish]);
+
+  // Let the parent know which step is showing (the navbar uses this to open
+  // the mobile menu only for the sidebar steps).
+  useEffect(() => {
+    if (active && step) onStepChange?.(step);
+  }, [active, step, onStepChange]);
 
   // Measure target position after mount / step change (small delay lets
   // the page settle first). If the target isn't currently in view, scroll
