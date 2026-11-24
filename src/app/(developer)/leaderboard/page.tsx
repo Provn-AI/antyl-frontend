@@ -416,9 +416,9 @@ export default function LeaderboardPage() {
         setBadges(badgeData.badges);
         setBadgeCatalog(badgeData.catalog);
 
-        const initialField = rank?.field_of_work ?? null;
-        const data = await getLeaderboard(initialField ?? undefined);
-        setSelectedField(initialField ?? data.field);
+        const initialField = rank?.rank ? rank.field_of_work : undefined;
+        const data = await getLeaderboard(initialField);
+        setSelectedField(data.field);
         setEntries(data.entries);
       } catch {
         setError("Couldn't load the leaderboard. Please refresh.");
@@ -472,7 +472,7 @@ export default function LeaderboardPage() {
           <WeekTimer />
         </div>
         <p className="text-xs sm:text-sm text-gray-400 mb-5 sm:mb-6">
-          Ranked by Antyl Score within each field. Recalculated daily, movement resets weekly.
+          Ranked by Antyl Score within each field. Resets every Monday. Verify this week to get on the board.
         </p>
 
         {/* Field selector — now at the top, directly under the header */}
@@ -562,9 +562,11 @@ export default function LeaderboardPage() {
 
         {myRank && !myRank.rank && (
           <div className="bg-white rounded-2xl border border-gray-100 p-3.5 sm:p-4 mb-5">
-            <p className="text-sm font-semibold text-gray-700">You are not ranked yet</p>
+            <p className="text-sm font-semibold text-gray-700">
+              You are not on this week&apos;s board
+            </p>
             <p className="text-xs text-gray-400 mt-0.5">
-              Complete a verification to get an Antyl Score and appear on the leaderboard.
+              Complete or redo your verification this week to get ranked. The board resets every Monday.
             </p>
           </div>
         )}
@@ -583,9 +585,9 @@ export default function LeaderboardPage() {
           ) : entries.length === 0 ? (
             <div className="py-16 text-center px-6">
               <Trophy className="w-6 h-6 text-gray-200 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-gray-700">No rankings yet</p>
+            <p className="text-sm font-semibold text-gray-700">No rankings yet this week</p>
               <p className="text-xs text-gray-400 mt-1">
-                Be the first to get verified in this field.
+                Be the first to verify in this field this week.
               </p>
             </div>
           ) : restEntries.length === 0 ? (
