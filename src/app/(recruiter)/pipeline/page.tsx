@@ -227,8 +227,8 @@ function StageCard({
             </button>
           </div>
           {match.meeting_link && (
-            
-            <a  href={match.meeting_link}
+            <a
+              href={match.meeting_link}
               target="_blank"
               rel="noopener noreferrer"
               className={`font-bold text-blue-600 hover:underline w-fit ${comfy ? "text-xs" : "text-[10px]"}`}
@@ -255,14 +255,14 @@ function StageCard({
         </button>
       )}
 
-      {/* Move back — dim by default; brand orange gradient (same as the
-          active nav item) with white text on hover. */}
+      {/* Move back — always shown in a softened brand-orange gradient
+          (toned down with reduced opacity), white text, no hover change. */}
       {prevStage && (
         <button
           type="button"
           onClick={handleMoveBack}
           disabled={movingBack}
-          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-gray-400 bg-gray-50 hover:bg-gradient-to-r hover:from-[#F2754A] hover:to-[#F8B36B] hover:text-white transition-all duration-200 disabled:opacity-40 ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
+          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-white bg-gradient-to-r from-[#F2754A]/70 to-[#F8B36B]/70 disabled:opacity-40 ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
         >
           <ChevronLeft className="w-3.5 h-3.5" />
           <span>Back to {prevStage.label}</span>
