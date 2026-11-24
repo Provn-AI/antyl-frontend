@@ -262,7 +262,7 @@ function StageCard({
           type="button"
           onClick={handleMoveBack}
           disabled={movingBack}
-          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-white bg-gradient-to-r from-[#F2754A]/70 to-[#F8B36B]/70 disabled:opacity-40 ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
+          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-white bg-gradient-to-r from-[#F2754A]/90 to-[#F8B36B]/90 disabled:opacity-40 ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
         >
           <ChevronLeft className="w-3.5 h-3.5" />
           <span>Back to {prevStage.label}</span>
