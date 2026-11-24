@@ -115,11 +115,12 @@ function MatchBar({ score }: { score: number }) {
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS: Record<string, { label: string; color: string; bg: string }> = {
-  sent:      { label: "Applied",   color: "text-gray-500",    bg: "bg-gray-100"   },
-  viewed:    { label: "Viewed",    color: "text-blue-600",    bg: "bg-blue-50"    },
-  matched:   { label: "Matched",   color: "text-emerald-600", bg: "bg-emerald-50" },
-  interview: { label: "Interview", color: "text-violet-600",  bg: "bg-violet-50"  },
-  rejected:  { label: "Rejected",  color: "text-red-500",     bg: "bg-red-50"     },
+  sent:                { label: "Applied",   color: "text-gray-500",    bg: "bg-gray-100"    },
+  viewed:              { label: "Viewed",    color: "text-blue-600",    bg: "bg-blue-50"     },
+  matched:             { label: "Matched",   color: "text-emerald-600", bg: "bg-emerald-50"  },
+  interview_scheduled: { label: "Interview", color: "text-violet-600",  bg: "bg-violet-50"   },
+  hired:               { label: "Hired",     color: "text-emerald-700", bg: "bg-emerald-100" },
+  rejected:            { label: "Rejected",  color: "text-red-500",     bg: "bg-red-50"      },
 };
 
 // TOP_N_OPTIONS: recruiters see the strongest candidates first by default
@@ -189,9 +190,22 @@ export default function CandidatesPage() {
   const [matchSuccessName, setMatchSuccessName] = useState<string | null>(null);
   const [matchedCandidate, setMatchedCandidate] = useState<Candidate | null>(null);
 
+  // Guards the Interested button against double-clicks, and holds the
+  // error message shown when a status update fails.
+  const [matching, setMatching] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showError = (msg: string) => {
+    setActionError(msg);
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = setTimeout(() => setActionError(null), 4000);
+  };
+
   useEffect(() => {
     return () => {
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     };
   }, []);
 
@@ -299,6 +313,7 @@ export default function CandidatesPage() {
       console.error(err);
       // rollback the optimistic removal if the API call failed
       setCandidates((prev) => [candidate, ...prev]);
+      showError("Could not reject candidate. Please try again.");
       return;
     }
 
@@ -322,6 +337,48 @@ export default function CandidatesPage() {
     try {
       await updateCandidateStatus(candidate.application_id, candidate.status);
       setCandidates((prev) => [candidate, ...prev]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Always reset the success overlay when opening or closing the drawer,
+  // so a stale "Moved to your pipeline" screen can never cover the next
+  // candidate's Interested button.
+  const openCandidate = (c: Candidate) => {
+    setMatchSuccessName(null);
+    setMatchedCandidate(null);
+    setSelected(c);
+    setNote(c.note ?? "");
+  };
+
+  const closeDrawer = () => {
+    setMatchSuccessName(null);
+    setMatchedCandidate(null);
+    setSelected(null);
+  };
+
+  const handleInterested = async () => {
+    if (!selected || !jobId || matching) return;
+    const candidate = selected;
+    setMatching(true);
+    try {
+      await updateCandidateStatus(candidate.application_id, "matched");
+      setMatchSuccessName(candidate.name);
+      setMatchedCandidate(candidate);
+    } catch (err) {
+      console.error(err);
+      showError(
+        err instanceof Error ? err.message : "Could not update candidate."
+      );
+      setMatching(false);
+      return;
+    }
+    setMatching(false);
+
+    // The status update succeeded; a failed refresh must not look like a failure.
+    try {
+      setCandidates(await getJobCandidates(jobId));
     } catch (err) {
       console.error(err);
     }
@@ -483,12 +540,11 @@ export default function CandidatesPage() {
                   key={c.application_id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => { setSelected(c); setNote(c.note ?? ""); }}
+                  onClick={() => openCandidate(c)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
-                      setSelected(c);
-                      setNote(c.note ?? "");
+                      openCandidate(c);
                     }
                   }}
                   className="w-full text-left bg-white rounded-[24px] border border-gray-100 shadow-sm p-5 sm:p-6 hover:border-[#F2754A] transition-all group cursor-pointer"
@@ -598,7 +654,7 @@ export default function CandidatesPage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div
             className="absolute inset-0 bg-black/20 backdrop-blur-sm"
-            onClick={() => setSelected(null)}
+            onClick={closeDrawer}
           />
           <div className="relative w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[90vh] bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl flex flex-col overflow-hidden">
 
@@ -609,7 +665,7 @@ export default function CandidatesPage() {
               </p>
               <button
                 type="button"
-                onClick={() => setSelected(null)}
+                onClick={closeDrawer}
                 className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
               >
                 <X className="w-4 h-4 text-gray-500" />
@@ -792,30 +848,25 @@ export default function CandidatesPage() {
                 <SkipForward className="w-4 h-4" />
                 Reject
               </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!selected || !jobId) return;
-                  const candidate = selected;
-                  try {
-                    await updateCandidateStatus(candidate.application_id, "matched");
-                    // BUG-FIX: play the success animation over the drawer.
-                    // No longer auto-closes — stays open with a Message
-                    // button so the recruiter can jump straight into the
-                    // conversation, or dismiss manually via "Done".
-                    setMatchSuccessName(candidate.name);
-                    setMatchedCandidate(candidate);
-                    const data = await getJobCandidates(jobId);
-                    setCandidates(data);
-                  } catch (err) {
-                    console.error(err);
-                  }
-                }}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-md shadow-orange-100"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Interested
-              </button>
+              {selected.status === "sent" || selected.status === "viewed" ? (
+                <button
+                  type="button"
+                  onClick={handleInterested}
+                  disabled={matching}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-md shadow-orange-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {matching ? "Saving…" : "Interested"}
+                </button>
+              ) : (
+                <Link
+                  href={`/recruiter_messages?developer_id=${selected.developer_id}`}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-sm font-bold text-white bg-[#F2754A] hover:bg-[#e0623a] transition-colors shadow-md shadow-orange-100"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {STATUS[selected.status]?.label ?? "Matched"} · Message
+                </Link>
+              )}
             </div>
 
             {/* BUG-FIX: success overlay — covers just the drawer (not the
@@ -985,6 +1036,22 @@ export default function CandidatesPage() {
               setSkippedCandidate(null);
             }}
             className="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* ── Error toast ──
+          Shown when a status update (Interested / Reject) fails.
+          Auto-dismisses after 4s (see errorTimerRef / showError). */}
+      {actionError && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-3 bg-red-600 text-white rounded-full pl-5 pr-3 py-2.5 shadow-2xl">
+          <span className="text-sm font-semibold">{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="w-6 h-6 rounded-full hover:bg-white/15 flex items-center justify-center transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>

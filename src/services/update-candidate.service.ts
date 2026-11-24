@@ -2,25 +2,19 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8000";
 
-
 export async function updateCandidateStatus(
   applicationId: string,
   status: string
 ) {
-  const token =
-    localStorage.getItem(
-      "access_token"
-    );
+  const token = localStorage.getItem("access_token");
 
   const res = await fetch(
     `${API_URL}/recruiter/applications/${applicationId}/status`,
     {
       method: "PATCH",
       headers: {
-        "Content-Type":
-          "application/json",
-        Authorization:
-          `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         status,
@@ -28,5 +22,11 @@ export async function updateCandidateStatus(
     }
   );
 
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.detail || "Failed to update candidate status");
+  }
+
+  return data;
 }
