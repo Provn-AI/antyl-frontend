@@ -255,13 +255,14 @@ function StageCard({
         </button>
       )}
 
-      {/* Move back */}
+      {/* Move back — dim by default; brand orange gradient (same as the
+          active nav item) with white text on hover. */}
       {prevStage && (
         <button
           type="button"
           onClick={handleMoveBack}
           disabled={movingBack}
-          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-gray-400 bg-gray-50 hover:bg-gray-100 transition-colors disabled:opacity-40 ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
+          className={`mt-1.5 w-full flex items-center justify-between rounded-xl font-bold text-gray-400 bg-gray-50 hover:bg-gradient-to-r hover:from-[#F2754A] hover:to-[#F8B36B] hover:text-white transition-all duration-200 disabled:opacity-40 ${comfy ? "px-3.5 py-2.5 text-sm" : "px-2.5 py-2 text-[11px]"}`}
         >
           <ChevronLeft className="w-3.5 h-3.5" />
           <span>Back to {prevStage.label}</span>
