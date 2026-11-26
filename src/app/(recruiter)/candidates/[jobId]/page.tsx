@@ -26,6 +26,7 @@ import {
   StickyNote,
   MessageCircle,
   Clock,
+  ArrowLeft,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -432,19 +433,25 @@ export default function CandidatesPage() {
 
         {/* Logo */}
         <h1
-          className="text-2xl font-bold mb-10"
+          className="text-2xl font-bold mb-8"
           style={{ color: "#F2754A", fontFamily: "var(--font-fraunces, serif)" }}
         >
           Antyl
         </h1>
 
+        {/* Back button — larger pill so it is easy to see and tap */}
+        <Link
+          href="/candidates"
+          className="inline-flex items-center gap-2 px-5 py-3 mb-6 rounded-full bg-white border border-gray-100 shadow-sm text-base font-bold text-[#F2754A] hover:border-[#F2754A] hover:bg-orange-50 active:scale-[0.98] transition-all"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          All jobs
+        </Link>
+
         {/* Header */}
         <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <div>
-            <Link href="/candidates" className="text-xs font-bold text-[#F2754A] hover:underline">
-              ← All jobs
-            </Link>
-            <h2 className="text-3xl font-bold text-gray-900 mt-1">{jobTitle || "Candidates"}</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{jobTitle || "Candidates"}</h2>
             <p className="text-sm text-gray-400 mt-1">
               Candidates · {filtered.length} of {candidates.length} shown
             </p>
